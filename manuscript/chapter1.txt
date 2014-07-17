@@ -1,0 +1,17 @@
+# Welcome
+
+Welcome the readers. Firsly, I'm not a RethinkDB export but RethinkDB is just so good to pick up. I realize that any framework, any language, any tool will not be popular without someone
+do something. PHP had it bad day, and Taylor bring it up with Laravel. http://tech.esper.com/2014/07/15/why-we-use-ocaml/
+
+Secondly, I'm a fan of Mixy writing style http://blog.mixu.net/2012/07/26/writing-about-technical-topics-like-its-2012/. I won't cover deeply stuff like installing RethinkDB, and so on.
+
+Thirdly, I'm not fluent in English. Please help me to fix this book by
+contributing at https://github.com/kureikain/simplyrethink Because of this,
+sometime my tone sound toughs, but that isn't my intention.
+
+Fortly, RethinkDB is changing so fast so something in this book may not reflect
+to the current state. Bear with me and let me know. Since this is a LeanPub
+book, once I updated you can download it free of charge.
+
+
+
