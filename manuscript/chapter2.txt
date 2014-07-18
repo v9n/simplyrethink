@@ -4,11 +4,19 @@ It's not uncommon to see someone write a interactive shell in browser for
 evaluation purpose such as mongly, tryRedis. This isn't apply for RethinkDB
 because it comes with a excellent editor where you can type code and run it.
 
-Install RethinkDB by downloading package for your platform http://rethinkdb.com/docs/install/
-Open your browser at http://127.0.0.1:8080 and welcome RethinkDB
+Install RethinkDB by downloading package for your platform http://rethinkdb.com/docs/install/. Run it after installing.
 
-Then download the sample datasheet 
+Open your browser at http://127.0.0.1:8080 and welcome RethinkDB. You can play
+around to see what you have:
 
-Then import it with:
+Navigate to the Explrer tab, you can type the command from there. Let's start
+with 
 
-rethinkdb restore 
+```
+r.dbList()
+```
+
+Run it, and you can see a list of database.
+
+rethinkdb import -c localhost:28015 --table test.input_polls --pkey uuid -f input_polls.json --format json
+rethinkdb import -c localhost:28015 --table test.county_stats --pkey uuid -f county_stats.json --format json

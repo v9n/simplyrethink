@@ -13,5 +13,8 @@ Fortly, RethinkDB is changing so fast so something in this book may not reflect
 to the current state. Bear with me and let me know. Since this is a LeanPub
 book, once I updated you can download it free of charge.
 
+And finally, due to my limited knowledge with RethinkDB (again, I'm nowhere a
+RethinkDB expert), I want to keep this book short and to the point. Expect 60-80
+pages.
 
 
