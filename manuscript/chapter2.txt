@@ -18,5 +18,38 @@ r.dbList()
 
 Run it, and you can see a list of database.
 
+
+## RethinkDB object
+
+Just similar to traditonal database system, we have database in RethinkDB. A
+database contains many tables. Each table contains your JSON document. Those
+JSON document can contains any fields. A table doesn't force a schema for those
+fields. 
+
+A JSON document is similar to a row in MySQL. Each of field in the document is
+similar to column in MySQL.
+
+
+## Command line tool
+
+Besides the dashboard, RethinkDB gives us some command line utility to
+interactive with it. However, we will focus into those at this moment:
+
+* import
+* export
+* dump
+* restore
+
+### dump utility
+
+### import
+
+## Settign up sample data
+
+Download the data in input_polls and country_stats from and import them into
+test database with.
+
+```
 rethinkdb import -c localhost:28015 --table test.input_polls --pkey uuid -f input_polls.json --format json
 rethinkdb import -c localhost:28015 --table test.county_stats --pkey uuid -f county_stats.json --format json
+```

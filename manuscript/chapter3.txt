@@ -1,0 +1,14 @@
+# Getting to Know ReQL
+
+RethinkDB uses a special syntax call ReQL to interactive with the data. ReQL is
+chainable. You start with a table, and chain to other API to get what you want,
+in a way very natural. Eg.
+
+```
+r.db("test").table('movie').filter({'type': 'anime'})
+```
+
+Don't worry about the syntax, just look at it again and even without any
+knowledge you know what it does and easily remember it. 
+
+
