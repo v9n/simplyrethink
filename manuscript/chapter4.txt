@@ -25,6 +25,38 @@ So we got the default test and db1 is what we just have. Since we don't use db1,
 let delete it to keep it clean. 
 
     r.dbDrop('db1')
+    #=>
+    {
+      "dropped": 1
+    }
+
+The object we got back let us know the result in `*dropped*` field.
+
+## Table
+
+The syntax to create a table is
+
+  db.tableCreate(tableName[, options])
+
+The second parameter is optional, including following value:
+
+primaryKey
+: the name of primary key. As mention before, default name of primary key is
+**id**. Using this option, you can change that default behaviou like we used
+`*uuid*` with our input_polls table.
+
+*durability
+: accept value of *'soft'* or *'hard'*. *soft* means the writes will be
+acknowledge by server immdediately and data will be flushed to disk in
+background. If you write a large chunk of data. The opposite of soft, is hard,
+the default behaviour is to acknowledge after data is written to disk.
+Therefore, it will be longer. When you don't need the data consitent, such as
+writing a cache, or an important log, you should set durability to soft to
+increase speed
+
+To list what table we has, call `*tableList()`. To get rid of the table, use
+`*tableDrop(tablename)`. 
+
 
     
 

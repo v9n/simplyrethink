@@ -29,6 +29,20 @@ fields.
 A JSON document is similar to a row in MySQL. Each of field in the document is
 similar to column in MySQL.
 
+## Durability
+`*durability` will appear a lot in many option of ReQL db. Because it's so
+common and it's very important, I want to address it here. durability accepts 
+value of *'soft'* or *'hard'*. 
+
+soft
+: means the writes will be acknowledge by server immdediately and data will be flushed to disk in
+background. If you write a large chunk of data. 
+
+hard
+: The opposite of soft, the default behaviour is to acknowledge after data is written to disk.
+Therefore, it will be longer. When you don't need the data consitent, such as
+writing a cache, or an important log, you should set durability to soft to
+increase speed
 
 ## Command line tool
 
