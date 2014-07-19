@@ -1,0 +1,112 @@
+# Writing data
+
+## Manipulation database: create, delete, list
+
+These are very simple. Probably with example you get it instanly
+
+    //Create database
+    r.dbCreate("db1")
+    #=>
+    {
+      "created": 1
+    }
+
+If creating succesfully, we get back the object with `created` is *1*. We can
+confirm by listing what we have:
+
+    r.dbList()
+    #=>
+    [
+    "test" ,
+    "db1"
+    ]
+
+So we got the default test and db1 is what we just have. Since we don't use db1,
+let delete it to keep it clean. 
+
+    r.dbDrop('db1')
+
+    
+
+As you can guess now, we will start from the database, chain the table, and use
+`*insert*` method to insert a document into the table. Eg
+
+    r.db('test').table('input_polls').insert({
+      id: 'foo',
+      Day: 120,
+      Date: 'May 2',
+      Dem: '49'
+    })
+    
+    #=>
+    {
+      "deleted": 0 ,
+      "errors": 0 ,
+      "generated_keys": [
+      "13556cd8-034c-4c0e-91c0-666230740121"
+      ] ,
+      "inserted": 1 ,
+      "replaced": 0 ,
+      "skipped": 0 ,
+      "unchanged": 0
+    }
+
+The return object contains following attributes. 
+
+inserted
+: the number of documents that were succesfully inserted.
+
+replaced
+: the number of documents that were updated when upsert is used.
+
+unchanged
+: the number of documents that would have been modified, except that the new value was the same as the old value when doing an upsert.
+
+errors
+: the number of errors encountered while performing the insert.
+
+first_error
+: If errors were encountered, contains the text of the first error.
+
+deleted, skipped
+: 0 for an insert operation.
+
+generated_keys
+: a list of generated primary keys in case the primary keys for some documents were missing (capped to 100000).
+
+warnings
+: if the field generated_keys is truncated, you will get the warning "Too many generated keys (<X>), array truncated to 100000.".
+old_val
+: if returnVals is set to true, contains null.
+new_val
+: if returnVals is set to true, contains the inserted/updated document.
+
+Notice the generated_keys. If you insert a document without set a value for
+primary key, whose field name is `*id*` by default, RethinkDB will generate an
+UUID[^uuid] for it and return here.
+
+[^uuid]: http://en.wikipedia.org/wiki/Universally_unique_identifier
+
+With our example, we can retreive back the document again.
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+    #=>
+    {
+        "Date":  "May 2" ,
+        "Day": 120 ,
+        "Dem":  "49" ,
+        "id":  "foo" ,
+        "uuid":  "13556cd8-034c-4c0e-91c0-666230740121"
+    }
+
+Notice the `*uuid*` field? Our table has primary field is `*uuid*` and its value
+is set automatically by RethinkDB. 
+
+
+### Delete
+
+To remove one ore more document, just use ReQL to select what we want and
+execute `*delete*` on them.
+
+
+

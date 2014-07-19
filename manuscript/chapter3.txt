@@ -146,7 +146,7 @@ key value.
 Every document in RethinkDB has to include a primary field, its value is
 unique across cluster and is used to identify the document. The name of primary 
 field is `id` by default. However, when you create a table, you have an option to change name of primary field.
-Like in above table, the primary field's name is `uuid`, not `id`. We will learn
+Like in above table, the primary field's name is `*uuid*`, not `*id*`. We will learn
 more about it later. Just keep a note here.
 
 In RethinkDB, using of incremental primary key isn't recommended because that's
@@ -157,10 +157,34 @@ incremental value.
 
 #### Select many document by value of field
 
-Let's find all poll on May 14.
+We used `*filter*` method, and passing an Let's find all poll on May 14.
 
-    r.db('test').table('')
-  
+    r.table('input_polls').filter({day: 'May 14'})
+    #=>  
+    [
+        {
+        "Date":  "May 14" ,
+        "Day": 131.5 ,
+        "Dem": 49 ,
+        "EV": 14 ,
+        "GOP": 39 ,
+        "Len": 6 ,
+        "Pollster":  "Quinnipiac U.-6" ,
+        "id":  "New Jersey" ,
+        "uuid":  "08acce74-9d7d-4baa-a0ee-2b5d6520ae82"
+        } ,
+        {
+        "Date":  "May 14" ,
+        "Day": 134 ,
+        "Dem": 43 ,
+        "EV": 15 ,
+        "GOP": 51 ,
+        "Len": 1 ,
+        "Pollster":  "Rasmussen-1" ,
+        "id":  "North Carolina" ,
+        "uuid":  "b3d2024b-92c0-4852-bb8c-50c10591cac3"
+        }
+    ]    
 
 
 
