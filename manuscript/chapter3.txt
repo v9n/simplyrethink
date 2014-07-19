@@ -1,3 +1,5 @@
+-# Getting to Know ReQL
+
 # Getting to Know ReQL
 
 RethinkDB uses a special syntax call ReQL to interactive with the data. ReQL is
@@ -9,6 +11,167 @@ r.db("test").table('movie').filter({'type': 'anime'})
 ```
 
 Don't worry about the syntax, just look at it again and even without any
-knowledge you know what it does and easily remember it. 
+knowledge you know what it does and easily remember it. A way, for me, to
+understand ReQL is that every command return an object which can be pass into
+next command. 
+
+ReQL is particular to your language. Though, of course, they will look familiar
+between different language to maintain consitent look and feel. But, they are
+different. Those querie are constructed by making function call of your
+language, not by concat SQL String, or not by special JSON object like MongoDB.
+Therefore, it feel very natualy to write ReQL. As if the document we manipulate
+is an object in our language. 
+
+RethinkDB supports 3 official drives:
+ 
+* Ruby
+* NodeJS
+* Python 
+
+These support all [driver specifications](http://rethinkdb.com/docs/driver-spec/). The community drives such as Go, PHP probably won't support them all, if you used a different language and find something isn't right, it is probably not your fault.
 
 
+All ReQL starts with r, its top level module to expose its public API. In
+NodeJS, we can use
+
+    var r = require('rethinkdb')
+
+or Ruby
+
+~~~~~~~~
+require 'rethinkdb'
+include RethinkDB::Shortcuts
+puts r.inspect
+~~~~~~~~
+
+Once we constructed ReQL with `r`, we have to call `run` method to execute it. The
+command will be submit to an active database connection. The database connection
+can be establish with `connect`
+
+```
+var r = require('rethinkdb')
+var p = r.connect({
+  host: '127.0.0.1', 
+  post: '28015', 
+  db: 'test'
+}, function (err, conn) {
+  
+  r.table('post').get(1).run(conn)
+})
+```
+
+However, most of the time, we will use Data Exploer. Therefore we can use r without 
+initialization and call `run` method
+
+
+### Selecting data
+
+
+#### Select the whole table
+
+Let's get all data in table `county_stat`, database `test` which we imported
+before. This is same as `SELECT * FROM table` in SQL.
+
+    r.db('tets').table('input_polls')
+
+    [
+      {
+      "Date":  "Jan 16" ,
+      "Day": 14 ,
+      "Dem": 50 ,
+      "EV": 12 ,
+      "GOP": 39 ,
+      "Len": 5 ,
+      "Pollster":  "SurveyUSA-5" ,
+      "id":  "Washington" ,
+      "uuid":  "0670d6e4-7b56-4259-b5f2-4dbc5186fcca"
+      } ,
+      {
+      "Date":  "Apr 05" ,
+      "Day": 93.5 ,
+      "Dem": 47 ,
+      "EV": 15 ,
+      "GOP": 47 ,
+      "Len": 4 ,
+      "Pollster":  "Marist Coll.-4" ,
+      "id":  "North Carolina" ,
+      "uuid":  "0788843d-a342-4402-9c47-f6522e7bc216"
+      } ,
+      {
+      "Date":  "May 14" ,
+      "Day": 131.5 ,
+      "Dem": 49 ,
+      "EV": 14 ,
+      "GOP": 39 ,
+      "Len": 6 ,
+      "Pollster":  "Quinnipiac U.-6" ,
+      "id":  "New Jersey" ,
+      "uuid":  "08acce74-9d7d-4baa-a0ee-2b5d6520ae82"
+      } ,
+      ...
+    ]
+
+You should get back an array of JSON object. By default, the data explorer will
+automatically paginate it.
+
+> Note: you can drop r.table() without r.db() if the table is in current
+> selected databas. Without any indication, the default database is `test`.
+> Just like in SQL, you can run `use database` and don't have to type
+> `database.table_name`. 
+
+
+#### Select a single document by its primary key
+
+To select a single element, we call `get` on a table, and passing its primary
+key value.
+
+    r.table('input_polls').get('08acce74-9d7d-4baa-a0ee-2b5d6520ae82')
+    # will return
+    {
+      "Date":  "May 14" ,
+      "Day": 131.5 ,
+      "Dem": 49 ,
+      "EV": 14 ,
+      "GOP": 39 ,
+      "Len": 6 ,
+      "Pollster":  "Quinnipiac U.-6" ,
+      "id":  "New Jersey" ,
+      "uuid":  "08acce74-9d7d-4baa-a0ee-2b5d6520ae82"
+    }
+
+> Note: This time, we drop `.db('test')` and just use `r.table()`. It's shorter
+> and it works. If you are working on database `test` and want to access table
+> in database `db1`, u have to use `r.db('db1').table(...)`
+
+Every document in RethinkDB has to include a primary field, its value is
+unique across cluster and is used to identify the document. The name of primary 
+field is `id` by default. However, when you create a table, you have an option to change name of primary field.
+Like in above table, the primary field's name is `uuid`, not `id`. We will learn
+more about it later. Just keep a note here.
+
+In RethinkDB, using of incremental primary key isn't recommended because that's
+hard in a cluster environment. To make sure
+the uniqueness of the new value, We have to check in every clusters
+somehow. RethinkDB team decide[^pr] to use an unique id instead of an
+incremental value.
+
+#### Select many document by value of field
+
+Let's find all poll on May 14.
+
+    r.db('test').table('')
+  
+
+
+
+
+[^pr]: Check http://stackoverflow.com/questions/21020823/unique-integer-counter-in-rethinkdb
+
+
+
+# What did we gain
+
+We now have some basic understanding:
+
+1. ReQL always starts with r
+2. ReQL is tie to your language

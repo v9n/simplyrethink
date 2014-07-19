@@ -47,9 +47,9 @@ interactive with it. However, we will focus into those at this moment:
 ## Settign up sample data
 
 Download the data in input_polls and country_stats from and import them into
-test database with.
+test database
 
-```
+~~~~~~~~
 rethinkdb import -c localhost:28015 --table test.input_polls --pkey uuid -f input_polls.json --format json
 rethinkdb import -c localhost:28015 --table test.county_stats --pkey uuid -f county_stats.json --format json
-```
+~~~~~~~~
