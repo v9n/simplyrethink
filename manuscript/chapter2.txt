@@ -1,3 +1,5 @@
+-#Getting to know RethinkDB
+
 # Getting Started
 
 It's not uncommon to see someone write a interactive shell in browser for
@@ -6,20 +8,37 @@ because it comes with a excellent editor where you can type code and run it.
 
 Install RethinkDB by downloading package for your platform http://rethinkdb.com/docs/install/. Run it after installing.
 
+
+## Ports
+
+By default, RethinkDB runs on 3 ports
+
+8080
+: this is the web user interface of RethinkDB, or the dashboard. You can query
+the data, check performance, server status
+
+28015
+: this is the client drive port. All client drive will connect to RethinkDB
+through this port. 
+
+29015
+: this is intracluster port. Different RethinkDB node in a cluster communicates
+with eath others via this port
+
+## Get to know the dashboard
+
 Open your browser at http://127.0.0.1:8080 and welcome RethinkDB. You can play
 around to see what you have:
 
 Navigate to the Explrer tab, you can type the command from there. Let's start
 with 
 
-```
-r.dbList()
-```
+    r.dbList()
 
 Run it, and you can see a list of database.
 
 
-## RethinkDB object
+# RethinkDB object
 
 Just similar to traditonal database system, we have database in RethinkDB. A
 database contains many tables. Each table contains your JSON document. Those
@@ -29,7 +48,9 @@ fields.
 A JSON document is similar to a row in MySQL. Each of field in the document is
 similar to column in MySQL.
 
-## Durability
+# Durability
+
+You will see a option/argument call `durability`
 `*durability` will appear a lot in many option of ReQL db. Because it's so
 common and it's very important, I want to address it here. durability accepts 
 value of *'soft'* or *'hard'*. 
@@ -44,8 +65,10 @@ Therefore, it will be longer. When you don't need the data consitent, such as
 writing a cache, or an important log, you should set durability to soft to
 increase speed
 
-## Command line tool
+# Command line tool
 
+We have two way to interact with RethinkDB: either using the command line or use
+the administrator dashboard. Eg,
 Besides the dashboard, RethinkDB gives us some command line utility to
 interactive with it. However, we will focus into those at this moment:
 
@@ -54,16 +77,34 @@ interactive with it. However, we will focus into those at this moment:
 * dump
 * restore
 
-### dump utility
+## import
 
-### import
-
-## Settign up sample data
-
-Download the data in input_polls and country_stats from and import them into
+In the spirit of giving user the dashboard, RethinkDB also gives us sample data.
+You can download the data in file input_polls and country_stats at []https://github.com/rethinkdb/rethinkdb/tree/next/demos/election and import them into
 test database
 
 ~~~~~~~~
 rethinkdb import -c localhost:28015 --table test.input_polls --pkey uuid -f input_polls.json --format json
 rethinkdb import -c localhost:28015 --table test.county_stats --pkey uuid -f county_stats.json --format json
 ~~~~~~~~
+
+Notice the `--table` argument, we are passing the table name in format of
+*database_name*.*table_name". In our case, we import the data into two tables:
+`input_polls` and `county_stats` inside database `test`.
+
+We will use those data set throught the book. At any point, if you messed up the
+data, just drop the table, and import again.
+
+## export
+
+## dump
+
+dump will just export whole of data of a cluster. Its syntax
+    
+    rethinkdb dump -c HOST:PORT
+
+## restore
+
+Once we got the dump file with `dump` command. We can restore with:
+
+    rethinkdb restore -c HOST:PORT rethinkdb_dump_DATE_TIME.tar.gz

@@ -1,5 +1,91 @@
-# Performance
+# Advanced Selection
+
+
 
 ## Index
+
+Quickly you will realize that `filter` is slow. If you have a table
+with more than 100,000 records, `filter` stops working. All of that is becuase
+we haven't used index.
+
+We have two kind of index in RethinkDB
+
+* primary index: our ID key is this. This index is created automatically by
+RethinkDB. We can eliminateit.
+* secondary index:
+
+Seconday index is the index we created ourselve on one or many fields. Secondary
+index can be simple, just index the value of fields directly, or doing some
+pre-calculate on data before indexing. 
+
+Index helps increase the reading time and decrease writing time, also cost
+storage space. It reduces write performance becuase whenever we inserted a
+document, the index has to be calculate and writing into the database.
+
+RethinkDB supports those kinds of index:
+
+*Simple
+:indexes based on the value of a single field.
+*Compound
+:indexes based on multiple fields.
+*Multi 
+:indexes based on arrays of values.
+*Indexes 
+:based on arbitrary expressions.
+
+
+### Creating index
+
+For a simple index a single fields.
+
+    table.index_create(index_name[, index_function][, :multi => false]) → object
+
+    r.db('db').table(table).indexCreate(indexName)
+  
+For a compund index on multiple fields
+
+For a multi index on arrays of values. Because of the value is an array, it has
+many value which needed to be index multiple times.
+
+
+
+RqlRuntimeError: Index `status` on table `phim365.epqueue` was accessed before its construction was finished in:
+r.db("phim365").table("epqueue").getAll("ready", {index: "status"}).limit(1)
+
+### Checking index status
+
+As I said above, indexing reduces write performance, therefore it takes time to
+create after we issue creating command. Depend on the table size, how many
+records we have, we have to wait for an amout of time before using it. We can
+check the status of index creating
+
+    r.table().indexStatus
+
+Or if we can tell RethinkDB to do something after indexing finishs:
+
+  r.table.indexWait
+
+
+### Drop index
+    
+When we change data structure, we may want to drop the index. It's easy.
+
+    r.table().indexDrop(index_name)
+
+### Using index
+
+
+
+
+
+
+## ORder
+
+Sorting with order without index limit to 100k issue
+
+## Pagination
+
+## Join
+
 
 

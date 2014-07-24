@@ -38,11 +38,9 @@ NodeJS, we can use
 
 or Ruby
 
-~~~~~~~~
-require 'rethinkdb'
-include RethinkDB::Shortcuts
-puts r.inspect
-~~~~~~~~
+    require 'rethinkdb'
+    include RethinkDB::Shortcuts
+    puts r.inspect
 
 Once we constructed ReQL with `r`, we have to call `run` method to execute it. The
 command will be submit to an active database connection. The database connection
@@ -63,6 +61,8 @@ var p = r.connect({
 However, most of the time, we will use Data Exploer. Therefore we can use r without 
 initialization and call `run` method
 
+Thinking ReQL like the pipe or stream, you select the data, narrow down it or
+transform it and pass it to the next command. 
 
 ### Selecting data
 
