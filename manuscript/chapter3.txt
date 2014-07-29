@@ -155,7 +155,7 @@ the uniqueness of the new value, We have to check in every clusters
 somehow. RethinkDB team decide[^pr] to use an unique id instead of an
 incremental value.
 
-#### Select many document by value of field
+#### Select many document by value of fields
 
 We used `*filter*` method, and passing an Let's find all poll on May 14.
 
@@ -186,16 +186,50 @@ We used `*filter*` method, and passing an Let's find all poll on May 14.
         }
     ]    
 
-
-
-
 [^pr]: Check http://stackoverflow.com/questions/21020823/unique-integer-counter-in-rethinkdb
 
+Not just that, if we pass many value into `filter`, it will be filter as well. 
 
+    r.table('input_polls').filter({Date: 'May 14', Day: 134})
+    #=>  
+    [
+        {
+        "Date":  "May 14" ,
+        "Day": 134 ,
+        "Dem": 43 ,
+        "EV": 15 ,
+        "GOP": 51 ,
+        "Len": 1 ,
+        "Pollster":  "Rasmussen-1" ,
+        "id":  "North Carolina" ,
+        "uuid":  "b3d2024b-92c0-4852-bb8c-50c10591cac3"
+        }
+    ]    
+
+With simple filterting, we can easily pass an filter object as above. But what
+up with complex searching? Like we want to find all polls happen in May, and
+have the GOP greater than 30
+
+    r.tablle()
+
+If you notice, we did't specify any fields in all our above query. That's bad.
+We don't need to rob what we don't want. Let's narrow down them
+
+    r.table()
+      .pluck()
+
+How about if we want to get only a single fields, like we want to get a list of
+id of input_polls. `pluck` works of course, but we have a shortcut here
+
+    r.table('input_polls').
 
 # What did we gain
 
 We now have some basic understanding:
 
-1. ReQL always starts with r
+1. ReQL always starts with `r`
 2. ReQL is tie to your language
+3. Find an document by its primary 
+4. Access table data
+
+If anything you don't understand, or not sure, please re-read this chapter.

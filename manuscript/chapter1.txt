@@ -2,14 +2,15 @@
 
 # Introduction
 
-Welcome the readers. Firsly, I'm not a RethinkDB export but RethinkDB is just so good to pick up. I realize that any framework, any language, any tool will not be popular without someone
+Welcome the readers. Firsly, I'm not a RethinkDB expert at all. RethinkDB is just so good to pick up. I realize that any framework, any language, any tool will not be popular without someone
 do something. PHP had it bad day, and Taylor bring it up with Laravel. http://tech.esper.com/2014/07/15/why-we-use-ocaml/
 
 
 # How the book is write
+
 Secondly, I'm a fan of Mixy writing style http://blog.mixu.net/2012/07/26/writing-about-technical-topics-like-its-2012/. I won't cover deeply stuff like installing RethinkDB, and so on. RethinkDB is indeed, extensively. You can easily look up for a particular API and find all its argument, option. I won't cover them all. I just want to make you have a good foundation with it
 
-# English fluently
+# Apology
 
 Thirdly, I'm not fluent in English. Please help me to fix this book by
 contributing at https://github.com/kureikain/simplyrethink Because of this,
