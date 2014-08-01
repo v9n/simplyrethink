@@ -2,8 +2,40 @@
 
 Join is a joy to work with. Without joy, we have to either embed or joinging
 data with our code instead of database take care of that for us. In RethinkDB,
-`JOIN` are automatically distributed, meaning if you run on a cluster, the data
+**JOIN** are automatically distributed, meaning if you run on a cluster, the data
 will be combined from many clusters and presents final result to you.
+
+In SQL, ideally you can join whatever you want, by make sure the records on 2
+tables match an condition. Example:
+
+
+    SELECT post.*
+      FROM post
+      JOIN comment ON comment.post_id=post.id
+
+    # OR
+
+    SELECT post.*
+      FROM post
+      JOIN comment ON comment.author_id=post.author_id
+ 
+   
+But thing is different in RethinkDB. Just like how we have primary index and
+second index. In RethinkDB, we have two way to join:
+
+* primary keys
+* secondary indexes
+* sub queries
+
+Let's first create some data set. Just copy and paste thi
+
+With the example above, in RethinkDB we can do
+
+    r.table('post').eq_join('post_id'
+
+    
+What's up 
+    
 
 
  
