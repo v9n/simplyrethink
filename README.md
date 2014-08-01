@@ -1,4 +1,4 @@
--simplyrethink
+Simplyrethink
 ==============
 
 Simple RethinkDB book

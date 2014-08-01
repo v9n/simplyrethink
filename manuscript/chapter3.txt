@@ -223,6 +223,32 @@ id of input_polls. `pluck` works of course, but we have a shortcut here
 
     r.table('input_polls').
 
+`filter` seems handy but it's actually limited. `filter` didn't leverage index.
+It scan and hold all data in memory. Of course, this isn't scale infinite. Only
+100,000 record can be filter.
+
+A thing you should know is RethinkDB doesn't order docuement based on time they
+are inserted by default. The order seems in an unpredicted way. In MySQL, for
+example, even without any index, the default order will be exactly same as you
+insrted the document. However, in RethinkDB it doesn't. I guess this is because
+it's distributed.
+
+Also, because ReQL is built into your language. You can do many amazing thing
+without had to deal to crete ugly and complex SQL. 
+
+Look at our `input_polls` table, we want to filter only the poll happen on
+Sunday in Minnesota, and all the poll on Monday at Virginia.
+
+    r.table('inut_polls').filter(function (p) {
+      var d = new Date(Date.parse(p('Date') + ' 2014'))
+      return ( d.getDay()==0 && p('id')='Minnesota') || ( d.getDay()==1 && p('id')='Virginia')
+    })
+
+
+
+We will learn more about advanced query in other chapter. For now, let's move on
+and try to write some data into RethinkDB.
+
 # What did we gain
 
 We now have some basic understanding:

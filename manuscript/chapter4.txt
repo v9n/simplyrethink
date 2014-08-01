@@ -185,8 +185,46 @@ is set automatically by RethinkDB.
 
 ### Delete
 
+Just go ahead and type those command if you want to, we can at any point, reset
+to the original data set.
+
 To remove one ore more document, just use ReQL to select what we want and
 execute `*delete*` on them.
 
+This will delete a single document. 
+    r.table('input_polls').get('id').delete()
+
+Let clear out the vote from florda on may
+
+    r.table('input_polls').filter(function (row) {
+      r.row()
+    })
+
+Or just wipe an entire table
+
+    r.table().delete()
 
 
+`delete` method accepts an optional object with:
+
+  * durability: 'hard' or 'soft'. default 'hard' and will override the value of
+run.
+  * returnVals: 'false' or true. True mean if the document fail to removed for
+any reason, it will be returned to your result set. 
+
+
+How about to wipe out a field or just some. 
+
+
+### Sync
+
+As you known in the previous chapter, with value of `durability` as 'soft' the
+write isn't guarantees to be written to the permanent storage. So after doing a
+bunch of those `soft durability`, you may want to said `Hey, I am done all task,
+let's make sure you write those change` you can call sync
+
+  r.table('t').sync().run(connection, function () {
+    console.log('Syncing is done. All data is safe now')
+  })
+
+A sync will run the callback will be called when all change are written to disk.
