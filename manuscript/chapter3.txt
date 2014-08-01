@@ -1,4 +1,4 @@
--# Getting to Know ReQL
+-# Basic ReQL
 
 # Getting to Know ReQL
 
@@ -243,7 +243,14 @@ Sunday in Minnesota, and all the poll on Monday at Virginia.
 		  r.js("(function (p) { var d = new Date(Date.parse(p.Date + ' 2014')); return p.id=='Minnesota' && d.getDay()==0;})")
     )
 
+    r.table('input_polls').filter(
+		  r.js("(function (p) { var d = new Date(Date.parse(p.Date + ' 2014')); return (p.id=='Minnesota' && d.getDay()==0) || (p.id=='Virgina' && d.getDay()==2) ;})")
+    )
 
+The syntax may ugly at this moment because we have to pass the JavaScript code
+as a single string. But the potential is huge. Those kind of tricky query can
+get hard with SQL. Now we can simply explain in our own language with eventually
+complex business logic rule
 
 We will learn more about advanced query in other chapter. For now, let's move on
 and try to write some data into RethinkDB.

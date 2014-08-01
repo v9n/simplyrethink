@@ -1,4 +1,4 @@
-# JOIN
+-# JOIN
 
 Join is a joy to work with. Without joy, we have to either embed or joinging
 data with our code instead of database take care of that for us. In RethinkDB,
