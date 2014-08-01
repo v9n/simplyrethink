@@ -221,7 +221,7 @@ We don't need to rob what we don't want. Let's narrow down them
 How about if we want to get only a single fields, like we want to get a list of
 id of input_polls. `pluck` works of course, but we have a shortcut here
 
-    r.table('input_polls').
+    r.table('input_polls')(field)
 
 `filter` seems handy but it's actually limited. `filter` didn't leverage index.
 It scan and hold all data in memory. Of course, this isn't scale infinite. Only
@@ -239,23 +239,22 @@ without had to deal to crete ugly and complex SQL.
 Look at our `input_polls` table, we want to filter only the poll happen on
 Sunday in Minnesota, and all the poll on Monday at Virginia.
 
-    r.table('inut_polls').filter(function (p) {
-      var d = new Date(Date.parse(p('Date') + ' 2014'))
-      return ( d.getDay()==0 && p('id')='Minnesota') || ( d.getDay()==1 && p('id')='Virginia')
-    })
+    r.table('input_polls').filter(
+		  r.js("(function (p) { var d = new Date(Date.parse(p.Date + ' 2014')); return p.id=='Minnesota' && d.getDay()==0;})")
+    )
 
 
 
 We will learn more about advanced query in other chapter. For now, let's move on
 and try to write some data into RethinkDB.
 
-# What did we gain
+## What did we gain
 
 We now have some basic understanding:
 
 1. ReQL always starts with `r`
 2. ReQL is tie to your language
 3. Find an document by its primary 
-4. Access table data
+4. Access table data and filter data by some condition
 
 If anything you don't understand, or not sure, please re-read this chapter.
