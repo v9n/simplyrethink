@@ -350,6 +350,7 @@ a default value for 1.
 
 You can actually use `add` on string, numeric, array fields too. 
 
+
 ## Replace
 
 When it come to remove one or many fields from document, we can use update
@@ -371,7 +372,7 @@ eliminate.
 
     }
 
-We can replae to an entirely new document. However, the primary key cannot be
+We can replace to an entirely new document. However, the primary key cannot be
 updated. It has to be same with the current primary key. An attempt to change
 the primary key will caused an error **Primary key `uuid` cannot be changed**
 
@@ -401,8 +402,6 @@ the primary key will caused an error **Primary key `uuid` cannot be changed**
         "unchanged": 0
 
     }
-
-
 
 
 

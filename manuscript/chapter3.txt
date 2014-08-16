@@ -64,8 +64,21 @@ initialization and call `run` method
 Thinking ReQL like the pipe or stream, you select the data, narrow down it or
 transform it and pass it to the next command. 
 
-Each ReQL method can be call on one or many data types. When you browser the API
-document, you can see something like this:
+Taking direcly from RethinkDB doc, we have 3 composite data types.
+
+* Streams 
+
+:are lists like arrays, but they're loaded in a lazy fashion. Operations that return streams return a cursor. A cursor is a pointer into the result set. Instead of reading the results all at once like an array, you loop over the results, retrieving the next member of the set with each iteration. This makes it possible to efficiently work with large result sets. (See "Working with Streams," below, for some tips.) Streams are read-only; you can't pass one as an input to an ReQL command meant to modify its input like update or delete.
+
+* Selections represent subsets of tables, for example, the return values of filter or get. There are two kinds of selections, Selection<Object> and Selection<Stream>, which behave like objects or streams respectively. The difference between selections and objects/streams are that selections are writable--their return values can be passed as inputs to ReQL commands that modify the database. For instance, the get command will return a Selection<Object> that could then be passed to an update or delete command.
+
+* Tables are RethinkDB database tables. They behave like selections—they're writable, as you can insert and delete documents in them. ReQL methods that use an index, like getAll, are only available on tables.
+
+Understanding this concept is important. It allows you to read and understand
+RethinkDB API, know where you can chain a command.
+
+Each ReQL method can be call on one or many above data types. Take `update` command, when you browser the API
+document, you see
 
     table.update(json | expr[, {durability: "hard", returnVals: false, nonAtomic: false}]) → object
 

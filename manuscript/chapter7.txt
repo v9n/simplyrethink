@@ -33,8 +33,7 @@ With the example above, in RethinkDB we can do
 
     r.table('post').eq_join('post_id'
 
-    
-What's up 
+# Wrap up 
     
 
 
