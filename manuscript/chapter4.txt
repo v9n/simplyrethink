@@ -182,6 +182,103 @@ With our example, we can retreive back the document again.
 Notice the `*uuid*` field? Our table has primary field is `*uuid*` and its value
 is set automatically by RethinkDB. 
 
+### Update
+
+To make it easier, you can think of updating like selecting data, then change
+their value. We chain `update` method from a selection to update its data.
+
+For example, to update an attribute for a single element
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+      .update({
+          'Dem': 120
+      })
+    //=>
+    {
+
+        "deleted": 0 ,
+        "errors": 0 ,
+        "inserted": 0 ,
+        "replaced": 1 ,
+        "skipped": 0 ,
+        "unchanged": 0
+    }
+     
+
+RethinkDB returns an object for the updating result. We can look into `replaced`
+field to see if the data is actually updated. If we re-run the above command,
+nothing is replaced and we will got 1 `unchanged`.
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+      .update({
+          'Dem': 120
+      })
+    //=>{
+
+      "deleted": 0 ,
+      "errors": 0 ,
+      "inserted": 0 ,
+      "replaced": 1 ,
+      "skipped": 0 ,
+      "unchanged": 0
+
+    }
+
+That's just how Awesome RethinkDB is. All query result is very verbose. 
+
+To add a new field to exsited document, we just set its value.
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+      .update({
+          'New Value': 1
+      })
+    //=>
+    {
+
+        "deleted": 0 ,
+        "errors": 0 ,
+        "inserted": 0 ,
+        "replaced": 1 ,
+        "skipped": 0 ,
+        "unchanged": 0
+
+    }
+    //Verify
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+    #=>
+    {
+
+        "Date": "May 2" ,
+        "Day": 120 ,
+        "Dem": 120 ,
+        "New Value": 1 ,
+        "id": "foo" ,
+        "uuid": "13556cd8-034c-4c0e-91c0-666230740121"
+
+    }
+ 
+What if we want to remove an attribute of document. Well, let's set it to
+`null`. Depend on your language, you have to use your null value. Such as in
+Ruby, it's `nil`.
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+      .update({
+          'Dem': null
+      })
+    //=>
+    {
+
+        "deleted": 0 ,
+        "errors": 0 ,
+        "inserted": 0 ,
+        "replaced": 1 ,
+        "skipped": 0 ,
+        "unchanged": 0
+    }
+
+
+
+    
+
 
 ### Delete
 
