@@ -64,6 +64,20 @@ initialization and call `run` method
 Thinking ReQL like the pipe or stream, you select the data, narrow down it or
 transform it and pass it to the next command. 
 
+Each ReQL method can be call on one or many data types. When you browser the API
+document, you can see something like this:
+
+    table.update(json | expr[, {durability: "hard", returnVals: false, nonAtomic: false}]) → object
+
+    selection.update(json | expr[, {durability: "hard", returnVals: false, nonAtomic: false}]) → object
+
+    singleSelection.update(json | expr[, {durability: "hard", returnVals: false, nonAtomic: false}]) → object
+
+It means the command can be invoked on a table, or selection (eg: first 30
+element of tables), or a single selection - a document is an example of single
+selection.
+
+
 ### Selecting data
 
 
