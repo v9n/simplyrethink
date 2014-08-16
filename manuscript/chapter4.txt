@@ -229,7 +229,7 @@ That's just how Awesome RethinkDB is. All query result is very verbose.
 To add a new field to exsited document, we just set its value.
     r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
       .update({
-          'New Value': 1
+          'authors': ['foo']
       })
     //=>
     {
@@ -251,11 +251,161 @@ To add a new field to exsited document, we just set its value.
         "Day": 120 ,
         "Dem": 120 ,
         "New Value": 1 ,
+        "authors": [
+            "foo"
+        ] ,
         "id": "foo" ,
         "uuid": "13556cd8-034c-4c0e-91c0-666230740121"
 
     }
- 
+
+#### Add an field
+
+Now, we got `authors` is an array with only one value of foo. How do we add more
+data into its. We can pass an value to the `update`. A naive way, we have to know
+the current value, and append a new element. That's just not so efficient
+because the array can be big. What we do is to say: *Hey, let append this value
+into the `authors` array*. We can do that by using manipulation document method.
+`r.row` is a special method returns the currently visited document. By using it,
+we can get the value of field we want.
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+      .update({
+    		authors: r.row("authors").append('bar')
+			})
+    //=>
+    {
+
+        "deleted": 0 ,
+        "errors": 0 ,
+        "inserted": 0 ,
+        "replaced": 1 ,
+        "skipped": 0 ,
+        "unchanged": 0
+
+    }
+
+However, if `authors` field isn't existed yet, an error will be throw. To avoid
+that, we can tell RethinkDB to set and use an default value when the field isn't
+existed.
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+      .update({
+    		lol_authors: r.row("lol_authors").append('bar').default([])
+			})
+    //=>
+    {
+
+        "deleted": 0 ,
+        "errors": 0 ,
+        "inserted": 0 ,
+        "replaced": 1 ,
+        "skipped": 0 ,
+        "unchanged": 0
+
+    }
+
+By calling `default`, we can set an default value for the field. In our case, we
+use an empty array [] as default value. 
+
+Take another example, we want to count how many time the input_polls is viewed.
+We increased its `views` field for one. 
+
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+      .update({
+        views: r.row('views').add(1)
+			})
+    //=>
+    {
+
+        "deleted": 0 ,
+        "errors": 1 ,
+        "first_error": "No attribute `views` in object: { "Date": "May 2", "Day": 120, "Dem": 120, "New Value": 1, "authors": ["foo"], "id": "foo", "lol_author": [], "uuid": "13556cd8-034c-4c0e-91c0-666230740121" }" ,
+        "inserted": 0 ,
+        "replaced": 0 ,
+        "skipped": 0 ,
+        "unchanged": 0
+
+    } 
+
+Oops, we got an error here because the *views* field has not existed. Let's set
+a default value for 1.
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+      .update({
+        views: r.row('views').add(1).default(1)
+			})
+    //=>
+    {
+
+        "deleted": 0 ,
+        "errors": 0 ,
+        "inserted": 0 ,
+        "replaced": 1 ,
+        "skipped": 0 ,
+        "unchanged": 0
+
+    }
+
+You can actually use `add` on string, numeric, array fields too. 
+
+## Replace
+
+When it come to remove one or many fields from document, we can use update
+anymore. We have to use `replace` method to replace it with a new document. The
+new document is constructed from old document without the data we want to
+eliminate.
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+      .replace(r.row.without('lol_author'))
+    //=>
+    {
+
+        "deleted": 0 ,
+        "errors": 0 ,
+        "inserted": 0 ,
+        "replaced": 1 ,
+        "skipped": 0 ,
+        "unchanged": 0
+
+    }
+
+We can replae to an entirely new document. However, the primary key cannot be
+updated. It has to be same with the current primary key. An attempt to change
+the primary key will caused an error **Primary key `uuid` cannot be changed**
+
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+      .replace({
+
+        "Date": "May 2" ,
+        "Day": 120 ,
+        "Dem": 120 ,
+        "New Value": 1 ,
+        "authors": [
+            "foo", "bar"
+        ] ,
+        "id": "foo-bar" ,
+        "uuid": "13556cd8-034c-4c0e-91c0-666230740121" ,
+        "views": 100
+    })
+    //=>
+    {
+
+        "deleted": 0 ,
+        "errors": 0 ,
+        "inserted": 0 ,
+        "replaced": 1 ,
+        "skipped": 0 ,
+        "unchanged": 0
+
+    }
+
+
+
+
+
 What if we want to remove an attribute of document. Well, let's set it to
 `null`. Depend on your language, you have to use your null value. Such as in
 Ruby, it's `nil`.
