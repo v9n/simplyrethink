@@ -17,7 +17,7 @@ Feedback
 
 You can either use the issue tracker or email me at kurei@axcoto.com
 
-Contributin
+Contribution
 ==============
 
 I welcome any kind of contribution. But note that, the copyright will be

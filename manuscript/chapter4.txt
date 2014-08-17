@@ -1,6 +1,13 @@
--# Writing data
+# Modifying data
 
-## Manipulation database: create, delete, list
+We will address database command, then table command, and then document command
+on this chapter.
+
+## Database
+
+All commands on database levels start at the top namespace `r`. 
+
+### Create
 
 These are very simple. Probably with example you get it instanly
 
@@ -21,6 +28,7 @@ confirm by listing what we have:
     "db1"
     ]
 
+### Drop
 So we got the default test and db1 is what we just have. Since we don't use db1,
 let delete it to keep it clean. 
 
@@ -32,7 +40,12 @@ let delete it to keep it clean.
 
 The object we got back let us know the result in `*dropped*` field.
 
+        
+
 ## Table
+
+Tables have to sit inside a database, therefore, all table command have to call
+on a database. When you don't use 
 
 The syntax to create a table is
 
@@ -351,10 +364,58 @@ a default value for 1.
 You can actually use `add` on string, numeric, array fields too. 
 
 
+#### Expression
+
+Beside passing an object into `update`, we can also pass an expression which
+returns an object. RethinkDB will evaluate it, get the object result and using
+that value for `update` command. It comes in useful when you have some logic
+on your document related to the updating. Example, if `views` is greater than
+100, we set its type to *host*, otherwise, it's *normal*.
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+        update(function(post) {
+            return r.branch(
+                post("views").gt(100),
+                {type: "hot"},
+                {type: "normal"}
+            )
+        })
+    //=>
+    {
+
+        "deleted": 0 ,
+        "errors": 0 ,
+        "inserted": 0 ,
+        "replaced": 1 ,
+        "skipped": 0 ,
+        "unchanged": 0
+
+    }
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+    //=>
+    {
+        "Date": "May 2" ,
+        "Day": 120 ,
+        "Dem": 120 ,
+        "New Value": 1 ,
+        "authors": [
+            "foo" ,
+            "bar"
+        ] ,
+        "id": "foo-bar" ,
+        "type": "normal" ,
+        "uuid": "13556cd8-034c-4c0e-91c0-666230740121" ,
+        "views": 100
+    }
+
+
+
+
 ## Replace
 
-When it come to remove one or many fields from document, we can use update
-anymore. We have to use `replace` method to replace it with a new document. The
+To remove one or many fields from document, we cannot use `update` anymore. 
+We have to use `replace` method to replace it with a new document. The
 new document is constructed from old document without the data we want to
 eliminate.
 

@@ -282,6 +282,36 @@ complex business logic rule
 We will learn more about advanced query in other chapter. For now, let's move on
 and try to write some data into RethinkDB.
 
+
+### List
+
+Same as in MySQL, we can use `SHOW DATABASES` to see a list of database. In
+RethinkDB, we can do that with `dbList`
+
+    r.dbList()
+    //=>
+    [
+
+        "test" ,
+        "phim365" ,
+        "yelp" ,
+        "epiphy_test_v001" ,
+        "crawler"
+    ]
+
+### Select
+
+Before doing anything, we have to select a database with `r.db`.
+
+    r.db('test').table()
+
+### Switch database
+
+
+
+
+
+
 ## What did we gain
 
 We now have some basic understanding:
