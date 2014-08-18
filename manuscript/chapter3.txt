@@ -74,6 +74,14 @@ Taking direcly from RethinkDB doc, we have 3 composite data types.
 
 * Tables are RethinkDB database tables. They behave like selections—they're writable, as you can insert and delete documents in them. ReQL methods that use an index, like getAll, are only available on tables.
 
+
+T> Sequence
+T>
+T> RethinkDB document use `sequence` in lots of places. It's a particular data
+T> type. You can think of it as an shortwords for all: strams, table, seletion
+
+
+
 Understanding this concept is important. It allows you to read and understand
 RethinkDB API, know where you can chain a command.
 

@@ -1,4 +1,4 @@
--# Advanced Selection
+# Advanced Selection
 
 
 
@@ -6,7 +6,7 @@
 
 Quickly you will realize that `filter` is slow. If you have a table
 with more than 100,000 records, `filter` stops working. All of that is becuase
-we haven't used index.
+we haven't used index yet.
 
 We have two kind of index in RethinkDB
 
@@ -77,15 +77,26 @@ When we change data structure, we may want to drop the index. It's easy.
 
 
 
-
-
-## ORder
+## Order
 
 Sorting with order without index limit to 100k issue
 
 ## Pagination
 
-## Join
+To pagination data, we will use a a combination of `skip`, `limit` and `slice`.
 
+**skip(n)**
+
+: Skip a number of element from the begining of sequence or array
+
+**limit(n)**
+
+: End the sequence after we read up to the give number of limit
+
+**slice
+
+T> ## Where else I can call Skip, Limit, Slice
+T>
+T> These command can be called on a selection, an array or stream. So you ca
 
 
