@@ -272,7 +272,7 @@ To add a new field to exsited document, we just set its value.
 
     }
 
-#### Add an field
+#### Update data for complex field
 
 Now, we got `authors` is an array with only one value of foo. How do we add more
 data into its. We can pass an value to the `update`. A naive way, we have to know
@@ -321,6 +321,9 @@ existed.
 By calling `default`, we can set an default value for the field. In our case, we
 use an empty array [] as default value. 
 
+`append` is a method to manipulation. Besides `append` we can also use
+`prepend`. It adds a new element to an array but at the bottom. 
+
 Take another example, we want to count how many time the input_polls is viewed.
 We increased its `views` field for one. 
 
@@ -362,6 +365,31 @@ a default value for 1.
     }
 
 You can actually use `add` on string, numeric, array fields too. 
+
+Now we know how to work with an array as value of a field, how to work with an
+object as value of a field. Consider we have this:
+
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+      .update({
+        reviewer: {name: 'Vinh', age: 27}
+      })
+    
+The `reviewer` field is an object now. Then we want to add a new field `state` to `reviewer` to denote the `state` of reviewer. We cannot use `append` or `add` on an object. We have to merge current document with something new.
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+      .update({
+        reviewer: r.row('reviewer').merge({'state': 'CA'})
+      })
+ 
+Same as `append`, you can also use `default`:
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+      .update({
+        reviewer: r.row('reviewer').merge({'state': 'CA'}).default({})
+      })
+ 
+Since we are working with an object, we set its default value to `{}`.
 
 
 #### Expression
