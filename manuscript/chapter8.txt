@@ -1,3 +1,45 @@
--# MATH
-  
-## WRAP UP
+-# TIME
+
+RethinkDB supports date time date with millisecond precison times with timezon.
+It is integrated with the drivers. Meaning you will work with the time data in
+your language. You don't have to convert it to a special format. Such as in 
+JavaScript you can just insert a document like
+
+  r.table('input_polls').insert({
+    timestamp: 
+  })
+
+or in Ruby
+
+  r.table('events').insert(
+    {'id' => 0, 'timestamp' => Time.now}
+  )
+
+When you reading back the time, again, it's converted into a native time
+object/data type of your language. This save you bunch of time from dealing with
+time formating, timezone.
+
+## Timezone
+
+When you are setting a native time object to a RethinkDB document, if the object
+includes a timezone value, RethinkDB picks up it and use it, otherwise, it
+defaults to UTC time. 
+
+## RethinkDB time command
+
+What if we want to use expression and want to access time from inside ReQL.
+RethinkDB supports a couple of command
+
+### now
+
+    r.now()
+    //=>
+    Tue Aug 19 2014 08:00:38 GMT+00:00
+
+Notice the return time is in GMT+00, it's same as UTC.
+
+### epochTime
+
+ 
+    
+# WRAP UP
