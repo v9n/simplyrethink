@@ -1,4 +1,4 @@
--# Basic ReQL
+-# Reading Data Basic
 
 # Getting to Know ReQL
 
@@ -6,9 +6,7 @@ RethinkDB uses a special syntax call ReQL to interactive with the data. ReQL is
 chainable. You start with a table, and chain to other API to get what you want,
 in a way very natural. Eg.
 
-```
-r.db("test").table('movie').filter({'type': 'anime'})
-```
+    r.db("test").table('movie').filter({'type': 'anime'})
 
 Don't worry about the syntax, just look at it again and even without any
 knowledge you know what it does and easily remember it. A way, for me, to
@@ -30,8 +28,7 @@ RethinkDB supports 3 official drives:
 
 These support all [driver specifications](http://rethinkdb.com/docs/driver-spec/). The community drives such as Go, PHP probably won't support them all, if you used a different language and find something isn't right, it is probably not your fault.
 
-
-All ReQL starts with r, its top level module to expose its public API. In
+All ReQL starts with `r`, its top level module to expose its public API. In
 NodeJS, we can use
 
     var r = require('rethinkdb')
@@ -44,25 +41,66 @@ or Ruby
 
 Once we constructed ReQL with `r`, we have to call `run` method to execute it. The
 command will be submit to an active database connection. The database connection
-can be establish with `connect`
+can be establish with `connect`.
 
-```
-var r = require('rethinkdb')
-var p = r.connect({
-  host: '127.0.0.1', 
-  post: '28015', 
-  db: 'test'
-}, function (err, conn) {
-  
-  r.table('post').get(1).run(conn)
-})
-```
+    var r = require('rethinkdb')
+    var p = r.connect({
+      host: '127.0.0.1', 
+      post: '28015', 
+      db: 'test'
+    }, function (err, conn) {
+      
+      r.table('post').get(1).run(conn)
+    })
 
-However, most of the time, we will use Data Exploer. Therefore we can use r without 
-initialization and call `run` method
+However, in this book, most of the time, we will use Data Exploer. Therefore 
+we can use r without initialization and calling `run` method. *Data Exploer*
+will do that for us. Just keep in mind, that
 
-Thinking ReQL like the pipe or stream, you select the data, narrow down it or
-transform it and pass it to the next command. 
+Thinking ReQL like the pipe on Linux, you select the data, passing into another
+command. An easier way to think of it is jQuery chainable method. You select DOM
+elements with selector, and can chain it to narrow or transform the result.
+
+Understanding this concept is important. It allows you to read and understand
+RethinkDB API, know where you can chain a command.
+
+Each ReQL method can be call on one or many above data types. Take `update` command, when you browser the API
+document, you see
+
+    table.update(json | expr[, {durability: "hard", returnVals: false, nonAtomic: false}]) → object
+
+    selection.update(json | expr[, {durability: "hard", returnVals: false, nonAtomic: false}]) → object
+
+    singleSelection.update(json | expr[, {durability: "hard", returnVals: false, nonAtomic: false}]) → object
+
+It means the command can be invoked on a table, or selection (eg: first 30
+element of tables), or a single selection - a document is an example of single
+selection.
+
+## Data Type
+
+In RethinkDB, we have two categories of datas.
+
+* Basic data type
+* Composite data type
+
+### Basic data type
+
+There are usually the native data type in your language too:
+
+    * Number: any real numbers. RethinkDB uses double precision (64-bit) floating point numbers internally
+    * String
+    * Time: This is native RethinkDB date time type. However, they will be converted automatically to your native data type in your language by the driver.
+    * Boolean: True/False 
+    * Null: Depend on your language, it can be nil, null,..    
+    * Object: any valid JSON object. In JavaScript, it will be a normal object. In Ruby, it can be a hash.
+    * Array: any valid JSON array.
+
+The data type of a field or column can be change. If you assign a `number` to a
+field, you can still assign an value with different data type to that same
+field. So we don't have a static scheme for tables.
+
+### Composite data type
 
 Taking direcly from RethinkDB doc, we have 3 composite data types.
 
@@ -80,23 +118,6 @@ T>
 T> RethinkDB document use `sequence` in lots of places. It's a particular data
 T> type. You can think of it as an shortwords for all: strams, table, seletion
 
-
-
-Understanding this concept is important. It allows you to read and understand
-RethinkDB API, know where you can chain a command.
-
-Each ReQL method can be call on one or many above data types. Take `update` command, when you browser the API
-document, you see
-
-    table.update(json | expr[, {durability: "hard", returnVals: false, nonAtomic: false}]) → object
-
-    selection.update(json | expr[, {durability: "hard", returnVals: false, nonAtomic: false}]) → object
-
-    singleSelection.update(json | expr[, {durability: "hard", returnVals: false, nonAtomic: false}]) → object
-
-It means the command can be invoked on a table, or selection (eg: first 30
-element of tables), or a single selection - a document is an example of single
-selection.
 
 
 ### Selecting data

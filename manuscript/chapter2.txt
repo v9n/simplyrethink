@@ -1,4 +1,6 @@
--#Getting to know RethinkDB
+-# Getting to know RethinkDB
+
+Let's warm up some RethinkDB concept, idea and tool
 
 # Getting Started
 
@@ -25,7 +27,7 @@ through this port.
 : this is intracluster port. Different RethinkDB node in a cluster communicates
 with eath others via this port
 
-## Get to know the dashboard
+## The dashboard
 
 Open your browser at http://127.0.0.1:8080 and welcome RethinkDB. You can play
 around to see what you have:
