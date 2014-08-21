@@ -490,8 +490,30 @@ ReQL into updated object. As long as it can be evaluated like:
         views: r.row('views').add(1).default(1)
 			})
 
+But this updating method has some limit with `r.row`. It cannot be called on
+nested query. 
+
+Example, for each polls, we want to count how many poll on same `Date`, and
+storing the counting result into a field call `same_day_count` to avoid counting
+everytime we need it. We use another query inside `update`, and reference to
+`r.row` to get current document for comparison. 
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+      .update({
+        same_day_count: r.table('input_polls')('Date').count(r.row('Date'))
+      })
+    //=>
+    RqlCompileError: Cannot use r.row in nested queries.  Use functions instead in:
+    r.table("input_polls").get("13556cd8-034c-4c0e-91c0-666230740121").update({same_day_count: r.table("input_polls")("Date").count(r.row("Date"))})
+
+This makes sense because we don't know which query to base `r.row` on? Is it the
+main query, or sub query?
+
+Luckily, we can use function to solve this.
 
 ### Expression
+
+Let's get some basic knowledge then we will come back previous example.
 
 Beside passing an object into `update` command, we can also pass an expression which
 returns an object. RethinkDB will evaluate it, get the object result and using
@@ -544,9 +566,145 @@ visited document. Therefore, you can use many document manipulation command in
 it such as: pluck, without, merge, append, prepend. Just keep in mind this so
 you know what you can do with that parameter.
 
+Now, back to our previous example.
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+      .update(function (poll) {
+        return {
+          same_day_count: r.table('input_polls')('Date').count(poll('Date'))
+        }
+      })
+
+The query runs, but throw this error:
+
+    RqlRuntimeError: Could not prove function deterministic.  Maybe you want to use the non_atomic flag? in:
+    r.table("input_polls").get("13556cd8-034c-4c0e-91c0-666230740121").update(function(var_11) { return {same_day_count: r.table("input_polls")("Date").count(var_11("Date"))}; })
+
+Well, this is because the updating isn't atomic. 
+
+T > non-atomic updates 
+T >    
+T > They are updates that require fetching data from another document.
+
+Let's make it atomic and try again:
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+      .update(function (poll) {
+        return {
+          same_day_count: r.table('input_polls')('Date').count(poll('Date'))
+        }
+      }, {nonAtomic: true})
+    //=>
+    {
+
+        "deleted": 0 ,
+        "errors": 0 ,
+        "inserted": 0 ,
+        "replaced": 1 ,
+        "skipped": 0 ,
+        "unchanged": 0
+
+    }
+
+    //Verify
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+    //=>
+    {
+
+        "Date": "May 2" ,
+        "Day": 120 ,
+        "Dem": 120 ,
+        "New Value": 1 ,
+        "authors": [
+            "foo" ,
+            "bar"
+        ] ,
+        "id": "foo-bar" ,
+        "reviewer": {
+            "age": 25 ,
+            "name": "Vinh" ,
+            "state": "CA"
+        } ,
+        "same_day_count": 1 ,
+        "type": "normal" ,
+        "uuid": "13556cd8-034c-4c0e-91c0-666230740121" ,
+        "views": 100
+
+    }
+
+### Return Values
+
+Sometimes, it can be useful to get back the updated document. This way you can
+verify the result, without issuing a sub sequent `get` command. We just need to
+set `returnVals` flag to true in option parameter of `update` command. Same
+example:
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+      .update(function (poll) {
+        return {
+          same_day_count: r.table('input_polls')('Date').count(poll('Date'))
+        }
+      }, {nonAtomic: true, returnVals: true})
+    //=>
+    {
+
+        "deleted": 0 ,
+        "errors": 0 ,
+        "inserted": 0 ,
+        "new_val": {
+            "Date": "May 2" ,
+            "Day": 120 ,
+            "Dem": 120 ,
+            "New Value": 1 ,
+            "authors": [
+                "foo" ,
+                "bar"
+            ] ,
+            "id": "foo-bar" ,
+            "reviewer": {
+                "age": 25 ,
+                "name": "Vinh" ,
+                "state": "CA"
+            } ,
+            "same_day_count": 1 ,
+            "type": "normal" ,
+            "uuid": "13556cd8-034c-4c0e-91c0-666230740121" ,
+            "views": 100
+        } ,
+        "old_val": {
+            "Date": "May 2" ,
+            "Day": 120 ,
+            "Dem": 120 ,
+            "New Value": 1 ,
+            "authors": [
+                "foo" ,
+                "bar"
+            ] ,
+            "id": "foo-bar" ,
+            "reviewer": {
+                "age": 25 ,
+                "name": "Vinh" ,
+                "state": "CA"
+            } ,
+            "same_day_count": 1 ,
+            "type": "normal" ,
+            "uuid": "13556cd8-034c-4c0e-91c0-666230740121" ,
+            "views": 100
+        } ,
+        "replaced": 0 ,
+        "skipped": 0 ,
+        "unchanged": 1
+    }
+
+The old value and value are returned in key `old_val` and `new_val`
+correspondingly.
+
 ## Replace
 
-To remove one or many fields from document, we cannot use `update` anymore. 
+To remove one or many fields from document, we cannot use `update` anymore.
+We can set a field to `null` value(null, nil depends on your language) to make
+it become null. But they key is still in the document with a `null` value.
+
 We have to use `replace` method to replace it with a new document. The
 new document is constructed from old document without the data we want to
 eliminate.
@@ -618,7 +776,7 @@ Ruby, it's `nil`.
     }
 
 
-### Delete
+## Delete
 
 Just go ahead and type those command if you want to, we can at any point, reset
 to the original data set.
@@ -647,7 +805,7 @@ run.
   * returnVals: 'false' or true. True mean if the document fail to removed for
 any reason, it will be returned to your result set. 
 
-### Sync
+## Sync
 
 As you known in the previous chapter, with value of `durability` as 'soft' the
 write isn't guarantees to be written to the permanent storage. So after doing a
