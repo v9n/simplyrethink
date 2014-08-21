@@ -48,7 +48,8 @@ JSON document can contains any fields. A table doesn't force a schema for those
 fields. 
 
 A JSON document is similar to a row in MySQL. Each of field in the document is
-similar to column in MySQL.
+similar to column in MySQL. The document on a table doesn't have to contains som
+fields. They can contains whatever.
 
 # Durability
 
@@ -66,6 +67,16 @@ hard
 Therefore, it will be longer. When you don't need the data consitent, such as
 writing a cache, or an important log, you should set durability to soft to
 increase speed
+
+# Atomicity
+
+According to RethinkDB docs [^atomic], write atomicity is supported on a per-document basis. So when you write to a single document, it's either succesfully or nothing orrcur instead of just update a couple field and leave your data in a bad shape. More further, RethinkDB guarantees that any combination of operation can be execute on a single document will be write atomically. 
+
+However, it comes with a limit. To quote RethinkDB doc, Operations that cannot be proven deterministic cannot update the document in an atomic way. That said, the unpredictable value won't be atomic. Eg, randome value, operation run by using JavaScript expression other than ReQL, or values which are fetched from somewhere else. RethinkDB will throw an error instead of silently do it or ignore. You can choose to set a flag for writing data in non-atomic way.
+
+Multiple document writing isn't atomic.
+
+[^atomic] http://www.rethinkdb.com/docs/architecture/#how-does-the-atomicity-model-work
 
 # Command line tool
 

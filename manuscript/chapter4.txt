@@ -46,6 +46,8 @@ Tables have to sit inside a database, therefore, all table command have to call
 on a database. When you don't explicit specify a database to run on with `r.db`,
 the current database will be the base for table manipulation.
 
+## Create
+
 The syntax to create a table is
 
     db.tableCreate(tableName[, options])
@@ -70,6 +72,8 @@ increase speed
 
 datacenter
 : the name of the datacenter this table should be assigned to.
+
+## Drop
 
 To list what table we has, call `tableList()`. To get rid of the table, use
 `*tableDrop(tablename)*`.
@@ -119,7 +123,7 @@ To list what table we has, call `tableList()`. To get rid of the table, use
 
 Notice how RethinkDB returns a consitent JSON schema for database and table
 creating, droping with `created`, `dropped` field. 
-    
+   
 # Document
 
 After creating database, creating table, we can start to insert document into
