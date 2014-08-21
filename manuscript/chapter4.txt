@@ -3,11 +3,11 @@
 We will address database command, then table command, and then document command
 on this chapter.
 
-## Database
+# Database
 
 All commands on database levels start at the top namespace `r`. 
 
-### Create
+## Create
 
 These are very simple. Probably with example you get it instanly
 
@@ -28,7 +28,7 @@ confirm by listing what we have:
     "db1"
     ]
 
-### Drop
+## Drop
 So we got the default test and db1 is what we just have. Since we don't use db1,
 let delete it to keep it clean. 
 
@@ -40,12 +40,11 @@ let delete it to keep it clean.
 
 The object we got back let us know the result in `*dropped*` field.
 
-        
-
-## Table
+# Table
 
 Tables have to sit inside a database, therefore, all table command have to call
-on a database. When you don't use 
+on a database. When you don't explicit specify a database to run on with `r.db`,
+the current database will be the base for table manipulation.
 
 The syntax to create a table is
 
@@ -53,12 +52,14 @@ The syntax to create a table is
 
 The second parameter is optional, including following value:
 
-primaryKey
+*primaryKey
+
 : the name of primary key. As mention before, default name of primary key is
 **id**. Using this option, you can change that default behaviou like we used
-`*uuid*` with our input_polls table.
+`uuid` with our input_polls table.
 
-durability
+*durability
+
 : accept value of *soft* or *hard*. *soft* means the writes will be
 acknowledge by server immdediately and data will be flushed to disk in
 background. If you write a large chunk of data. The opposite of soft, is hard,
@@ -71,7 +72,7 @@ datacenter
 : the name of the datacenter this table should be assigned to.
 
 To list what table we has, call `tableList()`. To get rid of the table, use
-`*tableDrop(tablename)*`. 
+`*tableDrop(tablename)*`.
   
     r.tableList()
     //=>
@@ -117,14 +118,14 @@ To list what table we has, call `tableList()`. To get rid of the table, use
     ]
 
 Notice how RethinkDB returns a consitent JSON schema for database and table
-creating, drop with `created`, `dropped` field. 
+creating, droping with `created`, `dropped` field. 
     
-## Document
+# Document
 
 After creating database, creating table, we can start to insert document into
 table.
 
-### Insert
+## Insert
 
 As you can guess now, we will start from the database, chain the table, and use
 `*insert*` method to insert a document into the table. Eg
@@ -200,7 +201,7 @@ With our example, we can retreive back the document again.
 Notice the `*uuid*` field? Our table has primary field is `*uuid*` and its value
 is set automatically by RethinkDB. 
 
-### Update
+## Update
 
 To make it easier, you can think of updating like selecting data, then change
 their value. We chain `update` method from a selection to update its data.
@@ -277,7 +278,7 @@ To add a new field to exsited document, we just set its value.
 
     }
 
-#### Update data for complex field
+### Update data for complex field
 
 Now, we got `authors` is an array with only one value of foo. How do we add more
 data into its. We can pass an value to the `update`. A naive way, we have to know
@@ -461,16 +462,38 @@ key from the passing object.
 
     }
 
-#### Update a selection
+### Update multiple documents
 
 Instead of select a single document and update one by one. You can update a
-bunch of document by calling `update` on a table, a selection.
+bunch of documents by calling `update` on a table or a stream, a selection.
+    
+    r.table.filter(r.row('Day').gt(1) && r.row('Day').lt(90))
+      .update({quarter: 1})
+    //=>
+    {
+
+        "deleted": 0 ,
+        "errors": 0 ,
+        "inserted": 0 ,
+        "replaced": 55 ,
+        "skipped": 0 ,
+        "unchanged": 0
+    }
+
+### ReQL inside the updated object
+
+As you notice, we not only pass value into an updated object, but also passing
+ReQL into updated object. As long as it can be evaluated like:
+
+    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+      .update({
+        views: r.row('views').add(1).default(1)
+			})
 
 
+### Expression
 
-#### Expression
-
-Beside passing an object into `update`, we can also pass an expression which
+Beside passing an object into `update` command, we can also pass an expression which
 returns an object. RethinkDB will evaluate it, get the object result and using
 that value for `update` command. It comes in useful when you have some logic
 on your document related to the updating. Example, if `views` is greater than
@@ -513,9 +536,15 @@ on your document related to the updating. Example, if `views` is greater than
         "views": 100
     }
 
+Don't care too much about `r.branch`. It's like an `IF` in MySQL. If the first
+argument is TRUE, the second argument is return, otherwise the third.
 
+When using a function, the parameter pass into function will be the current
+visited document. Therefore, you can use many document manipulation command in
+it such as: pluck, without, merge, append, prepend. Just keep in mind this so
+you know what you can do with that parameter.
 
-### Replace
+## Replace
 
 To remove one or many fields from document, we cannot use `update` anymore. 
 We have to use `replace` method to replace it with a new document. The
@@ -587,10 +616,6 @@ Ruby, it's `nil`.
         "skipped": 0 ,
         "unchanged": 0
     }
-
-
-
-    
 
 
 ### Delete

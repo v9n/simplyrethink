@@ -1,1 +1,51 @@
--# Aggregation
+-# Data Modeling With JOIN
+
+Join is a joy to work with. Without joy, we have to either embed or joinging
+data with our code instead of database take care of that for us. With embedding
+document, we will hit a limit point about document size because the document 
+will be usually load into the memory. Embedding document has its own advantages
+such as: query data is simple, but this section will focus on data modeling with
+*JOIN*.
+
+In RethinkDB, **JOIN** are automatically distributed, meaning if you run on a cluster, the data
+will be combined from many clusters and presents final result to you.
+
+In SQL, ideally you can join whatever you want, by make sure the records on 2
+tables match an condition. Example:
+
+
+    SELECT post.*
+      FROM post
+      JOIN comment ON comment.post_id=post.id
+
+    # OR
+
+    SELECT post.*
+      FROM post
+      JOIN comment ON comment.author_id=post.author_id
+ 
+   
+But thing is different in RethinkDB. Just like how we have primary index and
+second index. In RethinkDB, here is someway we use to join data.
+
+* primary keys
+* secondary indexes
+* sub queries
+
+Let's first create some data set. Just copy and paste this
+
+
+With the example above, in RethinkDB we can do
+
+    r.table('post').eq_join('post_id'
+
+## Using primary key
+
+## Using Secondary indexes
+
+## Using sub queries
+
+# Wrap up 
+    
+At the end of this chapter, we should know
+ 
