@@ -6,8 +6,8 @@
 # Download http://www.tug.org/mactex/morepackages.html and install BasicTeX  for
 # PDF generating
 
-echo "" > output/source.markdown
 if [ ! -d "./output" ]; then mkdir ./output; fi
+echo "" > "./output/source.markdown"
 for chapfile in $(cat manuscript/Book.txt) 
 do
   cat "manuscript/$chapfile" >> ./output/source.markdown
