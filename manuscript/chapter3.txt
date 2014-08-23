@@ -387,13 +387,47 @@ On `r.row`, we can also call many method to check for a condition. When we pass
 a ReQL to `filter`, RethinkDB runs it and if the returned value is `true`, the
 document is included into result set.
 
+What method `r.row` supports. We have a several method as below, they are
+usually grouped into Document Manipulation Command on RethinkDB
+docs[^doc_mani_cmd].
 
+[^doc_manu_cmd]: [http://rethinkdb.com/api/javascript/#row](http://rethinkdb.com/api/javascript/#row)
 
-If you notice, we did't specify any fields in all our above query. That's bad.
-We don't need to rob what we don't want. Let's narrow down them
+  * *r.row('field_name')* passing a field name into `r.row` return value of the field in document
+  * *pluck('field_1', 'field_2', 'another_field' [,...])* pluck will get us the
+   document with only fields in the parameters are included. 
+  * *without([selector1, selector2...])* opposite of pluck. It returns document
+   and eliminated the fields in the parameters list.
+  * *merge(object)* it merges the current document with the object we pass, and
+  return new document. 
 
-    r.table()
-      .pluck()
+So with `r.row` we can transform document into our want, but we are wanting to
+filter data. We want a way to run some check, compare data. Well, RethinkDB
+gives us some command that we can call on a value for logic checking.
+
+  * *eq(value)* check equal to value. similar to `==`.
+  * *ne(value)* check not equal to value. similar to `!=`.
+  * *ge(value)* check greater than or equal value. similar to `>=`.
+  * *gt(value)* check greater than value. similar to `>`.
+  * *le(value)* check less than or equal value. similar to `<=`.
+  * *lt(value)* check less than value. similar to `<`.
+  * *add(value)* Sum two numbers, concatenate two strings, or concatenate 2 arrays.
+  * *sub()* Subtract two numbers.
+
+Each of above command can be call on different data type. Eg, when you call `add` on an array, it will append the element to array. when you call on a string, it concat parameter to the original string. Or calling on a number and they just do arithmetic operation.
+  
+  ["foo", "bar"].add('forbar') => ['foo', 'bar', 'foobar']
+  2.add(10) => 12
+  'foo '.add("bar") => 'foo bar'
+      
+You can find more about them in RethinkDB doc, in group Math and
+logic[^math_logic]. 
+
+[^math_logic]: [http://rethinkdb.com/api/javascript/#mod](http://rethinkdb.com/api/javascript/#mod)     
+
+Time to use them now. If you notice, we didn't specify any fields in all our above query. That's bad because all fields are returned. We don't need to fetch what we don't want. Let's narrow down them with pluck
+
+    r.table('input_polls').filter({Date: 'May 14', Day: 134})
 
 How about if we want to get only a single fields, like we want to get a list of
 id of input_polls. `pluck` works of course, but we have a shortcut here
