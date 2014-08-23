@@ -53,6 +53,11 @@ The equavilent ReQL use to find only anime is:
 Notice how similar the structure between them? Because of those concept, I find
 ReQL is easy to learn.
 
+Another way to understand is considering ReQL like the pipe on Linux, you select the data, 
+passing into another command:
+
+    $ cd db; ls -la table/* | grep 'type: anime'
+
 # Drivers
 
 ReQL is binded to your language. Therefore, the API is implemented totally by
@@ -80,6 +85,12 @@ or Ruby
     include RethinkDB::Shortcuts
     puts r.inspect
 
+or in Go Lang
+
+    import (
+      r "github.com/dancannon/gorethink"
+    )
+
 Once we constructed ReQL with `r`, we have to call `run` method to execute it. The
 command will be submit to an active database connection. The database connection
 can be establish with `connect`.
@@ -87,7 +98,7 @@ can be establish with `connect`.
     var r = require('rethinkdb')
     var connection = r.connect({
       host: '127.0.0.1', 
-      post: '28015', 
+      port: '28015', 
       db: 'test'
     }, function (err, conn) {
       r.db('db').table('table').filter({type: 'anime'})
@@ -95,18 +106,45 @@ can be establish with `connect`.
 
 When creating the connection with `r.connect`, you can pass an `db` parameter to
 specify a default database to work on once connecting succesfully. It's similar
-to the current database of MySQL. 
+to the current database of MySQL. Without setting this parameter, RethinkDB
+assumes `test` as default database. 
 
-However, in this book, most of the time, we will use Data Exploer. Therefore 
+To understand more, let looks at Go Lang driver[^golang]
+
+   var connection *r.Session
+
+    connection, err := r.Connect(r.ConnectOpts{
+        Address:  "localhost:28015",
+        Database: "test",
+    })
+
+    if err != nil {
+        log.Fatalln(err.Error())
+    }
+
+Notice that we don't have any host, or Database parameter now. They are
+`Address`and `Database` in Go Lang driver. Therefore, by using an un-official
+language, the API will be totally different with official API. 
+
+That's how beautiful it is. Because each language has its own design philosophy.
+Such as in Go lang, we cannot have a lowcase key and expect it public. Using a
+name such as `host` or `db` is impossible.
+
+[^golang][https://github.com/dancannon/gorethink](https://github.com/dancannon/gorethink)
+
+## Default database
+
+Similar to MySQL, when you can issue `use database_name` to switch to another
+database. We can do that in RethinkDB by calling `use` command on a connection
+object.
+
+    connection.use('another_db')      
+
+In this small book, most of the time, we will use Data Exploer. Therefore 
 we can use r without initialization and calling `run` method. *Data Exploer*
-will do that for us. Just keep in mind, that
+will do that for us. Just keep in mind when you write code, you have to connect,
+and explicitly call `run` to, obviously, run the query.
 
-Thinking ReQL like the pipe on Linux, you select the data, passing into another
-command. An easier way to think of it is jQuery chainable method. You select DOM
-elements with selector, and can chain it to narrow or transform the result.
-
-Understanding this concept is important. It allows you to read and understand
-RethinkDB API, know where you can chain a command.
 
 
 # Data Type
@@ -383,7 +421,6 @@ Before doing anything, we have to select a database with `r.db`.
 
     r.db('test').table()
 
-### Switch database
 
 
 
@@ -394,8 +431,9 @@ Before doing anything, we have to select a database with `r.db`.
 
 We now have some basic understanding:
 
-1. ReQL always starts with `r`
-2. ReQL is tie to your language
+1. ReQL always starts with `r`.
+2. ReQL is tie to your language depend on language driver.
+3. 
 3. Find an document by its primary 
 4. Access table data and filter data by some condition
 
