@@ -2,9 +2,9 @@
 
 # Getting to Know ReQL
 
-RethinkDB uses a special syntax call ReQL to interactive with the data. ReQL is
+RethinkDB uses a special syntax call *ReQL* to interact with the data. ReQL is
 chainable. You start with a table, and chain to other API to get what you want,
-in a way very natural. Eg.
+in a way very natural. Eg:
 
     r.db("test").table('movie').filter({'type': 'anime'})
 
@@ -13,12 +13,53 @@ knowledge you know what it does and easily remember it. A way, for me, to
 understand ReQL is that every command return an object which can be pass into
 next command. 
 
-ReQL is particular to your language. Though, of course, they will look familiar
-between different language to maintain consitent look and feel. But, they are
-different. Those querie are constructed by making function call of your
+ReQL is particular binding to your language. Though, of course, they will look 
+familiar between different language to maintain consitent look and feel. But, 
+they are different. Those querie are constructed by making function call of your
 language, not by concat SQL String, or not by special JSON object like MongoDB.
-Therefore, it feel very natualy to write ReQL. As if the document we manipulate
-is an object in our language. 
+Therefore, it feel very natualy to write ReQL. As if the data we manipulate
+is an object or data type in our language. 
+
+What is `r`? `r` is like a special namespace which is all RethinkDB is exposed 
+via it. It's just a normal variable in your language, or a namespace, a package
+name, a module. Think of `r` like `$` of jQuery. If you don't like `r`, assign
+another variable to it is possible.
+
+We will call all method of `r`, or of any method of return resulted from other
+method are command for now. Think of it like a method in jQuery world.
+
+Here is example, with this HTML structure:
+
+    <div class="db">
+      <div class="table" data-type="anime">Haru River</div>
+      <div class="table" data-type="anime">Bakasara</div>
+      <div class="table" data-type="movie">James Bond</div>
+    </div>
+
+To filter only anime movie, we can use this jQuery:
+
+    $('.db').find('.table').filter('[data-type="anime"]')
+
+If we have a database call `db`, and a table call `table`, with 3 records:
+
+    {type: 'anime', title: 'Haru River'}
+    {type: 'anime', title: 'Bakasara'}
+    {type: 'movie', title: 'James Bond'}
+
+The equavilent ReQL use to find only anime is:
+
+    r.db('db').table('table').filter({type: 'anime'})
+
+Notice how similar the structure between them? Because of those concept, I find
+ReQL is easy to learn.
+
+# Drivers
+
+ReQL is binded to your language. Therefore, the API is implemented totally by
+the driver itself. You won't work directly with RethinkDB server. You write the
+query from the API of driver, the driver will built it into a real query to send
+to server, receive data, parse it to return data as a native data of your
+language.
 
 RethinkDB supports 3 official drives:
  
@@ -44,14 +85,17 @@ command will be submit to an active database connection. The database connection
 can be establish with `connect`.
 
     var r = require('rethinkdb')
-    var p = r.connect({
+    var connection = r.connect({
       host: '127.0.0.1', 
       post: '28015', 
       db: 'test'
     }, function (err, conn) {
-      
-      r.table('post').get(1).run(conn)
+      r.db('db').table('table').filter({type: 'anime'})
     })
+
+When creating the connection with `r.connect`, you can pass an `db` parameter to
+specify a default database to work on once connecting succesfully. It's similar
+to the current database of MySQL. 
 
 However, in this book, most of the time, we will use Data Exploer. Therefore 
 we can use r without initialization and calling `run` method. *Data Exploer*
@@ -63,6 +107,9 @@ elements with selector, and can chain it to narrow or transform the result.
 
 Understanding this concept is important. It allows you to read and understand
 RethinkDB API, know where you can chain a command.
+
+
+# Data Type
 
 Each ReQL method can be call on one or many above data types. Take `update` command, when you browser the API
 document, you see
@@ -77,14 +124,14 @@ It means the command can be invoked on a table, or selection (eg: first 30
 element of tables), or a single selection - a document is an example of single
 selection.
 
-## Data Type
 
-In RethinkDB, we have two categories of datas.
+In RethinkDB, we have several data type. We will focus into those 2 kind for
+now:
 
 * Basic data type
 * Composite data type
 
-### Basic data type
+## Basic data type
 
 There are usually the native data type in your language too:
 
@@ -98,9 +145,9 @@ There are usually the native data type in your language too:
 
 The data type of a field or column can be change. If you assign a `number` to a
 field, you can still assign an value with different data type to that same
-field. So we don't have a static scheme for tables.
+field. So we don't have a static schema for tables.
 
-### Composite data type
+## Composite data type
 
 Taking direcly from RethinkDB doc, we have 3 composite data types.
 
@@ -119,13 +166,14 @@ T> RethinkDB document use `sequence` in lots of places. It's a particular data
 T> type. You can think of it as an shortwords for all: strams, table, seletion
 
 
+# Selecting data
 
-### Selecting data
+In this section, we will learn how to get data out of RethinkDB. Most of the
+time, we will choose a db to work with, and chain into command `table`. 
 
+## Select the whole table
 
-#### Select the whole table
-
-Let's get all data in table `county_stat`, database `test` which we imported
+Let's get all data in table `county_stat` of database `test` which we imported
 before. This is same as `SELECT * FROM table` in SQL.
 
     r.db('tets').table('input_polls')
@@ -168,13 +216,14 @@ before. This is same as `SELECT * FROM table` in SQL.
     ]
 
 You should get back an array of JSON object. By default, the data explorer will
-automatically paginate it.
+automatically paginate it and display a part of data.
 
-> Note: you can drop r.table() without r.db() if the table is in current
-> selected databas. Without any indication, the default database is `test`.
-> Just like in SQL, you can run `use database` and don't have to type
-> `database.table_name`. 
+Typing `r.db(db_name)` all the time is insane. We can drop it to use `r.table()`
+without calling `r.db()` if the table is in current selected database. Without 
+any indication, the default database is `test`. On Data Exploer, without a 
+`r.db` command, RethinkDB will use `test` as default database. 
 
+Just like in SQL, you can run `use database` and don't have to type `database.table_name`. 
 
 #### Select a single document by its primary key
 
