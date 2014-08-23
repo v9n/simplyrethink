@@ -51,7 +51,7 @@ The equavilent ReQL use to find only anime is:
     r.db('db').table('table').filter({type: 'anime'})
 
 Notice how similar the structure between them? Because of those concept, I find
-ReQL is easy to learn.
+ReQL is easy to learn. If you can write jQuery, you can write ReQL.
 
 Another way to understand is considering ReQL like the pipe on Linux, you select the data, 
 passing into another command:
@@ -286,10 +286,10 @@ key value.
 > and it works. If you are working on database `test` and want to access table
 > in database `db1`, u have to use `r.db('db1').table(...)`
 
-Every document in RethinkDB has to include a primary field, its value is
+Every document in RethinkDB includes a primary key field, its value is
 unique across cluster and is used to identify the document. The name of primary 
 field is `id` by default. However, when you create a table, you have an option to change name of primary field.
-Like in above table, the primary field's name is `*uuid*`, not `*id*`. We will learn
+Like in above table, the primary field's name is `uuid`, not `id`. We will learn
 more about it later. Just keep a note here.
 
 In RethinkDB, using of incremental primary key isn't recommended because that's
@@ -301,9 +301,9 @@ incremental value.
 [^pr]: [http://stackoverflow.com/questions/21020823/unique-integer-counter-in-rethinkdb](http://en.wikipedia.org/wiki/Universally_unique_identifier)
 [^uuidinfo]: [http://en.wikipedia.org/wiki/Universally_unique_identifier](http://en.wikipedia.org/wiki/Universally_unique_identifier)
 
-## Select many document by value of fields
+## Select many documents by value of fields
 
-We used **filter** method, and passing an object with expected value.
+We used `filter` method, and passing an object with expected value.
 Let's find all poll on May 14.
 
     r.table('input_polls').filter({day: 'May 14'})
@@ -354,9 +354,40 @@ Not just that, if we pass many value into `filter`, it will be filter as well.
 
 With simple filterting, we can easily pass an filter object as above. But what
 up with complex searching? Like we want to find all polls happen in May, and
-have the GOP greater than 30
+have the GOP greater than 30. It's hard and complex to denote that condition 
+with an object. And to me, that's how MongoDB lost to RethinkDB. Let's meet our
+`r.row`.
 
-    r.tablle()
+## r.row
+
+`r.row` is our swiss army knife. It refers to current visited document.
+Literally, it's the document at which RethinkDB is accessing (it's not quite 
+true in sub query). It's similar to `this` in a JavScript
+callback. Eg, we write this in JavaScript to filter all DOM element whose
+`data-type` value is *anime*.
+
+    $('.db').find('.table').filter(function() {
+      return $(this).data('type')=='anime'
+    })
+
+This simpe ReQL
+    r.db('db').table('table').filter({type: 'anime'})
+
+can re-write with `r.row`
+
+    r.db('db').table('table').filter(r.row('type').eq('anime'))
+
+Breaking it down we have:
+
+  * r.row        => current document
+  * ('type')     => get value of field type
+  * .eq('anime') => return true if the value is equal to the argument, anime in this case
+
+On `r.row`, we can also call many method to check for a condition. When we pass
+a ReQL to `filter`, RethinkDB runs it and if the returned value is `true`, the
+document is included into result set.
+
+
 
 If you notice, we did't specify any fields in all our above query. That's bad.
 We don't need to rob what we don't want. Let's narrow down them
@@ -373,13 +404,12 @@ id of input_polls. `pluck` works of course, but we have a shortcut here
 It scan and hold all data in memory. Of course, this isn't scale infinite. Only
 100,000 record can be filter.
 
-A thing you should know is RethinkDB doesn't order docuement based on time they
-are inserted by default. The order seems in an unpredicted way. In MySQL, for
+RethinkDB doesn't order docuement based on time they are inserted by default. The order seems in an unpredicted way. In MySQL, for
 example, even without any index, the default order will be exactly same as you
 insrted the document. However, in RethinkDB it doesn't. I guess this is because
 it's distributed.
 
-Also, because ReQL is built into your language. You can do many amazing thing
+Because ReQL is built into your language. You can do many amazing thing
 without had to deal to crete ugly and complex SQL. 
 
 Look at our `input_polls` table, we want to filter only the poll happen on
@@ -402,7 +432,7 @@ We will learn more about advanced query in other chapter. For now, let's move on
 and try to write some data into RethinkDB.
 
 
-### List
+## Listing databases
 
 Same as in MySQL, we can use `SHOW DATABASES` to see a list of database. In
 RethinkDB, we can do that with `dbList`
@@ -418,26 +448,35 @@ RethinkDB, we can do that with `dbList`
         "crawler"
     ]
 
-### Select
+## Listing table of a database
 
-Before doing anything, we have to select a database with `r.db`.
+    r.db('test').tableList()
+    //or just call direcly on current database
+    r.tableList()
+    [
 
-    r.db('test').table()
+        "users" ,
+        "article" ,
+        "user" ,
+        "movie" ,
+        "county_stats" ,
+        "LOp" ,
+        "input_polls" ,
+        "LOP" ,
+        "customuser" ,
+        "lop"
 
+    ]    
+    
 
-
-
-
-
-
-## What did we gain
+# Wrap Up 
 
 We now have some basic understanding:
 
 1. ReQL always starts with `r`.
 2. ReQL is tie to your language depend on language driver.
-3. 
+3. Default database
 3. Find an document by its primary 
 4. Access table data and filter data by some condition
 
-If anything you don't understand, or not sure, please re-read this chapter.
+Let's move to next chapter to write some data into RethinkDB.
