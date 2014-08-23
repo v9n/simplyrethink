@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Building with Pandoc
+# We need https://github.com/jgm/pandoc/releases
+# Download and install it
+# Download http://www.tug.org/mactex/morepackages.html and install BasicTeX  for
+# PDF generating
+
+echo "" > output/source.markdown
+if [ ! -d "./output" ]; then mkdir ./output; fi
+for chapfile in $(cat manuscript/Book.txt) 
+do
+  cat "manuscript/$chapfile" >> ./output/source.markdown
+done
+
+pandoc --smart --table-of-contents --output=./output/preview.pdf ./output/source.markdown
