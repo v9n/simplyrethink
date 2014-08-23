@@ -131,7 +131,7 @@ Such as in Go lang, we cannot have a lower case field of a struct and expect it
 publicly available to outside. Using names such as `host` or `db` for connection
 option is impossible in Go lang.
 
-[^golang][https://github.com/dancannon/gorethink](https://github.com/dancannon/gorethink)
+[^golang]: [https://github.com/dancannon/gorethink](https://github.com/dancannon/gorethink)
 
 ## Default database
 
