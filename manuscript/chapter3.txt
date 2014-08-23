@@ -126,9 +126,10 @@ Notice that we don't have any host, or Database parameter now. They are
 `Address`and `Database` in Go Lang driver. Therefore, by using an un-official
 language, the API will be totally different with official API. 
 
-That's how beautiful it is. Because each language has its own design philosophy.
-Such as in Go lang, we cannot have a lowcase key and expect it public. Using a
-name such as `host` or `db` is impossible.
+That's how beautiful it is because each language has its own design philosophy.
+Such as in Go lang, we cannot have a lower case field of a struct and expect it 
+publicly available to outside. Using names such as `host` or `db` for connection
+option is impossible in Go lang.
 
 [^golang][https://github.com/dancannon/gorethink](https://github.com/dancannon/gorethink)
 
@@ -145,7 +146,8 @@ we can use r without initialization and calling `run` method. *Data Exploer*
 will do that for us. Just keep in mind when you write code, you have to connect,
 and explicitly call `run` to, obviously, run the query.
 
-
+Note that you don't have to switch to another database to access its table, you
+can just call `r.db('another_db')` before building query.
 
 # Data Type
 
@@ -261,9 +263,7 @@ without calling `r.db()` if the table is in current selected database. Without
 any indication, the default database is `test`. On Data Exploer, without a 
 `r.db` command, RethinkDB will use `test` as default database. 
 
-Just like in SQL, you can run `use database` and don't have to type `database.table_name`. 
-
-#### Select a single document by its primary key
+## Select a single document by its primary key
 
 To select a single element, we call `get` on a table, and passing its primary
 key value.
@@ -295,12 +295,16 @@ more about it later. Just keep a note here.
 In RethinkDB, using of incremental primary key isn't recommended because that's
 hard in a cluster environment. To make sure
 the uniqueness of the new value, We have to check in every clusters
-somehow. RethinkDB team decide[^pr] to use an unique id instead of an
+somehow. RethinkDB team decides[^pr] to use an universal unique[^uuidinfo] id instead of an
 incremental value.
 
-#### Select many document by value of fields
+[^pr]: [http://stackoverflow.com/questions/21020823/unique-integer-counter-in-rethinkdb](http://en.wikipedia.org/wiki/Universally_unique_identifier)
+[^uuidinfo]: [http://en.wikipedia.org/wiki/Universally_unique_identifier](http://en.wikipedia.org/wiki/Universally_unique_identifier)
 
-We used `*filter*` method, and passing an Let's find all poll on May 14.
+## Select many document by value of fields
+
+We used **filter** method, and passing an object with expected value.
+Let's find all poll on May 14.
 
     r.table('input_polls').filter({day: 'May 14'})
     #=>  
@@ -329,7 +333,6 @@ We used `*filter*` method, and passing an Let's find all poll on May 14.
         }
     ]    
 
-[^pr]: Check http://stackoverflow.com/questions/21020823/unique-integer-counter-in-rethinkdb
 
 Not just that, if we pass many value into `filter`, it will be filter as well. 
 
