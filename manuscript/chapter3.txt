@@ -162,8 +162,8 @@ document, you see
 
 It means the command can be invoked on a table, or selection (eg: first 30
 element of tables), or a single selection - a document is an example of single
-selection.
-
+selection. The behaviour of course is different based on data type, even the
+command is same.
 
 In RethinkDB, we have several data type. We will focus into those 2 kind for
 now:
@@ -352,6 +352,44 @@ Not just that, if we pass many value into `filter`, it will be filter as well.
         }
     ]    
 
+If you notice, we didn't specify any fields in all our above query. That's bad because all fields are returned. We don't need to fetch what we don't want. Let's narrow down them with `pluck`. `pluck` accepts a list of fields to be included in document
+
+    r.table('input_polls').filter({Date: 'May 14', Day: 134})
+      .pluck('Pollster', 'id', 'uuid')
+//=> Result is an array with one element.
+[
+
+    {
+        "Pollster": "Rasmussen-1" ,
+        "id": "North Carolina" ,
+        "uuid": "b3d2024b-92c0-4852-bb8c-50c10591cac3"
+    }
+
+]
+
+We can call `pluck` on document too. 
+
+    r.table('input_polls').get('b3d2024b-92c0-4852-bb8c-50c10591cac3')
+      .pluck('Pollster', 'id', 'uuid')
+    //=> Return a single object since we used `get`
+    {
+        "Pollster": "Rasmussen-1" ,
+        "id": "North Carolina" ,
+        "uuid": "b3d2024b-92c0-4852-bb8c-50c10591cac3"
+    }
+
+Opposite of `pluck` is `without`. We passed a list of fields, and it removes
+those fiels from document.
+
+    r.table('input_polls').get('b3d2024b-92c0-4852-bb8c-50c10591cac3')
+      .pluck(Date', 'Day', 'Dem', 'EV', 'GOP', 'Len')
+    //=> Return a single object since we used `get`
+    {
+        "Pollster": "Rasmussen-1" ,
+        "id": "North Carolina" ,
+        "uuid": "b3d2024b-92c0-4852-bb8c-50c10591cac3"
+    }
+
 With simple filterting, we can easily pass an filter object as above. But what
 up with complex searching? Like we want to find all polls happen in May, and
 have the GOP greater than 30. It's hard and complex to denote that condition 
@@ -401,7 +439,7 @@ docs[^doc_mani_cmd].
   * *merge(object)* it merges the current document with the object we pass, and
   return new document. 
 
-So with `r.row` we can transform document into our want, but we are wanting to
+So with `r.row` we can transform document into our want, but we wanted to
 filter data. We want a way to run some check, compare data. Well, RethinkDB
 gives us some command that we can call on a value for logic checking.
 
@@ -425,12 +463,10 @@ logic[^math_logic].
 
 [^math_logic]: [http://rethinkdb.com/api/javascript/#mod](http://rethinkdb.com/api/javascript/#mod)     
 
-Time to use them now. If you notice, we didn't specify any fields in all our above query. That's bad because all fields are returned. We don't need to fetch what we don't want. Let's narrow down them with pluck
-
-    r.table('input_polls').filter({Date: 'May 14', Day: 134})
+Time to use them now.    
 
 How about if we want to get only a single fields, like we want to get a list of
-id of input_polls. `pluck` works of course, but we have a shortcut here
+id of input_polls. `pluck` works of course, but we have a shortcut here.
 
     r.table('input_polls')(field)
 
@@ -465,6 +501,25 @@ complex business logic rule
 We will learn more about advanced query in other chapter. For now, let's move on
 and try to write some data into RethinkDB.
 
+### Transforming document with `merge`
+
+The documents from query can be merge into another document to return another
+document. Or we can also merge two arrays.
+
+Eg, simple merging with an object:
+
+    r.table('input_polls').get('5da46eba-5717-40aa-93c5-9f5c50e1e20e')
+      .merge({'foo': 'bar', 'foobar' : 'bar'})
+     
+`merge` shines when we merge it with result from other query
+    
+  r.table('county_stats').get('0189da60-2501-40c2-a16e-2f69eb0feb30')
+      .pluck('Births2010', 'Births2011', 'Deaths2010', 'Deaths2011', 'Stname', 'ctyname')
+      .merge()
+ 
+
+We can also merge the nested object
+    
 
 ## Listing databases
 
@@ -502,6 +557,7 @@ RethinkDB, we can do that with `dbList`
 
     ]    
     
+
 
 # Wrap Up 
 
