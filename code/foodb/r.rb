@@ -2,6 +2,7 @@ require 'mysql2'
 require 'sequel'
 require 'pry'
 require 'rethinkdb'
+require 'benchmark'
 
 class Importer
   include RethinkDB::Shortcuts
@@ -22,6 +23,8 @@ class Importer
       r.db_create("foodb").run @connection
     rescue 
     end
+
+    @records = {}
   end
 
   def run
@@ -33,25 +36,41 @@ class Importer
   def migrate(t)
     p "Going to migrate table #{t}"
     r.db("foodb").table_create(t).run @connection rescue nil
+    @records[t] = []
 
     count = 1
     while true do
       begin
-        q = "SELECT * FROM #{t} ORDER BY id ASC LIMIT #{count}, 20"
+        q = "SELECT * FROM #{t} ORDER BY id ASC LIMIT #{count}, 100"
         result = @client[q]
-        p q
+        #p q
         break if result.count == 0
 
         result.each do |row|
-          p "#{t}/#{count}"
-          r.db("foodb").table(t).insert(row).run @connection
+          write(t, row)
           count = row[:id]
         end
       rescue Exception => e
         p "Get error on #{t} at record #{count}: #{e}"
       end
+
+      puts "\n========================\n"
+      Benchmark.benchmark do |x|
+        x.report("Insert #{t}/#{count}") { flush(t) }
+      end
+      puts "\n========================\n"
     end
 
+  end
+
+  def write(t, record)
+    @records[t] << record
+  end
+
+  def flush(t)
+    if @records[t].count >=0
+      r.db("foodb").table(t).insert(@records[t], conflict: 'update').run @connection
+    end
   end
 
 end
