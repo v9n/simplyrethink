@@ -53,24 +53,30 @@ class Importer
       rescue Exception => e
         p "Get error on #{t} at record #{count}: #{e}"
       end
-
-      puts "\n========================\n"
-      Benchmark.benchmark do |x|
-        x.report("Insert #{t}/#{count}") { flush(t) }
-      end
-      puts "\n========================\n"
+      flush(t, count)
     end
-
+    flush(t, count, final: true)
   end
 
   def write(t, record)
     @records[t] << record
   end
 
-  def flush(t)
-    if @records[t].count >=0
-      r.db("foodb").table(t).insert(@records[t], conflict: 'update').run @connection
+  def flush(t, count, final: false)
+    if !final && @records[t].count<200
+      return
     end
+
+    puts "\n========================\n"
+    Benchmark.benchmark do |x|
+      x.report("Insert #{t}/#{count}") do
+        if @records[t].count >=0
+          r.db("foodb").table(t).insert(@records[t]).run @connection
+          @records[t] = []
+        end
+      end
+    end
+    puts "\n========================\n"
   end
 
 end
