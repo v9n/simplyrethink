@@ -1,0 +1,27 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    coderay (1.1.0)
+    json (1.8.3)
+    method_source (0.8.2)
+    mysql2 (0.3.17)
+    pry (0.10.1)
+      coderay (~> 1.1.0)
+      method_source (~> 0.8.1)
+      slop (~> 3.4)
+    rethinkdb (2.0.0.1)
+      json
+    sequel (4.24.0)
+    slop (3.6.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  mysql2
+  pry
+  rethinkdb
+  sequel
+
+BUNDLED WITH
+   1.10.5
