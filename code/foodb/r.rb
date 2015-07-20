@@ -12,12 +12,14 @@ class Importer
       :host => '127.0.0.1',
       :user => 'root',
       :password => 'root',
-      :database => 'food'
+      :database => 'food',
+      :wait_timeout => 30,
+      :timeout => 30,
     )
 
-    r.connect.repl
+    @connection = r.connect
     begin
-      r.db_create("foodb").run
+      r.db_create("foodb").run @connection
     rescue 
     end
   end
@@ -30,14 +32,26 @@ class Importer
 
   def migrate(t)
     p "Going to migrate table #{t}"
-    r.db("foodb").table_create(t).run rescue nil
+    r.db("foodb").table_create(t).run @connection rescue nil
 
-    count = 0
-    @client["SELECT * FROM #{t}"].each do |row|
-      p "#{t}/#{count}"
-      count += 1 
-      r.db("foodb").table(t).insert(row).run
+    count = 1
+    while true do
+      begin
+        q = "SELECT * FROM #{t} ORDER BY id ASC LIMIT #{count}, 20"
+        result = @client[q]
+        p q
+        break if result.count == 0
+
+        result.each do |row|
+          p "#{t}/#{count}"
+          r.db("foodb").table(t).insert(row).run @connection
+          count = row[:id]
+        end
+      rescue Exception => e
+        p "Get error on #{t} at record #{count}: #{e}"
+      end
     end
+
   end
 
 end
