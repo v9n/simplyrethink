@@ -26,15 +26,179 @@ tables match an condition. Example:
 
 You don't event need to care about the index. The database is usually smart enough to figure out what index to use, or do an full scall table for you.
 
-Join is a bit different in RethinkDB. Just like how we have primary index and
+Join is a bit different in RethinkDB. Similarly to how we have primary index and
 second index. In RethinkDB, we usually need index to join
 
 * primary keys
 * secondary indexes
 * sub queries
 
-Let's first create some data set. Just copy and paste this
+Let's explorer why we need joins. Starting with one-to-many relation ship. Let's find alll compound and its synonyms. `eq_join` is used to join data:
 
+    sequence.eqJoin(leftField, rightTable[, {index:'id'}]) → sequence
+    sequence.eqJoin(function, rightTable[, {index:'id'}]) → sequence
+
+It tries to find the document on table **righTable** whose index value matches leftField value or the return value of function. It's similar to `INNER JOIN` in MySQL.
+
+    r.db("foodb")
+      .table("compound_synonyms")
+      .eqJoin("compound_id", r.db("foodb").table("compounds"))
+
+And we get this:
+
+    r.db("foodb")
+      .table("compound_synonyms")
+      .eqJoin("compound_id", r.db("foodb").table("compounds"))
+    #=>
+      "left": {
+          "compound_id": 82 ,
+          "created_at": Fri Apr 09 2010 17:40:05 GMT-07:00 ,
+          "id": 832 ,
+          "source":  "db_source" ,
+          "synonym":  "3,4,2',4'-Tetrahydroxychalcone" ,
+          "updated_at": Fri Apr 09 2010 17:40:05 GMT-07:00
+          } ,
+          "right": {
+          "annotation_quality":  "low" ,
+          "assigned_to_id": null ,
+          "bigg_id": null ,
+          "boiling_point": null ,
+          "boiling_point_reference": null ,
+          "cas_number": null ,
+          "charge": null ,
+          "charge_reference": null ,
+          "chebi_id": null ,
+          "comments": null ,
+          "compound_source":  "PHENOLEXPLORER" ,
+          "created_at": Thu Apr 08 2010 22:04:26 GMT-07:00 ,
+          "creator_id": null ,
+          "density": null ,
+          "density_reference": null ,
+          "description": null ,
+          "dfc_id": null ,
+          "dfc_name": null ,
+          "drugbank_id": null ,
+          "duke_id":  "BUTEIN" ,
+          "duplicate_id": null ,
+          "eafus_id": null ,
+          "experimental_logp": null ,
+          "experimental_logp_reference": null ,
+          "experimental_pka": null ,
+          "experimental_pka_reference": null ,
+          "experimental_solubility": null ,
+          "experimental_solubility_reference": null ,
+          "export": false ,
+          "flavornet_id": null ,
+          "genbank_id": null ,
+          "general_citations": null ,
+          "goodscent_id": null ,
+          "het_id": null ,
+          "hmdb_id": null ,
+          "hydrophobicity": null ,
+          "hydrophobicity_reference": null ,
+          "id": 82 ,
+          "isoelectric_point": null ,
+          "isoelectric_point_reference": null ,
+          "kegg_compound_id":  "C08578" ,
+          "knapsack_id":  "C00006941" ,
+          "legacy_id": 99 ,
+          "mass_spec_content_type": null ,
+          "mass_spec_file_name": null ,
+          "mass_spec_file_size": null ,
+          "mass_spec_updated_at": null ,
+          "melting_point": null ,
+          "melting_point_reference": null ,
+          "metabolism": null ,
+          "moldb_alogps_logp":  "2.61" ,
+          "moldb_alogps_logs":  "-3.57" ,
+          "moldb_alogps_solubility":  "7.38e-02 g/l" ,
+          "moldb_average_mass":  "272.2528" ,
+          "moldb_formula":  "C15H12O5" ,
+          "moldb_id": 41513 ,
+          "moldb_inchi": "InChI=1S/C15H12O5/c16-10-3-4-11(14(19)8-10)12(17)5-1-9-2-6-13(18)15(20)7-9/h1-8,16,18-20H/b5-1+" ,
+          "moldb_inchikey":  "InChIKey=AYMYWHCQALZEGT-ORCRQEGFSA-N" ,
+          "moldb_iupac":  "(2E)-1-(2,4-dihydroxyphenyl)-3-(3,4-dihydroxyphenyl)prop-2-en-1-one" ,
+          "moldb_logp":  "3.33" ,
+          "moldb_mono_mass":  "272.068473494" ,
+          "moldb_pka":  "8.77" ,
+          "moldb_smiles":  "OC1=CC=C(C(=O)\C=C\C2=CC(O)=C(O)C=C2)C(O)=C1" ,
+          "msds_content_type": null ,
+          "msds_file_name": null ,
+          "msds_file_size": null ,
+          "msds_updated_at": null ,
+          "name":  "Butein" ,
+          "old_dfc_id": null ,
+          "optical_rotation": null ,
+          "optical_rotation_reference": null ,
+          "percent_composition": null ,
+          "percent_composition_reference": null ,
+          "phenolexplorer_id": 104 ,
+          "phenolexplorer_metabolite_id": 104 ,
+          "physical_description": null ,
+          "physical_description_reference": null ,
+          "protein_formula": null ,
+          "protein_structure_content_type": null ,
+          "protein_structure_file_name": null ,
+          "protein_structure_file_size": null ,
+          "protein_structure_updated_at": null ,
+          "protein_weight": null ,
+          "pubchem_compound_id":  "5281222" ,
+          "pubchem_substance_id": null ,
+          "public_id":  "FDB000082" ,
+          "refractive_index": null ,
+          "refractive_index_reference": null ,
+          "state": null ,
+          "structure_source":  "BIOSPIDER" ,
+          "superscent_id": null ,
+          "synthesis_citations": null ,
+          "type":  "SmallMoleculeCompound" ,
+          "uniprot_id": null ,
+          "uniprot_name": null ,
+          "updated_at": Fri Jan 20 2012 00:50:49 GMT-08:00 ,
+          "updater_id": 2 ,
+          "uv_index": null ,
+          "uv_index_reference": null ,
+          "wikipedia_id": null
+          }
+          }
+
+We get back an array, with element on both table match our condition. We can see that item on the left has its `compound_id` matchs `id` field of item on the right. However, the above result with left, right is not very useful. It's more useful if we can merge both side into a single document. To do that we use `zip`
+
+        r.db("foodb")
+          .table("compound_synonyms")
+          .eqJoin("compound_id", r.db("foodb").table("compounds"))
+          .zip()
+
+As you see, We don't need to specify an index on above query. When we don't specify index, RethinkDB use primary key of table. In this case, the primary key, or `id` field of `compounds`. Now loking at the query, it seems a bit awkard because `compound_synonyms` com first? Can we make it more nature, follow above syntax: for each document on `compounds`, fetch all document on `compound_synonyms` where document's `compound_id` field match id of document on `compounds` table. So we see that we have to have an index on `compound_synonyms` table for `compound_id` field. Let's create an index for it:
+
+        r.db("foodb").table("compounds")
+          .indexCreate("compound_id")
+
+Note that we can always query index status by using `indexStatus`
+
+        r.db("foodb") .table("compound_synonyms") .indexStatus()
+Until we get status ready:
+
+        [
+        {
+        "function": <binary, 185 bytes, "24 72 65 71 6c 5f..."> ,
+        "geo": false ,
+        "index":  "compound_id" ,
+        "multi": false ,
+        "outdated": false ,
+        "ready": true
+        }
+        ]
+
+Let's try it out:
+
+        r.db("foodb")
+          .table("compounds")
+          .eqJoin("id", r.db("foodb").table("compound_synonyms"), {index: 'compound_id'})
+          .zip()
+
+
+As you can see, we don't have `left join`, `right join` equivalents in RethinkDB. We achieve it by swapping left and right on eqJoin with approriate index. So far we only join on 
 
 With the example above, in RethinkDB we can do
 
@@ -48,5 +212,5 @@ With the example above, in RethinkDB we can do
 
 # Wrap up 
     
-At the end of this chapter, we should know
+At the end of this chapter, we should know how to do simpe
  
