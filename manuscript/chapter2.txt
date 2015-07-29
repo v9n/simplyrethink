@@ -1,12 +1,12 @@
 -# Getting to know RethinkDB
 
-Let's warm up some RethinkDB concept, idea and tool
+Let's warm up some RethinkDB concept, idea and tool.
 
 # Getting Started
 
 It's not uncommon to see someone write a interactive shell in browser for
 evaluation purpose such as mongly, tryRedis. This isn't apply for RethinkDB
-because it comes with a excellent editor where you can type code and run it.
+because it comes with an excellent editor where you can type code and run it.
 
 Install RethinkDB by downloading package for your platform http://rethinkdb.com/docs/install/. Run it after installing.
 
@@ -17,11 +17,12 @@ By default, RethinkDB runs on 3 ports
 
 8080
 : this is the web user interface of RethinkDB, or the dashboard. You can query
-the data, check performance, server status
+the data, check performance, server status on that UI.
 
 28015
 : this is the client drive port. All client drive will connect to RethinkDB
-through this port. 
+through this port. If you remember in previous chapter, we used a `tcpdump`
+command to listen on this port to capture data send over it.
 
 29015
 : this is intracluster port. Different RethinkDB node in a cluster communicates
@@ -54,13 +55,13 @@ fields. They can contains whatever.
 # Durability
 
 You will see a option/argument call `durability`
-`*durability` will appear a lot in many option of ReQL db. Because it's so
+`*durability` appear a lot in many option of ReQL db. Because it's so
 common and it's very important, I want to address it here. durability accepts 
 value of *'soft'* or *'hard'*. 
 
 soft
 : means the writes will be acknowledge by server immdediately and data will be flushed to disk in
-background. If you write a large chunk of data. 
+background.
 
 hard
 : The opposite of soft, the default behaviour is to acknowledge after data is written to disk.
@@ -80,10 +81,8 @@ Multiple document writing isn't atomic.
 
 # Command line tool
 
-We have two way to interact with RethinkDB: either using the command line or use
-the administrator dashboard. Eg,
 Besides the dashboard, RethinkDB gives us some command line utility to
-interactive with it. However, we will focus into those at this moment:
+interactive with it. Some of them are:
 
 * import
 * export
@@ -110,14 +109,41 @@ data, just drop the table, and import again.
 
 ## export
 
+Export exports your database into many JSON files, each file is a table. The
+JSON file can be import using above import command.
+
 ## dump
 
 dump will just export whole of data of a cluster. Its syntax
+
+    rethinkdb dump -c 127.0.0.1:28015
+
+You will see some status lines:
     
-    rethinkdb dump -c HOST:PORT
+    NOTE: 'rethinkdb-dump' saves data and secondary indexes, but does *not* save
+   cluster metadata.  You will need to recreate your cluster setup yourself after
+   you run 'rethinkdb-restore'.
+  Exporting to directory...
+  [========================================] 100%
+  428353 rows exported from 9 tables, with 0 secondary indexes
+    Done (260 seconds)
+  Zipping export directory...
+    Done (25 seconds)
+
+The dump result is a gzip file whose name is in format `rethinkdb_dump_{timestamp}.tar.gz`
+It's very useful when you want to try out something and get back your original data. Note it here because you will need it later.
 
 ## restore
 
 Once we got the dump file with `dump` command. We can restore with:
 
-    rethinkdb restore -c HOST:PORT rethinkdb_dump_DATE_TIME.tar.gz
+    rethinkdb restore -c 127.0.0.1:28015 rethinkdb_dump_DATE_TIME.tar.gz
+
+# Import sample data
+
+It's much nicer to work with real and fun data than boring data. I have used the
+`dump` command and you can restore them.
+
+    rethinkdb restore -c 127.0.0.1:28015 simply_rethink_dump_2015-07-20T00:54:39.tar.gz
+
+

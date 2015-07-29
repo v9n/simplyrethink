@@ -1,24 +1,32 @@
 -# Reading Data Basic
 
+If you are lazy(just like me) and skip straigh to this chapter, please go back to
+the end of previous chapter to import sample dataset. Once you did it, let's start.
+
 # Getting to Know ReQL
 
 RethinkDB uses a special syntax call *ReQL* to interact with the data. ReQL is
 chainable. You start with a table, and chain to other API to get what you want,
-in a way very natural. Eg:
+in a way very natural. Type this into data explorer:
 
-    r.db("test").table('movie').filter({'type': 'anime'})
+    r.db("foodb").table('flavors').filter({'flavor_group': 'fruity'})
+
+You should see some interesting data now.
 
 Don't worry about the syntax, just look at it again and even without any
 knowledge you know what it does and easily remember it. A way, for me, to
 understand ReQL is that every command return an object which can be pass into
-next command. 
+next command.
 
 ReQL is particular binding to your language. Though, of course, they will look 
 familiar between different language to maintain consitent look and feel. But, 
 they are different. Those querie are constructed by making function call of your
 language, not by concat SQL String, or not by special JSON object like MongoDB.
 Therefore, it feel very natualy to write ReQL. As if the data we manipulate
-is an object or data type in our language. 
+is an object or data type in our language. But everything comes with a trade
+off. On the downside, we have to accept differences of ReQL betweens many
+language. No matter how hard we try, different language has different syntax,
+especially when it comes to anonymous function. 
 
 What is `r`? `r` is like a special namespace which is all RethinkDB is exposed 
 via it. It's just a normal variable in your language, or a namespace, a package
@@ -62,15 +70,30 @@ passing into another command:
 
 ReQL is binded to your language. Therefore, the API is implemented totally by
 the driver itself. You won't work directly with RethinkDB server. You write the
-query from the API of driver, the driver will built it into a real query to send
+query using the API of driver, the driver will built it into a real query to send
 to server, receive data, parse it to return data as a native data of your
 language.
 
+Internaly, all client driver will turn the query that you write in driver language
+into an AST tree, then serialize them as JSON and send to server.
+
+If you curious, you can fire up `tcpdump` and watch the raw query in JSON
+
+    tcpdump -nl -w - -i lo0 -c 500 port 28015|strings
+
+A simple command, `r.db("db1").table("table1")` is turned into this JSON:
+
+    [...]
+
+You can quickly sense a downside is that each of driver have different API to construct query.
+When you come to another language, you may feel very strange. The driver hide the real query behinds its API.
+Very similar to how you use an ORM in SQL world to avoid writing raw SQL string.
+
 RethinkDB supports 3 official drives:
- 
+
 * Ruby
 * NodeJS
-* Python 
+* Python
 
 These support all [driver specifications](http://rethinkdb.com/docs/driver-spec/). The community drives such as Go, PHP probably won't support them all, if you used a different language and find something isn't right, it is probably not your fault.
 
@@ -139,7 +162,7 @@ Similar to MySQL, when you can issue `use database_name` to switch to another
 database. We can do that in RethinkDB by calling `use` command on a connection
 object.
 
-    connection.use('another_db')      
+    connection.use('another_db')
 
 In this small book, most of the time, we will use Data Exploer. Therefore 
 we can use r without initialization and calling `run` method. *Data Exploer*
@@ -150,6 +173,13 @@ Note that you don't have to switch to another database to access its table, you
 can just call `r.db('another_db')` before building query.
 
 # Data Type
+
+Why do we have to discuss about data type? We have use dynamica language and we almost dicuss about
+Ruby and JavaScript most of time. But understanding data type allow us to read API document better.
+It helps us to understand why we can can `r.table.insert` but we cannot call like `r.table.filter().insert`.
+Aren't we still selecting data from table, so we should be able to insert data to it?
+
+Data type helps us know that we can only call some method on some of data type
 
 Each ReQL method can be call on one or many above data types. Take `update` command, when you browser the API
 document, you see
@@ -165,10 +195,11 @@ element of tables), or a single selection - a document is an example of single
 selection. The behaviour of course is different based on data type, even the
 command is same.
 
-In RethinkDB, we have several data type. We will focus into those 2 kind for
+In RethinkDB, we have several data types. We will focus into those 2 kind for
 now:
 
 * Basic data type
+
 * Composite data type
 
 ## Basic data type
@@ -191,13 +222,17 @@ field. So we don't have a static schema for tables.
 
 Taking direcly from RethinkDB doc, we have 3 composite data types.
 
-* Streams 
+* Streams
 
 :are lists like arrays, but they're loaded in a lazy fashion. Operations that return streams return a cursor. A cursor is a pointer into the result set. Instead of reading the results all at once like an array, you loop over the results, retrieving the next member of the set with each iteration. This makes it possible to efficiently work with large result sets. (See "Working with Streams," below, for some tips.) Streams are read-only; you can't pass one as an input to an ReQL command meant to modify its input like update or delete.
 
-* Selections represent subsets of tables, for example, the return values of filter or get. There are two kinds of selections, Selection<Object> and Selection<Stream>, which behave like objects or streams respectively. The difference between selections and objects/streams are that selections are writable--their return values can be passed as inputs to ReQL commands that modify the database. For instance, the get command will return a Selection<Object> that could then be passed to an update or delete command.
+* Selections
 
-* Tables are RethinkDB database tables. They behave like selections—they're writable, as you can insert and delete documents in them. ReQL methods that use an index, like getAll, are only available on tables.
+:represent subsets of tables, for example, the return values of filter or get. There are two kinds of selections, Selection<Object> and Selection<Stream>, which behave like objects or streams respectively. The difference between selections and objects/streams are that selections are writable--their return values can be passed as inputs to ReQL commands that modify the database. For instance, the get command will return a Selection<Object> that could then be passed to an update or delete command.
+
+* Tables
+
+:are RethinkDB database tables. They behave like selections. However, they're writable, as you can insert and delete documents in them. ReQL methods that use an index, like getAll, are only available on tables, because they require write permission
 
 
 T> Sequence
@@ -300,6 +335,15 @@ incremental value.
 
 [^pr]: [http://stackoverflow.com/questions/21020823/unique-integer-counter-in-rethinkdb](http://en.wikipedia.org/wiki/Universally_unique_identifier)
 [^uuidinfo]: [http://en.wikipedia.org/wiki/Universally_unique_identifier](http://en.wikipedia.org/wiki/Universally_unique_identifier)
+
+However, we usually know what we want and only need a couple of fields instead of the whole document. We can do that
+
+some document on how to use get and select some field
+
+Similar to that, to only returns some field for the whole table we can do
+
+    r.table("foods").getField("a")("b")
+
 
 ## Select many documents by value of fields
 
@@ -492,6 +536,15 @@ Sunday in Minnesota, and all the poll on Monday at Virginia.
     r.table('input_polls').filter(
 		  r.js("(function (p) { var d = new Date(Date.parse(p.Date + ' 2014')); return (p.id=='Minnesota' && d.getDay()==0) || (p.id=='Virgina' && d.getDay()==2) ;})")
     )
+
+Example for this query:
+
+r.table("hb")
+  .filter(function(request) {
+    return request("web_environment")("HTTP_X_FORWARDED_FOR").eq("103.246.249.121")
+  })
+  .count()
+
 
 The syntax may ugly at this moment because we have to pass the JavaScript code
 as a single string. But the potential is huge. Those kind of tricky query can

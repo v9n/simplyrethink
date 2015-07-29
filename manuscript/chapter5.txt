@@ -6,12 +6,25 @@
 
 Quickly you will realize that `filter` is slow. If you have a table
 with more than 100,000 records, `filter` stops working. All of that is becuase
-we haven't used index yet.
+we haven't used index yet. Without index, we cannot even order data
 
-We have two kind of index in RethinkDB
+    r.db("foodb").table("compounds_foods").orderBy(r.desc("id"))
+    #->
+    RqlRuntimeError: Array over size limit `100000` in:
+    r.db("foodb").table("compounds_foods").orderBy(r.desc("id"))
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Without an index, RethinkDB hold all data in memory and sort or filter in
+memory. A limit has to lie somewhere else. That 100,000 number is the limit
+RethinkDB set to read data without index. 
+
+We have two kind of indexes in RethinkDB
 
 * primary index: our ID key is this. This index is created automatically by
-RethinkDB. We can eliminateit.
+RethinkDB. Coming back above query, if we change it to use primary `index`
+
+    r.db("foodb").table("compounds_foods").orderBy({index: r.desc("id")})
+
 * secondary index:
 
 Seconday index is the index we created ourselve on one or many fields. Secondary

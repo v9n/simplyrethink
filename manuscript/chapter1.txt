@@ -1,6 +1,5 @@
 -# Welcome
 
-
 # Introduction
 
 Welcome the readers. I appreciate your purchase. This will help me continue
@@ -48,7 +47,21 @@ a week you find yourself start a RethinkDB project.
 
 RethinkDB is a mind blowing to me. I like the beauty, nature of ReQL which is
 built into your language. It's also very developer friendly with its own
-administrator UI.
+administrator UI. RethinkDB is very easy to learn, because its query language is
+nature to what we think. Because of that, you rarely needs to read document to 
+understand what it does.
+
+Take this SQL query:
+
+    SELECT * FROM tables ORDER BY id DESC LIMIT 10,100
+
+Compare with RQL:
+
+    r.table(tables).order_by(r.desc(id)).limit(10)
+
+We can guess what it does from query, and the order of execution is clear too
+us. 
+
 
 # Feedback
 
