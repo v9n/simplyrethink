@@ -56,11 +56,105 @@ So now you know what index is. But a sad news is that filter cannot use those se
 
 #### Simple index
 
-As its name, simple index is simply a single field. Let's say we want to find all `compounds_foods` whose name contains `banana`. Note that 
+As its name, simple index is simply a single field. Let's say we want to find all `compounds_foods` whose name contains `banana`. We cannot use `filter` here because this table has more than 100,000 item. `filter` also doesn't use index. Let's meet `getAll`. `getAll` grabs all document where a given key match the index which we specified.
+
+First, we create index follow this syntax
 
     table.index_create(index_name[, index_function][, :multi => false]) → object
 
-    r.db('db').table(table).indexCreate(indexName)
+Apply it on our case, for a single column:
+
+    r.db("foodb")
+      .table("compounds_foods")
+      .indexCreate("match_orig_food_common_name", r.row.match)
+
+If we don't pass an index function, RethinkDB try to create index for the column of same name as requested index name.
+
+Time to use it:
+
+    r.db("foodb")
+      .table("compounds_foods")
+      .getAll('Bananas', {index:'orig_food_common_name'})
+    #=> Executed in 10ms. No results returned.
+
+No result. Strange, we cannot believe we have no document where its
+orig_food_common_name doesn't contain banana. Why so? Well, the simple
+index does an exact match, or in other world, it's an equal comparison.
+Let's try an exact match:
+
+    r.db("foodb")
+      .table("compounds_foods")
+      .getAll('Bananas, raw', {index:'orig_food_common_name'})
+    #=> Executed in 69ms. 40 rows returned, 40 displayed, more available
+    {
+    "citation":  "USDA" ,
+    "citation_type":  "DATABASE" ,
+    "compound_id": 2100 ,
+    "created_at": Tue Jan 03 2012 18:33:15 GMT-08:00 ,
+    "creator_id": null ,
+    "food_id": 208 ,
+    "id": 257686 ,
+    "orig_citation": null ,
+    "orig_compound_id":  "262" ,
+    "orig_compound_name":  "Caffeine" ,
+    "orig_content":  "0.0" ,
+    "orig_food_common_name":  "Bananas, raw" ,
+    "orig_food_id":  "09040" ,
+    "orig_food_part": null ,
+    "orig_food_scientific_name": null ,
+    "orig_max": null ,
+    "orig_method": null ,
+    "orig_min": null ,
+    "orig_unit":  "mg" ,
+    "orig_unit_expression": null ,
+    "updated_at": Tue Jan 03 2012 18:33:15 GMT-08:00 ,
+    "updater_id": null
+    }
+
+We can pass multiple keys to `getAll` to have an `or` effect. Meaning RethinkDB
+returns document where the index match any of value that we pass.
+
+    r.db("foodb")
+      .table("compounds_foods")
+      .getAll('Bananas, raw', 'Yoghurt with pear and banana', 'Alfalfa seeds',{index:'orig_food_common_name'})
+
+We can chain to `count` to count how many document we have
+
+    r.db("foodb")
+      .table("compounds_foods")
+      .getAll('Bananas, raw', 'Yoghurt with pear and banana', 'Alfalfa seeds',{index:'orig_food_common_name'})
+      .count()
+    #=> 256
+
+Not only use to find document, index can be used for sorting as well. To sort,
+we call `orderBy` and passing index name.
+
+    r.db("foodb").table("compounds_foods")
+      .orderBy({index: "orig_food_common_name"})
+
+When passing index, we can wrap it in other expression to change ordering:
+
+    r.db("foodb").table("compounds_foods")
+      .orderBy({index: r.desc("orig_food_common_name")})
+      .withFields("orig_food_common_name")
+    #=> 
+    {
+    "orig_food_common_name":  "Zwieback"
+    } {
+    "orig_food_common_name":  "Zwieback"
+    } {
+    "orig_food_common_name":  "Zwieback"
+    }
+
+Using `withFields`, we can pass a list of field to choose what we want to get
+back.
+
+However, a simple index create index for a column and do an exactly match.
+To have more control over index, we have to use expression or anonymous
+function. 
+
+
+
 
 This work when we want to find data based on a single field. How about find all 
 
@@ -68,6 +162,7 @@ For a multi index on arrays of values. Because of the value is an array, it has
 many value which needed to be index multiple times.
 
 
+Note: When you create an index, if index is not yet ready, you can see message similar to this. Just wait for awhile and try again.
 
 RqlRuntimeError: Index `status` on table `phim365.epqueue` was accessed before its construction was finished in:
 r.db("phim365").table("epqueue").getAll("ready", {index: "status"}).limit(1)
