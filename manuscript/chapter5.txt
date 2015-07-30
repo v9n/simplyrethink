@@ -1,7 +1,5 @@
 -# Reading Data Advanced
 
-
-
 ## Index
 
 Quickly you will realize that `filter` is slow. If you have a table
@@ -53,6 +51,8 @@ RethinkDB supports those kinds of index:
 
 So now you know what index is. But a sad news is that filter cannot use those secondary index. FOr that purpose we have to use other functions: `getAll` and `between`. 
 ### Creating index
+
+Let's start with simple index first.
 
 #### Simple index
 
@@ -149,17 +149,39 @@ When passing index, we can wrap it in other expression to change ordering:
 Using `withFields`, we can pass a list of field to choose what we want to get
 back.
 
-However, a simple index create index for a column and do an exactly match.
-To have more control over index, we have to use expression or anonymous
-function. 
+Because index can be used to sort, we can use it to find the value between a
+range. In RethinkDB, `between` syntax is:
 
+    table.between(lowerKey, upperKey[, {index: 'id', leftBound: 'closed',
+rightBound: 'open'}]) → selection
 
+As you see, we can only use between on table type. So, note that.
+Use this we can find the document between "Apple" and "Banana" range.
 
+    r.db("foodb").table("compounds_foods")
+      .between("Apple", "Banana", {index: 'orig_food_common_name'})
+      .orderBy({index: r.desc("orig_food_common_name")})
+      .withFields("orig_food_common_name")
 
-This work when we want to find data based on a single field. How about find all 
+Without specifying an index, `between` operates on primary index. Many RethinkDB 
+function has same behaviour
 
-For a multi index on arrays of values. Because of the value is an array, it has
-many value which needed to be index multiple times.
+    r.db("foodb").table("compounds_foods")
+      .between(1, 200)
+      .count()
+    #=> 198
+
+This work when we want to find data based on a single field. How about find
+value base on multiple field. Let's meet compound index
+
+##### Compound index
+
+Compound index is created by using value of multiple fields. It's very similar to
+single index in syntax, just different on how many fields we pass to index
+create.
+
+    
+
 
 
 Note: When you create an index, if index is not yet ready, you can see message similar to this. Just wait for awhile and try again.
@@ -188,8 +210,6 @@ When we change data structure, we may want to drop the index. It's easy.
     r.table().indexDrop(index_name)
 
 ### Using index
-
-
 
 
 ## Order
