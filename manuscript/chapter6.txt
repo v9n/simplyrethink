@@ -198,11 +198,19 @@ Let's try it out:
           .zip()
 
 
-As you can see, we don't have `left join`, `right join` equivalents in RethinkDB. We achieve it by swapping left and right on eqJoin with approriate index. So far we only join on 
+As you can see, we don't have `left join`, `right join` equivalents in RethinkDB. We achieve it by swapping left and right on eqJoin with approriate index. So far we only join on a single field. How do we join in multile field condtion? Such as in MySQL we can do
 
-With the example above, in RethinkDB we can do
+    SELECT * 
+      FROM table1 as t1
+    LEFT JOIN tabl2 as t2 ON t1.field1= t2.field1 AND 
 
-    r.table('post').eq_join('post_id'
+How about complex join where we want either or ? Like in MySQL
+
+    SELECT * 
+      FROM table1 as t1
+    LEFT JOIN tabl2 as t2 ON t1.field1= t2.field1  OR 
+
+
 
 ## Using primary key
 

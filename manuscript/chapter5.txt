@@ -15,8 +15,11 @@ we haven't used index yet. Without index, we cannot even order data
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Without an index, RethinkDB hold all data in memory and sort or filter in
-memory. A limit has to lie somewhere else. That 100,000 number is the limit
-RethinkDB set to read data without index. 
+memory. A limit has to lie somewhere else. That 100,000 the magic number of the limit
+RethinkDB set to read data without index.
+
+
+To properpely fetching data, we have to create an Index. And really, in real application, we almost always endup creating index on MySQL  to fetch data efficiently. 
 
 We have two kind of indexes in RethinkDB
 
@@ -25,13 +28,15 @@ RethinkDB. Coming back above query, if we change it to use primary `index`
 
     r.db("foodb").table("compounds_foods").orderBy({index: r.desc("id")})
 
+`id` field is always indexed automatically.
+
 * secondary index:
 
 Seconday index is the index we created ourselve on one or many fields. Secondary
 index can be simple, just index the value of fields directly, or doing some
-pre-calculate on data before indexing. 
+pre-calculate on data before indexing.
 
-Index helps increase the reading time and decrease writing time, also cost
+While index helps to decrease the reading time, it decreases writing time, also cost
 storage space. It reduces write performance becuase whenever we inserted a
 document, the index has to be calculate and writing into the database.
 
@@ -46,16 +51,18 @@ RethinkDB supports those kinds of index:
 *Indexes 
 :based on arbitrary expressions.
 
-
+So now you know what index is. But a sad news is that filter cannot use those secondary index. FOr that purpose we have to use other functions: `getAll` and `between`. 
 ### Creating index
 
-For a simple index a single fields.
+#### Simple index
+
+As its name, simple index is simply a single field. Let's say we want to find all `compounds_foods` whose name contains `banana`. Note that 
 
     table.index_create(index_name[, index_function][, :multi => false]) → object
 
     r.db('db').table(table).indexCreate(indexName)
-  
-For a compund index on multiple fields
+
+This work when we want to find data based on a single field. How about find all 
 
 For a multi index on arrays of values. Because of the value is an array, it has
 many value which needed to be index multiple times.
