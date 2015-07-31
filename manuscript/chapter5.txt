@@ -273,25 +273,146 @@ Now, try it:
     "updater_id": null
     }
 
+With above indexing approach, you found that you have to crate a dedicated index
+for whatever you want to find. An index contains a single value for a document:
+either a single value of field, or an order set of value in case of compound
+index. But life is not that simple. Let's looking at `users` table. It contains
+a list of user and their three of most faviroute food, store in field
+`favfoods`. That's a single column. But it hold many elements. Because of that,
+we cannot simple answer the question who liked `Mushroom`:
+
+let's create an index
+
+    r.db("foodb").table("users").indexCreate('favfoods')
+
+Try to find all user who liked mushrooms.
+
+    r.db("foodb").table("users")
+      .getAll('Mushrooms', {index: 'favfoods'})
+    #=> Executed in 6ms. No results returned.
+
+Why so? Because we index the whole field as a single value, we have to match the
+whole value of field:
+
+    r.db("foodb").table("users")
+      .getAll(["Edible shell" ,
+        "Clupeinae (Herring, Sardine, Sprat)" ,
+        "Deer" ,
+        "Perciformes (Perch-like fishes)" ,
+        "Bivalvia (Clam, Mussel, Oyster)"], {index: 'favfoods'})
+    #=>
+    {
+    "favfoods": [
+    "Edible shell" ,
+    "Clupeinae (Herring, Sardine, Sprat)" ,
+    "Deer" ,
+    "Perciformes (Perch-like fishes)" ,
+    "Bivalvia (Clam, Mussel, Oyster)"
+    ] ,
+    "id":  "1dd8059c-82ca-4345-9d75-eaa0f8edbf48" ,
+    "name":  "Arthur Hegmann"
+    }
+
+*Multi index* is used to solve above question: who likes Banana. An multi index
+is used on multiple value, or in other word, an array of value. When RethinkDB
+see that we want to use a *multi index*, it try to loop over all value in the
+array of index, and match to each of element of array.
+
+To create a multi index, all we have to do is pass the option flag:` multi:
+true`
+
+
+    r.db("foodb").table("users").indexCreate('favfoods_multi', r.row("favfoods"), {multi: true})
+
+Now, try it:
+
+    r.db("foodb").table("users")
+      .getAll('Mushrooms', {index: 'favfoods_multi'})
+    #=>
+    {
+    "favfoods": [
+    "Milk substitute" ,
+    "Mushrooms" ,
+    "Nuts" ,
+    "Hummus" ,
+    "Soft-necked garlic"
+    ] ,
+    "id":  "47110a8f-3c2c-46b8-96d8-244747c1818b" ,
+    "name":  "Annabelle Lindgren"
+    }
+
+If you notice, we have to pass `r.row(favfoods)` to create an index. Remember
+that to create an index where its name doesn't match any field, we have to pass
+an expression or an anonymous fuction to `indexCreate` to caculate its value.
+But we defined `favfoods` index before, so now we cannot create other index with
+same name. Can we go back, delete index to clear thing up and save our
+namespace:
+
+    r.db("foodb").table("users").indexDrop('favfoods')
+    #=> 
+    { "dropped": 1 } 
+    r.db("foodb").table("users").indexDrop('favfoods_multi')
+    #=> 
+    { "dropped": 1 } 
+
+Now, let create an multile index with same field name:
+
+    r.db("foodb").table("users").indexCreate('favfoods', {multi: true})
+    r.db("foodb").table("users").getAll('Mushrooms', {index: 'favfoods'})
+    #=>
+    {
+    "favfoods": [
+    "Milk substitute" ,
+    "Mushrooms" ,
+    "Nuts" ,
+    "Hummus" ,
+    "Soft-necked garlic"
+    ] ,
+    "id":  "47110a8f-3c2c-46b8-96d8-244747c1818b" ,
+    "name":  "Annabelle Lindgren"
+    }
+
+Another question come up? Can we find all user who like `Mustrooms` and
+`Banana`. We may try this:
+
+    r.db("foodb").table("users")
+      .getAll('Kiwi', 'Banana', {index: 'favfoods'})
+
+However, that's an `or`. RethinkDB will return documents where its index value
+matches either `Kiwi` or `Banana`.
+
+Even more complex, we want to find user who like Kiwi most. Meaning `kiwi` has
+to be first element in ther *favfoods* array.
+
+To do that, we see that we are passing business logic into RethinkDB. We have to
+somehow represent that logic in RethinkDB, calculate the value, and index the
+return value. Let's meet `arbitrary expressions` index. 
+
+As its name, the returned value of expression is used to calculate index. 
+
+Unfortunately at this moment, we cannot simple answer who like both of banana
+and kiwi. We will save it for later chapter: map-reduce. Now, let's find user
+who like kiwi most.
+
+    r.db("foodb").table("users")
+      .indexCreate('most-favourite-food', function (user) {
+        return r.row("favfoods").nth(0)
+      })
+
+
 ### Checking index status
 
 As I said above, indexing reduces write performance, therefore it takes time to
 create after we issue creating command. Depend on the table size, how many
 records we have, we have to wait for an amout of time before using it. We can
-check the status of index creating
+check the status of an index to see if it's ready to use
 
-    r.table().indexStatus
+    r.table().indexStatus(indexName)
 
-Or if we can tell RethinkDB to do something after indexing finishs:
+Sometimes we just want to say, when the index is ready, please run this:
 
-  r.table.indexWait
+    r.table.indexWait
 
-
-### Drop index
-    
-When we change data structure, we may want to drop the index. It's easy.
-
-    r.table().indexDrop(index_name)
 
 ### Using index
 
