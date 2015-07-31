@@ -178,16 +178,100 @@ value base on multiple field. Let's meet compound index
 
 Compound index is created by using value of multiple fields. It's very similar to
 single index in syntax, just different on how many fields we pass to index
-create.
+create. Let's look at `compounds_foods` table, it contains relation ship of
+`foods` and `compounds`. We will learn more about JOIN later. For now, let's say
+we want to find all `compounds_foods` document where its `compound_id` is 3524
+and `food_id` is 287. We are finding on two columnds, so we need an index
+contains those 2 columns:
 
+    r.db("foodb").table("compounds_foods")
+      .indexCreate("compound_food_id", [r.row(row"compound_id"), r.row("food_id")]) 
+
+The only different with simple index is we have to pass an array of field to
+create index. Let's try it:
+
+    r.db("foodb").table("compounds_foods")
+      .getAll([354,287], {index: 'compound_food_id'})
+    #=>
+    RqlRuntimeError: Index `compound_food_id` on table `foodb.compounds_foods` was
+    accessed before its construction was finished in:
+    r.db("foodb").table("compounds_foods").getAll([354, 287], {index:
+    "compound_food_id"})
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We got an error. Looks like the index is not completed created yet. The table
+has 
+
+We can query index status:
+
+    r.db("foodb").table("compounds_foods")
+      .indexStatus('compound_food_id')
+    #=>
+    [
+    {
+    "blocks_processed": 13192 ,
+    "blocks_total": 15437 ,
+    "function": <binary, 408 bytes, "24 72 65 71 6c 5f..."> ,
+    "geo": false ,
+    "index":  "compound_food_id" ,
+    "multi": false ,
+    "outdated": false ,
+    "ready": false
+    }
+    ]
+
+The field ready is false. We can only wait until it finish. This table is very
+big. We can verify:
+
+    r.db("foodb").table("compounds_foods").count()
+    #=> 737089
+
+Let's just wait for bit, make a cup of coffee and come back :). When it's ready
+you should see:
+
+    r.db("foodb").table("compounds_foods")
+      .indexStatus('compound_food_id')
+
+    [
+    {
+    "function": <binary, 408 bytes, "24 72 65 71 6c 5f..."> ,
+    "geo": false ,
+    "index":  "compound_food_id" ,
+    "multi": false ,
+    "outdated": false ,
+    "ready": true
+    }
+    ]
+
+Now, try it:
     
-
-
-
-Note: When you create an index, if index is not yet ready, you can see message similar to this. Just wait for awhile and try again.
-
-RqlRuntimeError: Index `status` on table `phim365.epqueue` was accessed before its construction was finished in:
-r.db("phim365").table("epqueue").getAll("ready", {index: "status"}).limit(1)
+    r.db("foodb").table("compounds_foods")
+      .getAll([21477,899], {index: 'compound_food_id'})
+    #=> Executed in 7ms. 1 row returned
+    {
+    "citation":  "DFC CODES" ,
+    "citation_type":  "DATABASE" ,
+    "compound_id": 21477 ,
+    "created_at": Tue Sep 11 2012 16:12:30 GMT-07:00 ,
+    "creator_id": null ,
+    "food_id": 899 ,
+    "id": 740574 ,
+    "orig_citation": null ,
+    "orig_compound_id": null ,
+    "orig_compound_name": null ,
+    "orig_content": null ,
+    "orig_food_common_name":  "Meats" ,
+    "orig_food_id":  "WI8000" ,
+    "orig_food_part": null ,
+    "orig_food_scientific_name": null ,
+    "orig_max": null ,
+    "orig_method": null ,
+    "orig_min": null ,
+    "orig_unit": null ,
+    "orig_unit_expression": null ,
+    "updated_at": Tue Sep 11 2012 16:12:30 GMT-07:00 ,
+    "updater_id": null
+    }
 
 ### Checking index status
 
