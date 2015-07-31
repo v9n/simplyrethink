@@ -1,0 +1,27 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    coderay (1.1.0)
+    faker (1.4.3)
+      i18n (~> 0.5)
+    i18n (0.7.0)
+    json (1.8.3)
+    method_source (0.8.2)
+    pry (0.10.1)
+      coderay (~> 1.1.0)
+      method_source (~> 0.8.1)
+      slop (~> 3.4)
+    rethinkdb (2.0.0.1)
+      json
+    slop (3.6.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  faker
+  pry
+  rethinkdb
+
+BUNDLED WITH
+   1.10.5
