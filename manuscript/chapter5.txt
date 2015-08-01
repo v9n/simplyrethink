@@ -646,6 +646,23 @@ check the status of an index to see if it's ready to use
 
     r.table().indexStatus(indexName)
 
+Such as:
+
+    r.db("foodb").table("compounds_foods").indexStatus("food_id")
+    #=> 
+    {
+    "blocks_processed": 656 ,
+    "blocks_total": 11331 ,
+    "function": <binary, 181 bytes, "24 72 65 71 6c 5f..."> ,
+    "geo": false ,
+    "index":  "food_id" ,
+    "multi": false ,
+    "outdated": false ,
+    "ready": false
+    }
+
+The `ready` field indicate if the index is ready to use.
+
 Sometimes we just want to say, when the index is ready, please run this:
 
     r.table.indexWait
@@ -819,11 +836,101 @@ eaten:
     }
 
 By using `map`, we can pre-calculated some data, either using function or
-expression.
+expression. Let's meet other kind of `mapping` function.
 
 #### concatMap
 
+***concatMap*** is very similar to map. It applies function to every element of
+sequence. But it's different because it also try to flatten, or concat all
+element into a single sequence.
 
+    r.expr([1, 2, 3]).map(function(x) { return [x, x.mul(2)] })
+    #=> [[1, 2], [2, 4], [3, 6]]
+
+However, `concatMap` will concat all sub sequence/array into final return data.
+
+    r.expr([1, 2, 3]).concatMap(function(x) { return [x, x.mul(2)] })
+    #=> [1, 2, 2, 4, 3, 6]
+
+When is it useful? It looks like very useless, right. Well, let's look at
+`favfoods` field. If we want to get a list of `favfoods` on entire system, we
+can do:
+
+    r.db("foodb").table("users").map(
+      r.row("favfoods")
+    )
+    #=>
+    [
+      "Garden tomato (var.)" ,
+      "Linden" ,
+      "Lowbush blueberry" ,
+      "American cranberry" ,
+      "Vanilla"
+    ],
+    [
+      "Swiss chard" ,
+      "Chicory roots" ,
+      "Grapefruit" ,
+      "Jostaberry" ,
+      "Spirit"
+    ]
+
+Well, as expecting, we get an array of array. That's when `concapMap` shines:
+
+    r.db("foodb").table("users").concatMap(
+      r.row("favfoods")
+    )
+    #=>
+    Pikeperch
+    Pacific ocean perch
+    True seal
+    Columbidae (Dove, Pigeon)
+    Conch
+    Kiwi
+    Lemon
+    Lime
+    Coffee
+    Sweet orange
+    Kiwi
+    True seal
+    Salmonidae (Salmon, Trout)
+    ...
+
+If you notice, we have duplicate data. That's natural because many users may
+like same foods. To get distinct value, you can call `distinct` on the sequence:
+
+    r.db("foodb").table("users").concatMap(
+      r.row("favfoods")
+    ).distinct()
+    #=>
+    [
+    "Abalone" ,
+    "Abiyuch" ,
+    "Acerola" ,
+    "Acorn" ,
+    "Adobo" ,
+    "Adzuki bean" ,
+    ]
+
+`distinct` accepts an index and use it to differentce document, without any
+specified index, it used primary index, or the `id` value, which is good enough
+in our case, because we don't have foods with same name. Sometimes, you may want
+to create extra index for the field and call `distinct` using that index.
+
+Let's dig into more complex example. For each of foods, let's find all of its
+compound.
+
+Let's create an index first:
+
+    r.db("foodb").table("compounds_foods").indexCreate("food_id")
+
+r.db("foodb")
+  .table("foods")
+  .concatMap(function (food) {
+    r.db("foodb").table("compounds_foods")
+      .getAll(food("id"), {index: "food_id"}) 
+  })
+    
 
 # Wrap up
 
