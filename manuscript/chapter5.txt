@@ -54,7 +54,7 @@ So now you know what index is. But a sad news is that filter cannot use those se
 
 Let's start with simple index first.
 
-#### Simple index
+## Simple index
 
 As its name, simple index is simply a single field. Let's say we want to find all `compounds_foods` whose name contains `banana`. We cannot use `filter` here because this table has more than 100,000 item. `filter` also doesn't use index. Let's meet `getAll`. `getAll` grabs all document where a given key match the index which we specified.
 
@@ -174,7 +174,7 @@ function has same behaviour
 This work when we want to find data based on a single field. How about find
 value base on multiple field. Let's meet compound index
 
-##### Compound index
+## Compound index
 
 Compound index is created by using value of multiple fields. It's very similar to
 single index in syntax, just different on how many fields we pass to index
@@ -388,7 +388,7 @@ To do that, we see that we are passing business logic into RethinkDB. We have to
 somehow represent that logic in RethinkDB, calculate the value, and index the
 return value. Let's meet `arbitrary expressions` index. 
 
-##### Arbitray expressions index
+## Arbitray expressions index
 
 As its name, the returned value of expression is used to calculate index. 
 
@@ -637,7 +637,7 @@ result of function executing. Now, we can try to find:
 
 
 
-### Checking index status
+## Checking index status
 
 As I said above, indexing reduces write performance, therefore it takes time to
 create after we issue creating command. Depend on the table size, how many
@@ -668,7 +668,7 @@ Sometimes we just want to say, when the index is ready, please run this:
     r.table.indexWait
 
 
-### Using index
+## Using index
 
 ### Order
 
@@ -692,7 +692,7 @@ T> ## Where else I can call Skip, Limit, Slice
 T>
 T> These command can be called on a selection, an array or stream. So you ca
 
-### Transform data
+## Transform data
 
 So far, we always take the value that return from RethinkDB to work with it? In
 any real application, you prolly want to do some transform around it. If we do
@@ -712,7 +712,7 @@ area because database engine now seems has an embedded language in it.
 Let's cover more of those functions. Along the way we learn somne structure
 control command. Now, move on to our next function, **map**.
 
-#### Map
+### Map
 
 Let's say we want to divide our users into 3 groups, who are under 18 years old
 are **teenager**, between 18-50 are **adult**, and over 50 years old are
@@ -838,7 +838,7 @@ eaten:
 By using `map`, we can pre-calculated some data, either using function or
 expression. Let's meet other kind of `mapping` function.
 
-#### concatMap
+### concatMap
 
 ***concatMap*** is very similar to map. It applies function to every element of
 sequence. But it's different because it also try to flatten, or concat all
@@ -913,7 +913,7 @@ like same foods. To get distinct value, you can call `distinct` on the sequence:
     ]
 
 `distinct` accepts an index and use it to differentce document, without any
-specified index, it used primary index, or the `id` value, which is good enough
+specified index, it uses primary index, or the `id` value, which is good enough
 in our case, because we don't have foods with same name. Sometimes, you may want
 to create extra index for the field and call `distinct` using that index.
 
@@ -924,13 +924,212 @@ Let's create an index first:
 
     r.db("foodb").table("compounds_foods").indexCreate("food_id")
 
-r.db("foodb")
-  .table("foods")
-  .concatMap(function (food) {
-    r.db("foodb").table("compounds_foods")
-      .getAll(food("id"), {index: "food_id"}) 
-  })
-    
+With that index, we can try our query:
+
+    r.db("foodb")
+      .table("foods")
+      .withFields("id", "name")
+      .concatMap(function (food) {
+        return 
+          r.db("foodb").table("compounds_foods")
+          .getAll(food("id"), {index: "food_id"})
+          .withFields("id", "food_id", "compound_id", "orig_food_common_name",
+    "orig_compound_name")
+          .map(function(compound_food) {
+            return food.merge({compound: compound_food})
+          })
+      })
+    #=>
+    {
+    "compound": {
+    "compound_id": 21594 ,
+    "food_id": 2 ,
+    "id": 15609 ,
+    "orig_compound_name":  "Fatty acids, total saturated" ,
+    "orig_food_common_name":  "Cabbage, savoy, raw"
+    } ,
+    "id": 2 ,
+    "name":  "Savoy cabbage"
+    } {
+    "compound": {
+    "compound_id": 21595 ,
+    "food_id": 2 ,
+    "id": 15610 ,
+    "orig_compound_name":  "Fatty acids, total mono-unsaturated" ,
+    "orig_food_common_name":  "Cabbage, savoy, raw"
+    } ,
+    "id": 2 ,
+    "name":  "Savoy cabbage"
+    }
+
+Note that we use some `withFields` command to limit on the fields that we want
+to include in return document.
+
+Above example won't work with `map`. Because the return value from function
+isn't a single value, but another sequence. If you attempt to use `map`, you can
+see error clearly:
+
+    r.db("foodb")
+      .table("foods")
+      .withFields("id", "name")
+      .map(function (food) {
+        return 
+          r.db("foodb").table("compounds_foods")
+          .getAll(food("id"), {index: "food_id"})
+          .withFields("id", "food_id", "compound_id", "orig_food_common_name",
+    "orig_compound_name")
+          .map(function(compound_food) {
+            return food.merge({compound: compound_food})
+          })
+      })
+    #=> RqlRuntimeError: Expected type DATUM but found SEQUENCE:
+
+`concatMap` can operator on sequence value from funciton, and try to flatten it
+for us. Let's back to this and break down how it works:
+
+    r.db("foodb")
+      .table("foods")
+      .withFields("id", "name")
+      .concatMap(function (food) {
+        return 
+          r.db("foodb").table("compounds_foods")
+          .getAll(food("id"), {index: "food_id"})
+          .withFields("id", "food_id", "compound_id", "orig_food_common_name",
+    "orig_compound_name")
+          .map(function(compound_food) {
+            return food.merge({compound: compound_food})
+          })
+      })
+
+For every documents of foods, it's transform into a document similar to this:
+
+    [
+      {id: id1, name: name1, compound: compound_food_document1}, 
+      {id: id1, name: name1, compound: compound_food_document2},
+      {id: id1, name: name1, compound: compound_food_documentn},a
+    ]
+
+That mean, with an sequence of foods, we will have this(without concatMap):
+
+    [
+      {id: id1, name: name1, compound: compound_food_document1}, 
+      {id: id1, name: name1, compound: compound_food_document2},
+      {id: id1, name: name1, compound: compound_food_documentn},...
+    ],
+    [
+      {id: id2, name: name2, compound: compound_food_document1}, 
+      {id: id2, name: name2, compound: compound_food_document2},
+      {id: id2, name: name2, compound: compound_food_documentn},...
+    ],
+    ...
+
+But concat map will fallten array and we have this:
+
+    {id: id1, name: name1, compound: compound_food_document1}, 
+    {id: id1, name: name1, compound: compound_food_document2},
+    {id: id1, name: name1, compound: compound_food_documentn},...
+    ,
+    {id: id2, name: name2, compound: compound_food_document1}, 
+    {id: id2, name: name2, compound: compound_food_document2},
+    {id: id2, name: name2, compound: compound_food_documentn},...
+    , ...
+
+That's power of `concatMap`. We can use it to do a join effect. But one problem
+remains, as you can see, we have many document with same `food` but different
+compound of that food. Can we somehow compile them into an array like this:
+
+    {id: id1, name: name1, 
+      compound: [compound_food_document1, compound_food_document2, ...]
+    },
+    {id: id2, name: name2, 
+      compound: [compound_food_documentn, compound_food_documentn, ...]
+    },...
+
+Let's tweak our `concatMap` a bit.
+
+    r.db("foodb")
+      .table("foods")
+      .withFields("id", "name")
+      .concatMap(function (food) {
+        return [
+          food.merge({compound: 
+            r.db("foodb").table("compounds_foods")
+            .getAll(food("id"), {index: "food_id"})
+            .withFields("id", "food_id", "compound_id", "orig_food_common_name",
+    "orig_compound_name")
+            .limit(10)
+          })
+        ]
+      })
+
+First off, you notice that we wrap food.merge in array. Why so? Because
+`concatMap` expects return value from function is a sequence. `map` expects
+return value from function is DATUM, likewise. We also call `limit(10)` on the
+`compound_foods` sequence to limit first 10 result, sort by primary key, `id`
+field of `compound_foods` table in this case.
+
+Instead of create a map to loop over the `compound_foods` sequence and create a
+document, we simply bring the whole `compound_foods` array to merge into
+**food** document. Looks good, run this and here come the error:
+
+    RqlRuntimeError: Expected type DATUM but found SEQUENCE:
+
+Well, merge expect a `DATUM`. A datum is like a single primitive value. Such as
+a number, an array. But we are passing SEQUENCE. You can understand that we are
+expecting an primitive value, but we passed a cursor. Like in Ruby, when we
+expect an array, but we pass an enumarator. In RethinkDB, to make this kind of
+merge work, we have to explicitly convert it to an array, using `coerceTo` with
+parameter **array**.
+
+    r.db("foodb")
+      .table("foods")
+      .withFields("id", "name")
+      .concatMap(function (food) {
+        return [
+          food.merge({compound: 
+            r.db("foodb").table("compounds_foods")
+            .getAll(food("id"), {index: "food_id"})
+            .withFields("id", "food_id", "compound_id", "orig_food_common_name",
+    "orig_compound_name")
+            .limit(10)
+            .coerceTo('array')
+          })
+        ]
+      })
+    #=>
+    {
+    "compound": [ ... ] ,
+    "id": 2 ,
+    "name":  "Savoy cabbage"
+    } {
+    "compound": [ ... ] ,
+    "id": 15 ,
+    "name":  "Wild celery"
+    }
+
+Now, with `coerceTo` function, we know that we can convert sequence into
+`array`. So can we achieve this with map, instead of `concatMap`. Yes, and it's even more
+simpler:
+
+    r.db("foodb")
+      .table("foods")
+      .withFields("id", "name")
+      .map(function (food) {
+        return
+          food.merge({compound: 
+            r.db("foodb").table("compounds_foods")
+            .getAll(food("id"), {index: "food_id"})
+            .withFields("id", "food_id", "compound_id", "orig_food_common_name",
+    "orig_compound_name")
+            .limit(10)
+            .coerceTo('array')
+          })
+      })
+
+We no longer have to wrap it in `[]` because `map` can work with OBJECT. With
+this example, we see that `concatMap` and `map` sometime can be use
+interchangably depend on how we want to model the data.
+
 
 # Wrap up
 
@@ -941,4 +1140,8 @@ This chapter is quite long. So far we learn about index. We know how to create:
   * Multi value index
   * Arbitrary expression index
 
-We also learn how to leverage index to sort, filter data.
+We also learn how to leverage index to sort, filter data. Two important
+transform function you also learn:
+
+  * map:
+  * concatMap: 
