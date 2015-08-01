@@ -390,10 +390,11 @@ return value. Let's meet `arbitrary expressions` index.
 
 ## Arbitray expressions index
 
-As its name, the returned value of expression is used to calculate index. 
+As its name, the returned value of expression is used to calculate index.
 
 Unfortunately at this moment, we cannot simple answer who like both of banana
-and kiwi. We will save it for later chapter: map-reduce. Now, let's find user
+and kiwi. We will save it for later chapter when we learn about `map` function.
+Now, let's find user
 who like kiwi most. With assumption that the first element of `favfoods` array
 is what an user like most.
 
@@ -1130,6 +1131,57 @@ We no longer have to wrap it in `[]` because `map` can work with OBJECT. With
 this example, we see that `concatMap` and `map` sometime can be use
 interchangably depend on how we want to model the data.
 
+## Index and Map
+
+I promised you an answer to quesiton who like both of Kiwi and banana. As you
+can guest, we have to create a multi index with each of value is a pair of
+favourite foods. It's very hard to do this without `map`. We prolly thinking of
+two nested loops. With map, we can do this:
+
+
+    r.db("foodb")
+      .table("users")
+      .indexCreate("food-test-idx-1", function (food) {
+        return
+          food("favfoods")
+            .concatMap(function (favfood) {
+              return
+                food("favfoods").map(function (favfood2) {
+                  return [favfood, favfood2]
+                  })
+            })
+      }, {multi: true})
+
+We will do a map. With each of element of `favfoods` we try to create a new
+array of two element, by combine the element with each of element of `favfoods`
+itself. We use `concatMap` to flatten array, and set `multi: true` because this
+is a multi indexer: we are returning an array from index function.
+
+And now, we can use that index, pass a pair of value:
+
+    r.db("foodb")
+      .table("users")
+      .getAll(['Spirit', 'Grapefruit'], {index: "food-test-idx-1"})
+    #=>
+    {
+    "age": 41 ,
+    "eatenfoods": [
+    "Hummus" ,
+    "Common beet"
+    ] ,
+    "favfoods": [
+    "Swiss chard" ,
+    "Chicory roots" ,
+    "Grapefruit" ,
+    "Jostaberry" ,
+    "Spirit"
+    ] ,
+    "gender":  "f" ,
+    "id":  "3700fa48-2806-4cb2-9bfb-a5d90d6cfd38" ,
+    "name":  "Wilburn Price"
+    }
+
+The order isn't important, because we 
 
 # Wrap up
 
