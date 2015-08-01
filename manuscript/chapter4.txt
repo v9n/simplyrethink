@@ -709,7 +709,26 @@ where as `r.add` expects array, so we wrap it in `[]`.
 Before we continue, lets' remove junk data:
 
     r.db("foodb").table("users").replace(r.row.without('eateanorlike'))
-    
+
+We also didn't have an `age` field on those user table. Let's generate some fake
+data for it so we can play around later
+
+    r.db("foodb").table("users")
+      .update({
+        age : r.random(8, 90)
+      }, {nonAtomic: true})
+    #=>
+    {
+    "deleted": 0 ,
+    "errors": 0 ,
+    "inserted": 0 ,
+    "replaced": 152 ,
+    "skipped": 0 ,
+    "unchanged": 0
+    }
+
+By using function or expression, we can update document in complex way
+
 ### Return Values
 
 Sometimes, it can be useful to get back the updated document. This way you can
