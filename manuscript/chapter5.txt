@@ -559,13 +559,84 @@ Now, we can use that index:
     "name":  "Luma Ramses"
     }
     
-How about finding user liked Kiwi most and have eaten kiwi? It
+How about finding user liked Kiwi most and have eaten kiwi? We just need to
+change the index function, this time we will use anonymous function:
 
-r.db("foodb").table("users")
-  .indexCreate(
-    'eateanorlike', 
-    r.add(r.row("eatenfoods"), [r.row("favfoods").nth(0)])
-    , {multi: true})
+    r.db("foodb").table("users")
+      .indexCreate(
+        'eatean-or-like-most',
+        function (user) {
+          return r.add(user("eatenfoods"), [user("favfoods").nth(0)])
+        }
+        , {multi: true})
+
+Really, function is just a special case of expression where expression is
+result of function executing. Now, we can try to find:
+
+    r.db("foodb").table("users")
+      .getAll('Kiwi', {index: 'eatean-or-like-most'})
+    #=>
+    {
+        "eatenfoods": [
+            "Shrimp",
+            "Other fish product",
+            "Sweet orange",
+            "Unclassified food or beverage"
+        ],
+        "favfoods": [
+            "Kiwi",
+            "Lemon",
+            "Lime",
+            "Coffee",
+            "Sweet orange"
+        ],
+        "gender": "f",
+        "id": "0b83164e-fb42-4273-8db1-ba12be6e580d",
+        "name": "Carl Achiban"
+    } {
+        "eatenfoods": [
+            "Celery leaves",
+            "Kiwi",
+            "Rainbow trout",
+            "Chinese bayberry",
+            "Hyacinth bean",
+            "Other sandwich"
+        ],
+        "favfoods": [
+            "Honey",
+            "Cake",
+            "Butter substitute",
+            "Cream",
+            "Sugar"
+        ],
+        "gender": "m",
+        "id": "808cedd5-f2ac-4724-98bc-061ee84755c9",
+        "name": "Forrest Jacobs"
+    } {
+        "eatenfoods": [
+            "Jerusalem artichoke",
+            "Conch",
+            "Milk and milk products",
+            "Dumpling",
+            "Custard apple",
+            "Sacred lotus",
+            "Japanese walnut",
+            "Crab"
+        ],
+        "favfoods": [
+            "Kiwi",
+            "Banana",
+            "Peanut",
+            "Asparagus",
+            "Common cabbage"
+        ],
+        "gender": "f",
+        "id": "d10b51d7-d321-4b41-bd7d-1367ede0eb30",
+        "name": "Luma Ramses"
+    }
+
+
+
 ### Checking index status
 
 As I said above, indexing reduces write performance, therefore it takes time to
@@ -582,12 +653,11 @@ Sometimes we just want to say, when the index is ready, please run this:
 
 ### Using index
 
-
-## Order
+### Order
 
 Sorting with order without index limit to 100k issue
 
-## Pagination
+### Pagination
 
 To pagination data, we will use a a combination of `skip`, `limit` and `slice`.
 
@@ -605,4 +675,24 @@ T> ## Where else I can call Skip, Limit, Slice
 T>
 T> These command can be called on a selection, an array or stream. So you ca
 
+## Map Reduce
 
+Coming back our question, find users who like *kiwi* and *banana*. To recap, we
+cannot use a single index because that's only match the whole document. We
+cannot use compound index, because we have an only single field to index. We
+cannot use multi index, because that's an or. This leaves us with only arbitrary
+index. However, how we are going to create index for it? A non-multi index is
+not usable here. More detail here...
+
+Let's meep map reduce. 
+
+# Wrap up
+
+This chapter is quite long. So far we learn about index. We know how to create:
+
+  * Simple index
+  * Compound index
+  * Multi value index
+  * Arbitrary expression index
+
+We also learn how to leverage index to sort, filter data.
