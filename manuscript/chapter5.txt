@@ -675,16 +675,155 @@ T> ## Where else I can call Skip, Limit, Slice
 T>
 T> These command can be called on a selection, an array or stream. So you ca
 
-## Map Reduce
+### Transform data
 
-Coming back our question, find users who like *kiwi* and *banana*. To recap, we
-cannot use a single index because that's only match the whole document. We
-cannot use compound index, because we have an only single field to index. We
-cannot use multi index, because that's an or. This leaves us with only arbitrary
-index. However, how we are going to create index for it? A non-multi index is
-not usable here. More detail here...
+So far, we always take the value that return from RethinkDB to work with it? In
+any real application, you prolly want to do some transform around it. If we do
+it at applcation level, for complex thing, it make sense. But for simple thing,
+we may waste another extra loop. Or sometime we want to do thing at RethinkDB
+level, or we want to use transform data in other ReQL expression.
 
-Let's meep map reduce. 
+An example is the function `nth` or `count`. We call them on a sequence, or an
+array of data, and they return a different data. They transform original data
+into a different piece of data. But `nth` and `count` are simple function. They
+don't have any complex logic inside them. Some transform function has complex
+logic. With those logic, we have to use some kind of `if ...else...` command, or
+loop. To help us with that, RethinkDB has some control structure functions such
+as `branch` (similar to `if`) or `forEach`, `do`. RethinkDb shines in those
+area because database engine now seems has an embedded language in it.
+
+Let's cover more of those functions. Along the way we learn somne structure
+control command. Now, move on to our next function, **map**.
+
+#### Map
+
+Let's say we want to divide our users into 3 groups, who are under 18 years old
+are **teenager**, between 18-50 are **adult**, and over 50 years old are
+**older**. We have a pattern here, with each of document in table, we want to
+calculate a new data, depend on their existed data. In RethinkDB, we used
+***map*** function.
+
+Map apply a function on document, and return value of fuction is returned from
+query. With our example, in a normal programming language, such as Ruby we can
+write:
+
+    users.map do |user|
+      if user["age"] <= 18
+        "teenager"
+      else if user["age"] >18 && user["age"] <50 
+        "adult"
+      else
+        "older"
+      end
+    end
+
+In RethinkDB, the format of map is:
+
+    sequence1.map([sequence2, ...], mappingFunction) → stream
+    array1.map([array2, ...], mappingFunction) → array
+    r.map(sequence1[, sequence2, ...], mappingFunction) → stream
+    r.map(array1[, array2, ...], mappingFunction) → array
+
+With our example, we have to represent `if` in RethinkDB function. We do that
+with `branch`:
+
+    r.branch(test, true_branch, false_branch) → any
+
+Time to write our function:
+
+    r.db("foodb").table("users").map(function (user) {
+      return r.branch(
+        user("age").lt(18),
+        "teenager",
+        r.branch(
+          user("age").gt(50),
+          "older",
+          "adult"
+        )
+      )
+    })
+    #=>
+    "older" "older" "older" "adult" "older" "older" "older" "adult" "older"
+    "older" "older" "adult" "teenager" "adult" "adult" "adult" "older" "adult"
+    "older" "older" "older" "older" "adult" "teenager" "adult" "older" "older"
+    "older" "older" "adult" "adult" "older" "adult" "older" "older" "older" "adult"
+    "older" "older" "older"
+
+Yay, we get what we want. But it only return the value from fuction, we don't
+know who is who. Well, that's `map` job. It transform the whole document into
+the return value. How about we return an object, with original `name` field, and
+our `group` field, like this:
+
+    r.db("foodb").table("users").map(function (user) {
+      return {
+        name: user("name"), 
+        group: r.branch(
+        user("age").lt(18),
+        "teenager",
+        r.branch(
+          user("age").gt(50),
+          "older",
+          "adult"
+        )
+        )}
+    })
+    #=>
+    {
+    "group":  "adult" ,
+    "name":  "Arthur Hegmann"
+    } {
+    "group":  "older" ,
+    "name":  "Ricky Quigley Sr."
+    } {
+    "group":  "older" ,
+    "name":  "Jazmyne Brakus"
+    }
+    ....
+
+
+Great. But if we want to return whole document, with extra `group` field, do we
+have to repeatedly write every fields. Well, let's meet `merge`.
+
+    r.db("foodb").table("users").map(function (user) {
+      return user.merge({
+        group: r.branch(
+          user("age").lt(18),
+          "teenager",
+          r.branch(
+            user("age").gt(50),
+            "older",
+            "adult"
+          )
+        )})
+    })
+
+If you question can we use `row` in `map` expression instead of using function.
+Yes, we can. But we cannot in above example. Because `row` doesn't work in
+nested query. In above example. we nested `r.branch` inside `merge`, and inside
+other `branch`. 
+
+Let's see an example where we can use `r.row`: couting how many foods they have
+eaten:
+
+    r.db("foodb").table("users").map({
+      name: r.row("name"),
+      total_eaten: r.row("eatenfoods").count()
+    })
+    #=>
+    {
+    "name":  "Arthur Hegmann" ,
+    "total_eaten": 6
+    } {
+    "name":  "Ricky Quigley Sr." ,
+    "total_eaten": 7
+    }
+
+By using `map`, we can pre-calculated some data, either using function or
+expression.
+
+#### concatMap
+
+
 
 # Wrap up
 
