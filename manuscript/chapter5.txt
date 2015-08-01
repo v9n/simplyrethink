@@ -388,18 +388,184 @@ To do that, we see that we are passing business logic into RethinkDB. We have to
 somehow represent that logic in RethinkDB, calculate the value, and index the
 return value. Let's meet `arbitrary expressions` index. 
 
+##### Arbitray expressions index
+
 As its name, the returned value of expression is used to calculate index. 
 
 Unfortunately at this moment, we cannot simple answer who like both of banana
 and kiwi. We will save it for later chapter: map-reduce. Now, let's find user
-who like kiwi most.
+who like kiwi most. With assumption that the first element of `favfoods` array
+is what an user like most.
 
     r.db("foodb").table("users")
       .indexCreate('most-favourite-food', function (user) {
-        return r.row("favfoods").nth(0)
+        return user("favfoods").nth(0)
       })
 
+Given an array, `nth(n)` return n-th element. We call `nth(0)` on array
+`favfoods`  that means first
+element of array since they are zero-base index.
 
+    r.db("foodb").table("users")
+      .getAll('Kiwi', {index: 'most-favourite-food-1'})
+    #=>
+    {
+    "favfoods": [
+    "Kiwi" ,
+    "Lemon" ,
+    "Lime" ,
+    "Coffee" ,
+    "Sweet orange"
+    ] ,
+    "id":  "0b83164e-fb42-4273-8db1-ba12be6e580d" ,
+    "name":  "Carl Achiban"
+    } {
+    "favfoods": [
+    "Kiwi" ,
+    "Banana" ,
+    "Peanut" ,
+    "Asparagus" ,
+    "Common cabbage"
+    ] ,
+    "id":  "d10b51d7-d321-4b41-bd7d-1367ede0eb30" ,
+    "name":  "Luma Ramses"
+    }
+
+This index is powerful because we can push more complex searching to database
+engine. Let's say we want to find all user who like `Kiwi` most and is a female.
+
+    r.db("foodb").table("users")
+      .indexCreate('most-favourite-food-gender', function (user) {
+        return [user("gender"), user("favfoods").nth(0)]
+      })
+
+Here, we are trying to create non-multi index. The index is an array of gender
+and most like food item. Now, let's try our index
+
+    r.db("foodb").table("users")
+      .getAll(['f', 'Kiwi'], {index: 'most-favourite-food-gender'})
+    #=>
+    {
+    "favfoods": [
+    "Kiwi" ,
+    "Lemon" ,
+    "Lime" ,
+    "Coffee" ,
+    "Sweet orange"
+    ] ,
+    "gender":  "f" ,
+    "id":  "0b83164e-fb42-4273-8db1-ba12be6e580d" ,
+    "name":  "Carl Achiban"
+    } {
+    "favfoods": [
+    "Kiwi" ,
+    "Banana" ,
+    "Peanut" ,
+    "Asparagus" ,
+    "Common cabbage"
+    ] ,
+    "gender":  "f" ,
+    "id":  "d10b51d7-d321-4b41-bd7d-1367ede0eb30" ,
+    "name":  "Luma Ramses"
+    }
+
+One thing I want to remind you(well, myself actually) is that the return
+function in any RethinkDb expression is evaludated on RethinkDB, not on client
+language. You cannot just write anything. You have to use RethinkDB expression
+in return value so that RethinkDB can calculated it. In previous chapter, we
+learn about `expr`, you can use that to turn native object into RethinkDb object
+when wanting.
+
+Let's look at this example:
+
+    r.table("users").indexCreate("full_name2", function(user) {
+        return r.add(user("last_name"), "_", user("first_name"))
+    }).run(conn, callback)
+
+We are trying to create an index by appending *last_name* and *first_name*. We
+cannot write
+
+    return user("last_name") + user("first_name")
+
+because ReThinkDB won't understand that expression. We have to call `r.add`
+function.
+
+However, even if you see something like 
+
+    return user("last_name") + user("first_name")
+
+That's doesn't mean RethinkDB understand your native expression. It's actually
+your driver overload operator (`+` operator) in this case because your host
+language apparently support operator overloading.
+
+If you notice, we don't pass `multi: true` in any of above examples. Can we use
+multi index with arbitray expression index? Yes, we can.
+
+Let's say if we can find any users who like `Kiwi` or used to eat Kiwi. We will
+create an multi index by concat array `favfoods` and `eatenfoods`
+
+
+    r.db("foodb").table("users")
+      .indexCreate(
+        'eateen-or-like-multi', 
+        r.add(r.row("eatenfoods"), r.row("favfoods"))
+        , {multi: true})
+
+Now, we can use that index:
+
+
+    r.db("foodb").table("users")
+      .getAll('Kiwi', {index:'eateen-or-like-multi'})
+    #=>
+    {
+    "eatenfoods": [
+    "Celery leaves" ,
+    "Kiwi" ,
+    "Rainbow trout" ,
+    "Chinese bayberry" ,
+    "Hyacinth bean" ,
+    "Other sandwich"
+    ] ,
+    "favfoods": [
+    "Honey" ,
+    "Cake" ,
+    "Butter substitute" ,
+    "Cream" ,
+    "Sugar"
+    ] ,
+    "gender":  "m" ,
+    "id":  "808cedd5-f2ac-4724-98bc-061ee84755c9" ,
+    "name":  "Forrest Jacobs"
+    } {
+    "eatenfoods": [
+    "Jerusalem artichoke" ,
+    "Conch" ,
+    "Milk and milk products" ,
+    "Dumpling" ,
+    "Custard apple" ,
+    "Sacred lotus" ,
+    "Japanese walnut" ,
+    "Crab"
+    ] ,
+    "favfoods": [
+    "Kiwi" ,
+    "Banana" ,
+    "Peanut" ,
+    "Asparagus" ,
+    "Common cabbage"
+    ] ,
+    "gender":  "f" ,
+    "id":  "d10b51d7-d321-4b41-bd7d-1367ede0eb30" ,
+    "name":  "Luma Ramses"
+    }
+    
+How about finding user liked Kiwi most and have eaten kiwi? It
+
+r.db("foodb").table("users")
+  .indexCreate(
+    'eateanorlike', 
+    r.add(r.row("eatenfoods"), [r.row("favfoods").nth(0)])
+    , {multi: true})
 ### Checking index status
 
 As I said above, indexing reduces write performance, therefore it takes time to

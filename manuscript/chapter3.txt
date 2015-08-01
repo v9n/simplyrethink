@@ -554,6 +554,7 @@ complex business logic rule
 We will learn more about advanced query in other chapter. For now, let's move on
 and try to write some data into RethinkDB.
 
+
 ### Transforming document with `merge`
 
 The documents from query can be merge into another document to return another

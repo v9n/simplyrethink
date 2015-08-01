@@ -649,6 +649,67 @@ Let's make it atomic and try again:
 
     }
 
+#### Expr
+
+`expr` is a normal function but I feel like they are important and help us
+achive many crazy thing so I cover them here.
+
+What `expr` does is tranform an native object from host language into ReQL
+object. For example, if a RethinkDb funciton can be call on array or sequence,
+we cannot write something like this: `[e1, e2].nth(2)`, RethinkDB will throw an
+error on [e1, e2]
+
+    ["e1","e2"].nth is not a function
+
+What we have to do is somehow convert the array, that we write in native
+language into RethinkDB data type. To do that we simply wrap them in `expr`
+
+A real example when I'm writing this book. I want to randomize generate
+faked data for `users` table on `gender` field. I do this with:
+
+    r.db("foodb").table("users")
+      .update({
+        gender: r.expr(['m', 'f']).nth(r.random(0, 2))
+      }, {nonAtomic: true})
+
+It means, for every document of `users` table, I want to set their gender to
+either `m` or `f` randomly. I create an two element array `[m, f]`, turn them
+into ReQL object with `expr`, so that I can call `nth` on them, passing a random
+number of either 0 or 1.
+
+
+let's try more complex example to generate some data. We want to r
+
+    r.db("foodb").table("users")
+      .update({
+          eatenfoods: r.db("foodb").table("foods").sample(r.random(0,
+10)).getField('name')
+        },
+        {nonAtomic: true}
+      )
+
+For every documents, we try to find a number of random food from `foods` table,
+get only its name and return the array, and assign to `eatfoods`
+
+Now, we have `eatenfoods` field. Let's say we want to create a field contains
+the foods that an user have eaten, and their most favourite foods (first element
+in `favfoods` field)
+
+    r.db("foodb").table("users")
+      .update({
+        eateanorlike : r.add(r.row("eatenfoods"), [r.row("favfoods").nth(0)])
+      }, {nonAtomic: true})
+
+By combine ReQL expression, by looking at its API and find approriate function,
+we can achieve what we want. In above example, we know we want to concat two
+arrays from `eatenfoods` and first item of `favfoods`. We used `r.add`. We have
+to wrap `r.row("favfoods").nth(0)` in `[]` because `nth()` return a document,
+where as `r.add` expects array, so we wrap it in `[]`.
+
+Before we continue, lets' remove junk data:
+
+    r.db("foodb").table("users").replace(r.row.without('eateanorlike'))
+    
 ### Return Values
 
 Sometimes, it can be useful to get back the updated document. This way you can
