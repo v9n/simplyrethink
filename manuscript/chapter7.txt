@@ -1,1 +1,89 @@
 -# Aggregation
+
+Any database has to offer some kind of aggregation functions. RethinkDb is not
+an exception here. 
+
+The most popular function is `group`. Yeah, group is everywhere. Let's see how
+it is handle in RethinkDB.
+
+## group
+
+  sequence.group(fieldOrFunction..., [{index: "indexName", multi: false}]) → grouped_stream
+
+In a nut shell, taking a sequence, depend on the value of field or return value
+of function, group document with same value into a group. Example, let's group
+`compounds_foods` by their `orig_food_common_name`
+
+    r.db("foodb")
+      .table("compounds_foods")
+      .group('orig_food_common_name')
+
+And we got this:
+
+    RqlRuntimeError: Grouped data over size limit `100000`.  Try putting a reduction (like `.reduce` or `.count`) on the end in:
+      r.db("foodb").table("compounds_foods").group("orig_food_common_name")
+
+This is a know issues on RethinkDB side https://github.com/rethinkdb/rethinkdb/issues/2596. Basically when we ends the ReQL with
+`group`, it loads everything into memory. 
+
+Let's try what it suggest:
+
+    r.db("foodb")
+      .table("compounds_foods")
+      .group('orig_food_common_name')
+      .count()
+    #=>
+    [
+    {
+        "group": null,
+        "reduction": 4313
+    },
+    {
+        "group": "AMARANTH FLAKES",
+        "reduction": 68
+    },
+    ...
+    ]
+
+So yeah, the query run, and it returns the group name(which is a value of `orig_food_common_name`) and count how many document has that value. Which is nice, but wont' solve our
+original query. How can we do it, let's try some reduce function
+
+
+Let's say we want to group compounds_foods table into multiple group with same
+origg_compound_name we can do this query:
+
+  r.db("foodb")
+      .table("compounds_foods")
+      .indexCreate('orig_compound_name')
+
+However, when youy try to run this queryy you got this error:
+
+RqlRuntimeError: Grouped data over size limit `100000`.  Try putting a reduction
+(like `.reduce` or `.count`) on the end in:
+r.db("foodb").table("compounds_foods").group("orig_compound_name", {index:
+"orig_compound_name"})
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Why so? because when we end the chain with `group`, the whole array is loaded
+into memory, and our sequence are greater than 100000 element. We have around
+~668K document. However, when we call `reduce` or `count` on it, RethinkDb won't
+load them all into memory and make it works. I don't know why, honestly, I read
+all of this from this issue.
+
+^ Source https://github.com/rethinkdb/rethinkdb/issues/2596
+
+
+
+## distinct
+
+## 
+
+## Map Reduce
+
+Since RethinkDB call itself `The open-source database for the realtime web`, it
+has support for map-reduce. Map reduce is a way to aggregation a large data set,
+run parallel on many servers, since RethinkDB is distributed.`, it has support
+for map-reduce. Map reduce is a way to aggregation a large data set, run
+parallel on many servers, since RethinkDB is distributed.
+
+Sometimes 
