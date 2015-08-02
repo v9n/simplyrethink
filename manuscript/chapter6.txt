@@ -169,7 +169,7 @@ We get back an array, with element on both table match our condition. We can see
           .eqJoin("compound_id", r.db("foodb").table("compounds"))
           .zip()
 
-As you see, We don't need to specify an index on above query. When we don't specify index, RethinkDB use primary key of table. In this case, the primary key, or `id` field of `compounds`. Now loking at the query, it seems a bit awkard because `compound_synonyms` com first? Can we make it more nature, follow above syntax: for each document on `compounds`, fetch all document on `compound_synonyms` where document's `compound_id` field match id of document on `compounds` table. So we see that we have to have an index on `compound_synonyms` table for `compound_id` field. Let's create an index for it:
+As you see, We don't need to specify an index on above query. When we don't specify index, RethinkDB use primary key of table. In this case, the primary key is `id` field of `compounds`. Now loking at the query, it seems a bit awkard because `compound_synonyms` com first? Can we make it more nature, follow above syntax: for each document on `compounds`, fetch all document on `compound_synonyms` where document's `compound_id` field match id of document on `compounds` table. So we see that we have to have an index on `compound_synonyms` table for `compound_id` field. Let's create an index for it:
 
         r.db("foodb").table("compounds")
           .indexCreate("compound_id")
@@ -220,5 +220,9 @@ How about complex join where we want either or ? Like in MySQL
 
 # Wrap up 
     
-At the end of this chapter, we should know how to do simpe
+At the end of this chapter, we should know how to join based on these concept:
+
+  * Primary key: the ID field of document
+  * Secondary index: join using secondary index
+  * Sub queries:
  
