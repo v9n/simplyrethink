@@ -1181,7 +1181,29 @@ And now, we can use that index, pass a pair of value:
     "name":  "Wilburn Price"
     }
 
-The order isn't important, because we 
+The order isn't important here, because we create the pair of array on every
+element if itself. Such as with [a,b,c] array we will have this array via map:
+
+  [a,a], [a,b], [a,c], [b,a], [b,b], [b,c], [c, a], [c, b], [c, a]
+
+Can we elimiate [a,a], [b,b], [c,c] because they are useless. We just need to
+put them in `branch` command:
+
+    r.db("foodb")
+      .table("users")
+      .indexCreate("food-test-idx-2", function (food) {
+        return food("favfoods").concatMap(function (favfood) {
+          return food("favfoods").map(function (favfood22)    {
+            return r.branch(favfood.eq(favfood2),
+                [],
+                [favfood, favfood2]
+                )
+          })
+        })
+      }, {multi: true})
+
+With each element, if we see the value of two elements are same, we return an
+empty array, otherwise, we return combination array of them.
 
 # Wrap up
 
@@ -1197,3 +1219,5 @@ transform function you also learn:
 
   * map:
   * concatMap: 
+
+And finally, by leveraging `map`, you can easily create multi index.
