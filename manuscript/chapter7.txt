@@ -292,10 +292,185 @@ includes 2 fields:
 
 and let any chain command follow it operator on this sequence.
 
-## distinct
-
 ## reduce
 
+I think at this point, you already know what `count()` does. From a sequence, or an array,
+it returns a single number of how many items the sequence holds. So it transform a whole
+array into a single value. Not similar to map, `map` turn each of element of sequence into
+other value, and return a new sequence with all return value from `map` function. 
+
+`count` is an example of `reduce`. `reduce` accepts a function, let's call it `reduce_function`,
+and produces a single value, by repeating a function with input is the previous output of 
+`reduce_function`. The `reduce_function` can be called with those parameters:
+
+  * two element of sequence
+  * one element of sequence and one result of previous reduce_function execution
+  * two results of previous reductions.
+
+We can guess, and somehow say that, on the first execution, two first elements of 
+sequence are passed into reduce function, on the second execution, one parameter is
+third element of sequence, other parameter is the result of reduce function call on
+first and second element. And so on for 4th, 5h execution...
+
+But why do we have two results of previous reductions? It's because reduce function 
+can run parallel across shards and CPU core, or even across computers in a cluster.
+The final result of each reduce functions on each shards, or each computer, finally
+are passed to reduce function again, to create final result.
+
+But what happens if the sequence has a single element? We don't have enough input
+for reduce function. That is a special case, and RethinkDB will simply return 
+value of element as result of reduce function.
+
+Usually, `reduce` will be used with `map` to transform document into a value that can 
+be aggreation. As you saw, the reduce function paramters can be element of sequence, 
+or the result of previous reduce function. Therefore, we will usually needs `map` to
+do some transformation so that the type of parameters and result of reduce function are
+same.
+
+T> Tail call optimization
+T>
+T> You may already sense that `reduce` is similar to recursion. But recursion is bad, they
+T> are quicjky fill up the heap. However, you can notice that we are also passing return
+T> value to next call of `reduce` function. Therefore the reduce function doesn't need to
+T> know about state of previous call. Or, in other words, we don't have to store a stack
+T> for previous function call. That's tail call optimization where we can reuse
+T> current stack frame for function call instead of creating new one.
+T> I think that under the hood, reduce function is implement in that sense.
+
+Let's rewrite `count` in `reduce` style. Giving it a bit thinking, the way we count thing
+is that we have an variable, each time we get a new input, we increment that variable 1,
+until all of input are process. The final value is how many element we have. Such as,
+counting in JavaScript:
+
+    function count(sequence) {
+      sum = 0
+      for (i=0; i<=sequence.length; i++) {
+        sum = sum + 1
+      }
+      return sum
+    }
+    count(['a', 'b', 'a1', 12, 'a9', 13])
+
+In above ***count*** function of JavaScript, we have a step where we initialize the
+value of `sum` to 0, and a step where we increment `sum` to 1. 
+
+Let's re-write it in recursion way so we can simulate `reduce` style:
+
+    function count(element, sum) {
+      if (typeof element == 'undefined') {
+        return 
+      }
+
+      if (typeof element == 'undefined') {
+        return 0
+      }
+      if (typeof sum == 'undefined') {
+        sum = 0
+      }
+      count(
+    }
+
+    for (i=0; i<=sequence.length; i++) {
+      
+    }
+    
+    reduce_function = function(left, right) {
+      return left+right
+    }
+    count_with_reduce(sequence, reduce_function(left, right) {
+    })
+
+    if (typeof sequence[0] == 'undefined') {
+      return 0
+    }
+
+    if (typeof sequence[1] == 'undefined') {
+      return 1
+    }
+
+    
+
+## distinct
+
+Given an sequence, `distinct` remove duplication from it. When giving an index,
+the duplication is detected by value of index. Its syntax is:
+
+    sequence.distinct() → array
+    table.distinct([:index => <indexname>]) → stream
+
+As you can tell, whenever we return an array, we will run into 100,000 element
+isues if the return array has more than 100,000 element. So keep that in mind,
+and try to call distinct with a proper index.
+
+Let's count how many distinct `user` we have:
+
+    r.db("foodb")
+      .table("users")
+      .withFields("name")
+      .distinct()
+    //=>Executed in 30ms. 152 rows returned
+    [
+    {
+    "name":  "Abe Willms"
+    } ,
+    {
+    "name":  "Adela Klein V"
+    } ,...]
+
+
+Let's see what kind of `age` our users are:
+
+    r.db("foodb")
+      .table("users")
+      .withFields("age")
+      .distinct()
+   //=> 71 rows are returned
+    [
+    {
+    "age": 9
+    } ,
+    {
+    "age": 10
+    } ,
+    {
+    "age": 13
+    } ,
+    {
+    "age": 14
+    } ,]
+
+So we have 152 unique user's name, and 71 unique `age`. 
+
+
+What happens when using an index?  Let's try to create an index for user age, we 
+divide them into 3 groups:
+
+    r.db("foodb")
+      .table("users")
+      .indexCreate("age-group", function (user) {
+        return
+          r.branch(
+            user("age").lt(18),
+            "teenager",
+            r.branch(user("age").gt(50),
+              "older",
+              "adult"
+            )
+          )   
+      })
+
+Calling `distinct` on table, passing that index:
+
+    r.db("foodb")
+      .table("users")
+      .distinct({index: "age-group"})
+    //=> 3 rows return
+    "adult"
+    "older"
+    "teenager"
+
+So when passing index, the value of index is returned and therefore that value is
+used to detect duplication.
 
 ## Map Reduce
 
