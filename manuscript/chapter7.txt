@@ -11,8 +11,201 @@ it is handle in RethinkDB.
   sequence.group(fieldOrFunction..., [{index: "indexName", multi: false}]) → grouped_stream
 
 In a nut shell, taking a sequence, depend on the value of field or return value
-of function, group document with same value into a group. Example, let's group
-`compounds_foods` by their `orig_food_common_name`
+of function, group document with same value into a group.
+
+Looking at `flavors` table, let's group them by their `flavor_group` field:
+
+    r.db("foodb")
+      .table("flavors")
+      .group('flavor_group')
+    #=>
+    [{
+        "group": "animal",
+        "reduction": [
+            {
+                "category": "odor",
+                "created_at": {
+                    "$reql_type$": "TIME",
+                    "epoch_time": 1317561018,
+                    "timezone": "-07:00"
+                },
+                "creator_id": null,
+                "flavor_group": "animal",
+                "id": 112,
+                "name": "animal",
+                "updated_at": {
+                    "$reql_type$": "TIME",
+                    "epoch_time": 1317561018,
+                    "timezone": "-07:00"
+                },
+                "updater_id": null
+            }
+        ]
+    },
+    {
+        "group": "balsamic",
+        "reduction": [
+            {
+                "category": "odor",
+                "created_at": {
+                    "$reql_type$": "TIME",
+                    "epoch_time": 1317561011,
+                    "timezone": "-07:00"
+                },
+                "creator_id": null,
+                "flavor_group": "balsamic",
+                "id": 43,
+                "name": "others",
+                "updated_at": {
+                    "$reql_type$": "TIME",
+                    "epoch_time": 1317561011,
+                    "timezone": "-07:00"
+                },
+                "updater_id": null
+            },
+            {
+                "category": "odor",
+                "created_at": {
+                    "$reql_type$": "TIME",
+                    "epoch_time": 1317561010,
+                    "timezone": "-07:00"
+                },
+                "creator_id": null,
+                "flavor_group": "balsamic",
+                "id": 40,
+                "name": "chocolate",
+                "updated_at": {
+                    "$reql_type$": "TIME",
+                    "epoch_time": 1317561010,
+                    "timezone": "-07:00"
+                },
+                "updater_id": null
+            }
+        ]
+    },
+    {
+        "group": "camphoraceous",
+        "reduction": [
+            {
+                "category": "odor",
+                "created_at": {
+                    "$reql_type$": "TIME",
+                    "epoch_time": 1317561017,
+                    "timezone": "-07:00"
+                },
+                "creator_id": null,
+                "flavor_group": "camphoraceous",
+                "id": 101,
+                "name": "camphoraceous",
+                "updated_at": {
+                    "$reql_type$": "TIME",
+                    "epoch_time": 1317561017,
+                    "timezone": "-07:00"
+                },
+                "updater_id": null
+            }
+        ]
+    },
+    ...]
+
+The returned array includes two field:
+
+  * group: value of group field, in our case, value of `flavor_group` field
+  * reduction: an array contains all of document has same value for `flavor_group` field
+
+When we continue to chain function after `group`, the function will operate on `reduction` array.
+Such as we can count how many element of **reduction**:
+
+    r.db("foodb")
+      .table("flavors")
+      .group('flavor_group')
+      .count()
+    //=>
+    [
+    {
+    "group": null ,
+    "reduction": 743
+    } ,
+    {
+    "group":  "animal" ,
+    "reduction": 1
+    } ,
+    {
+    "group":  "balsamic" ,
+    "reduction": 10
+    } ,
+    {
+    "group":  "camphoraceous" ,
+    "reduction": 1
+    } ,
+    ...
+    ]
+
+T> ## Command chain after group runs on grouped array
+T> 
+T> It's important to understand `group` make next function call operator
+T> on its `reduction` field.
+
+How about group them, and get the first document of grouped stream.
+
+    r.db("foodb")
+      .table("flavors")
+      .group('flavor_group')
+      .nth(0)
+    //=>
+    [
+    {
+    "group": null ,
+    "reduction": {
+    "category":  "odor" ,
+    "created_at": Sun Oct 02 2011 06:12:18 GMT-07:00 ,
+    "creator_id": null ,
+    "flavor_group": null ,
+    "id": 148 ,
+    "name":  "cotton candy" ,
+    "updated_at": Sun Oct 02 2011 06:12:18 GMT-07:00 ,
+    "updater_id": null
+    }
+    } ,
+    {
+    "group":  "animal" ,
+    "reduction": {
+    "category":  "odor" ,
+    "created_at": Sun Oct 02 2011 06:10:18 GMT-07:00 ,
+    "creator_id": null ,
+    "flavor_group":  "animal" ,
+    "id": 112 ,
+    "name":  "animal" ,
+    "updated_at": Sun Oct 02 2011 06:10:18 GMT-07:00 ,
+    "updater_id": null
+    }
+    } ,
+    {
+    "group":  "balsamic" ,
+    "reduction": {
+    "category":  "odor" ,
+    "created_at": Sun Oct 02 2011 06:10:10 GMT-07:00 ,
+    "creator_id": null ,
+    "flavor_group":  "balsamic" ,
+    "id": 40 ,
+    "name":  "chocolate" ,
+    "updated_at": Sun Oct 02 2011 06:10:10 GMT-07:00 ,
+    "updater_id": null
+    }
+    } ,
+    ...
+    ]
+
+W> Why null group?
+W>
+W> Why do we have a value ***null*** here. It's because 
+W> some document doesn't have any value for `flavor_group`,
+W> or in other word, NULL value. They are put into same group
+W> of NULL
+
+Note that we have some limit with `group` where the `group` size is 
+over 100000 element. Example, let's group `compounds_foods` by their
+`orig_food_common_name`
 
     r.db("foodb")
       .table("compounds_foods")
@@ -23,8 +216,13 @@ And we got this:
     RqlRuntimeError: Grouped data over size limit `100000`.  Try putting a reduction (like `.reduce` or `.count`) on the end in:
       r.db("foodb").table("compounds_foods").group("orig_food_common_name")
 
-This is a know issues on RethinkDB side https://github.com/rethinkdb/rethinkdb/issues/2596. Basically when we ends the ReQL with
-`group`, it loads everything into memory. 
+Why so? because when we end the chain with `group`, the whole array is loaded
+into memory, and our sequence are greater than 100000 element. We have around
+~668K document. However, when we call `reduce` or `count` on it, RethinkDb won't
+load them all into memory and make it works. I don't know why, honestly, I read
+all of this from this issue [^issue2596]
+
+[^issue2596]: https://github.com/rethinkdb/rethinkdb/issues/2596
 
 Let's try what it suggest:
 
@@ -33,6 +231,7 @@ Let's try what it suggest:
       .group('orig_food_common_name')
       .count()
     #=>
+    //Executed in 45.03s. 9492 rows returned
     [
     {
         "group": null,
@@ -45,38 +244,58 @@ Let's try what it suggest:
     ...
     ]
 
-So yeah, the query run, and it returns the group name(which is a value of `orig_food_common_name`) and count how many document has that value. Which is nice, but wont' solve our
-original query. How can we do it, let's try some reduce function
+Now, this result is of course not what we expect. But why it runs? It is because when we call `count`, the `reduction` field become a single
+value instead of an array of grouped data, that makes the size of final group data smaller. As you can see, ***9492*** is returned, and
+that's all loaded into memory.
+
+So keep in mind that we have some limitation with `group`, at least at this moment.
 
 
-Let's say we want to group compounds_foods table into multiple group with same
-origg_compound_name we can do this query:
+## ungroup
 
-  r.db("foodb")
-      .table("compounds_foods")
-      .indexCreate('orig_compound_name')
+As you see, anything follow `group` operates on sub stream, or `reduction` array.
+Can we make the follow function run on returned sequence of `group` itself? Such as,
+we want to sort by the value of `reduction` field. Let's try to sort `flavors` by
+how many value of `flavor_group`
 
-However, when youy try to run this queryy you got this error:
+    r.db("foodb")
+      .table("flavors")
+      .group('flavor_group')
+      .count()
+      .ungroup()
+      .orderBy(r.desc('reduction'))
+    //=>
+    [
+    {
+    "group": null ,
+    "reduction": 743
+    } ,
+    {
+    "group":  "fruity" ,
+    "reduction": 24
+    } ,
+    {
+    "group":  "floral" ,
+    "reduction": 14
+    } ,
+    {
+    "group":  "balsamic" ,
+    "reduction": 10
+    },...
+    ]
 
-RqlRuntimeError: Grouped data over size limit `100000`.  Try putting a reduction
-(like `.reduce` or `.count`) on the end in:
-r.db("foodb").table("compounds_foods").group("orig_compound_name", {index:
-"orig_compound_name"})
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+So `ungroup` turns the return array from `group` into a sequence of object, with each object
+includes 2 fields:
 
-Why so? because when we end the chain with `group`, the whole array is loaded
-into memory, and our sequence are greater than 100000 element. We have around
-~668K document. However, when we call `reduce` or `count` on it, RethinkDb won't
-load them all into memory and make it works. I don't know why, honestly, I read
-all of this from this issue.
+    * group
+    * reduciton
 
-^ Source https://github.com/rethinkdb/rethinkdb/issues/2596
-
-
+and let any chain command follow it operator on this sequence.
 
 ## distinct
 
-## 
+## reduce
+
 
 ## Map Reduce
 
@@ -87,3 +306,7 @@ for map-reduce. Map reduce is a way to aggregation a large data set, run
 parallel on many servers, since RethinkDB is distributed.
 
 Sometimes 
+
+# Wrap up
+
+You know how to group data, set a default value
