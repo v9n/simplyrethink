@@ -612,15 +612,71 @@ RethinkDB, we can do that with `dbList`
     ]    
     
 
+## Nested field
 
-# Wrap Up 
+As you know, RethinkDB document is a JSON object. Very likely we have two or
+more level of data structure. So how we can access those nested field, or to
+drill down the fields. Such as, considering this document:
+
+    {
+      :id => 10001,
+      :name => "Bob Smith",
+      :contact => {
+        :phone => {
+          :work => "408-555-1212",
+          :home => "408-555-1213",
+          :cell => "408-555-1214"
+        },
+        :email => {
+          :work => "bob@smith.com",
+          :home => "bobsmith@gmail.com",
+          :other => "bobbys@moosecall.net"
+        },
+        :im => {
+          :skype => "Bob Smith",
+          :aim => "bobmoose",
+          :icq => "nobodyremembersicqnumbers"
+        }
+      },
+      :notes => [
+        {
+          :date => r.time(2014,1,1,'Z'),
+          :from => "John Doe",
+          :subject => "My name is even more boring than Bob's"
+        },
+        {
+          :date => r.time(2014,2,2,'Z'),
+          :from => "Bob Smith Sr",
+          :subject => "Happy Second of February"
+        }
+      ]
+    }
+
+Depend on your language, you will usually have a way to access to nested field,
+by following the nested path. In above example, let's say we want to access
+***skype** im, the path is:
+
+  contact -> im -> skype
+
+Using JavaScript driver, we will use `(field)` to access field and sub field.
+like this:
+
+    r.table('user').get(10001)('contact')('im')('skype')
+
+While as, in Ruby driver we used `[field]`
+
+    r.table('user').get(10001)['contact']['im']['skype']
+
+
+
+# Wrap Up
 
 We now have some basic understanding:
 
 1. ReQL always starts with `r`.
 2. ReQL is tie to your language depend on language driver.
 3. Default database
-3. Find an document by its primary 
+3. Find an document by its primary
 4. Access table data and filter data by some condition
 
 Let's move to next chapter to write some data into RethinkDB.
