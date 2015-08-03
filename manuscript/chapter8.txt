@@ -2,44 +2,110 @@
 
 RethinkDB supports date time date with millisecond precison times with timezon.
 It is integrated with the drivers. Meaning you will work with the time data in
-your language. You don't have to convert it to a special format. Such as in 
-JavaScript you can just insert a document like
+your language. You don't have to convert it to a special format. Such as in
+JavaScript you can just insert a timestamp like:
 
-  r.table('input_polls').insert({
-    timestamp: 
-  })
+    r.db("foodb")
+      .table("users")
+      .get("03f5479c-403e-4dfa-995f-5aea85c25982")
+      .update({
+        birthday: r.time(1987, 5,5, 'Z')
+      })
 
-or in Ruby
+The syntax of `time` function
 
-  r.table('events').insert(
-    {'id' => 0, 'timestamp' => Time.now}
-  )
+    r.time(year, month, day[, hour, minute, second], timezone) → time
+
+**timezone** can be `Z`, means **UTC** time. Or a string of with format
+`+-[hh]:[mm]` from UTC time. UTC time is 7 or 8 hours a head of PST time
+depend on season.
 
 When you reading back the time, again, it's converted into a native time
 object/data type of your language. This save you bunch of time from dealing with
 time formating, timezone.
 
+Internally RethinkDB store **epoch time** and an associated timezone with it.
+Epoch time is how many seconds since epoch, or UTC, or more clearly 00:00:00
+Coordinated Universal Time (UTC), Thursday, 1 January 1970, not counting
+leap second[^epoch]
+
+[^epoch]: https://en.wikipedia.org/wiki/Unix_time
+
+The associated timezone is a minute precision time offsets from UTC. That means
+PST time is `[-08]:[00]`.
+
 ## Timezone
 
 When you are setting a native time object to a RethinkDB document, if the object
 includes a timezone value, RethinkDB picks up it and use it, otherwise, it
-defaults to UTC time. 
+defaults to UTC time. Let's say I was born in Vietnam, 1987/05/23, 10:10PM.
+Vietnam timezone is **UTC+07:00**, so I will write:
 
-## RethinkDB time command
+    r.db("foodb")
+      .table("users")
+      .insert({
+        name: 'Vinh',
+        age: 30,
+        eatenfoods: ['Frybread', 'Yogurt'],
+        favfoods: ['Avocado', 'Jellyfish', 'Vanilla', 'Sacred lotus', 'Banana'],
+        birthday: r.time(1987, 5, 23, 10, 10, 0, '+08:00')
+      })
 
-What if we want to use expression and want to access time from inside ReQL.
-RethinkDB supports a couple of command
+I can then find out what is my birthday timezone, using `timezone` command.
 
-### now
-
-    r.now()
+    r.db("foodb")
+      .table("users")
+      .get('12063f5f-4289-4a4b-b668-0e4a90861575')('birthday').timezone()
     //=>
-    Tue Aug 19 2014 08:00:38 GMT+00:00
+    "+08:00"
 
-Notice the return time is in GMT+00, it's same as UTC.
+Now I moved to the USA, people asks when were you born. I'm speechless.
+Knowing that USA is in PST time, that is **-08:000** compare to UTC.
+I turn to RethinkDB:
 
-### epochTime
+    r.db("foodb")
+      .table("users")
+      .get('12063f5f-4289-4a4b-b668-0e4a90861575')('birthday')
+      .inTimezone('-08:00')
+    //=>
+    Fri May 22 1987 18:10:00 GMT-08:00
 
- 
-    
+`inTimezone` helps us to convert time into other timezone.
+
+## epoch
+
+The number of seconds since Unix epoch is very important and is supposed by
+almost language. In RethinkDB we can get that number by using `toEpochTime`:
+
+    r.db("foodb")
+      .table("users")
+      .get('12063f5f-4289-4a4b-b668-0e4a90861575')('birthday')
+      .toEpochTime()
+    //=>
+    548734200
+
+We can confirm it:
+    r.expr(548734200).div(3600 * 24 * 365)
+    //=>
+    17.400247336377472
+
+1987 is around 17 years since 1970. 
+
+Likewise, if we have **epoch time** we can convert it into a timeobject with
+`epochTime`:
+
+    r.epochTime(548734200)
+    //=>
+    Sat May 23 1987 02:10:00 GMT+00:00
+
 # WRAP UP
+
+At this point, you should be confident to work with date/time in RethinkDB.
+Here are some recap:
+
+    * `now`: using `now` to get current time
+    * `time`: passing **year, month, day[, hour, minute, second], timezone** to
+        create a time object
+    *  `inTimezon` to convert time to other timezone
+    * `timezone` do detects timezone when we don't know what is the timezon
+
