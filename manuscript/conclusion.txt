@@ -15,4 +15,7 @@ because  I don't have experience using it. To me, all the upcoming thing for
 RethinkDB is a good sign to invest into learning it. Be prepare and go ahead,
 by learning and using RethinkDB today.
 
-I hope that my little book helps you come into RethinkDB world.
+When I write this book, I learnt more about RethinkDB. If I wouldn't written it
+I probably won't dive deeply. It a chance for me to study carefully and improve
+myself. So I hope that my little book will help you clear thing, make you
+confident to use RethinkDB.

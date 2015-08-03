@@ -43,7 +43,7 @@ RethinkDB expert), I want to keep this book short and to the point. Expect aroun
 pages. A book that you can pick up and read on the train when riding to work, and after
 a week you can sitdown and start the first RethinkDB power project.
 
-# Why RethinkDB
+# Why learning RethinkDB
 
 RethinkDB is a mind blowing to me. I like the beauty, nature of ReQL which is
 built into your language. It's also very developer friendly with its own
@@ -53,14 +53,50 @@ execution order.
 
 Take this SQL query:
 
-    SELECT * FROM tables ORDER BY id DESC LIMIT 10,100
+    SELECT * FROM users WHERE name="Vinh" ORDER BY id DESC LIMIT 10,100
 
-Compare with RQL:
+It's a string and you may sometime forgot the order of them. Will we put
+**ORDER** before or after **LIMIT**? Where the `WHERE` clause should appear?
+We don't even know if an index will be used. Because SQL is a string, the order
+of execution is defined by the syntax. You have to remember that syntax.
 
-    r.table(tables).order_by(r.desc(id)).limit(10)
+Compare with ReQL(RethinkDB Query Language):
+
+    r.table('users').getAll('vinh', {index: 'name'}).order_by(r.desc(id)).limit(10)
 
 We can guess what it does from query, and the order of execution is clear too
-us.
+us. Because it looks like function call and chaning, from left too right.
+Learning ReQL is like lean the API of an ORM.
+
+We can also guess it will use an index call **name** when finding data. The way
+query is constructed, somehow feel like `jQuery` if you are a front-end
+dev who never works with database. Or if you are a functional programming guys
+you probably see the pattern.
+
+If above example didn't convince you then take this:
+
+    SELECT *
+    FROM foods as f
+    INNER JOIN compounds_foods as c ON c.food_id=f.id
+    WHERE f.id IN (10, 20)
+    ORDER By f.id DESC, c.id ASC
+
+It will takes you sometime to learn that. In ReQL, it's:
+
+
+    r.db("foodb")
+      .table("foods")
+      .filter(function (food) {
+        return r.expr([10, 20]).contains(food("id"))
+      })
+      .eqJoin("id", r.db("foodb").table("compounds_foods"), {index: "food_id"})
+
+Even you are not familar with syntax. You can tell what is going to happen. The
+query looks like a chain of API call. The order of execution is clear to me.
+
+RethinkDB really makes me rethinking about how we work with database. I don't
+have to write query in a language that I don't like. I'm no longer forced
+to use a syntax that I don't like because I have no choice.
 
 # Feedback
 
