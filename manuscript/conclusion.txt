@@ -1,0 +1,18 @@
+-# Conclusion
+
+I call RethinkDB is a database for programmer, not for database administrator
+because it takes very minimal effort to understand and pick up it. The way
+we write ReQL is very clear, other developer looks at it and know exactly
+what is going on to happen. In SQL world, we have to profile, explain the
+query to know if any index will be used. In RethinkDB, we tell it to use
+an index. And it's ReQL language is a wonderful way to think about database.
+
+Then coming changefeeds, which I didn't cover in this book because you can
+quickly leanr and use it after reading 5 minutes API document.
+
+It also offer automatic failover in cluster. Which I also didn't cover
+because  I don't have experience using it. To me, all the upcoming thing for
+RethinkDB is a good sign to invest into learning it. Be prepare and go ahead,
+by learning and using RethinkDB today.
+
+I hope that my little book helps you come into RethinkDB world.
