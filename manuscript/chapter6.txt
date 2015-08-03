@@ -164,20 +164,72 @@ And we get this:
 
 We get back an array, with element on both table match our condition. We can see that item on the left has its `compound_id` matchs `id` field of item on the right. However, the above result with left, right is not very useful. It's more useful if we can merge both side into a single document. To do that we use `zip`
 
-        r.db("foodb")
-          .table("compound_synonyms")
-          .eqJoin("compound_id", r.db("foodb").table("compounds"))
-          .zip()
+    r.db("foodb")
+      .table("compound_synonyms")
+      .eqJoin("compound_id", r.db("foodb").table("compounds"))
+      .zip()
+    //=>
+    {
+    "annotation_quality":  "low" ,
+    "assigned_to_id": null ,
+    "bigg_id": null ,
+    "boiling_point":  "Bp14 72°" ,
+    "boiling_point_reference":  "DFC" ,
+    "cas_number":  "15707-34-3" ,
+    "charge": null ,
+    "charge_reference": null ,
+    "chebi_id": null ,
+    "comments": null ,
+    "compound_id": 923 ,
+    //...lot of other fields
+    },
+    //other document here as well
 
-As you see, We don't need to specify an index on above query. When we don't specify index, RethinkDB use primary key of table. In this case, the primary key is `id` field of `compounds`. Now loking at the query, it seems a bit awkard because `compound_synonyms` com first? Can we make it more nature, follow above syntax: for each document on `compounds`, fetch all document on `compound_synonyms` where document's `compound_id` field match id of document on `compounds` table. So we see that we have to have an index on `compound_synonyms` table for `compound_id` field. Let's create an index for it:
+What `zip` does is it merge right document into left document, and return that document instead a document
+with two **left** and **right** field.
+
+`zip` is not really flexible because it simply merges all the field. We can use some **transform** function
+to transform the document into a more read-able document. Such as we only care about `name` and its `synonym`
+
+    r.db("foodb")
+      .table("compound_synonyms")
+      .eqJoin(
+        "compound_id", 
+        r.db("foodb").table("compounds")
+      )
+      .map(function (doc) {
+        return {synonym: doc("left")("synonym"), name: doc("right")("name")}
+      })
+    //=>
+    {
+      "name":  "Butein" ,
+      "synonym":  "Acrylophenone, 2',4'-dihydroxy-3-(3,4-dihydroxyphenyl)-"
+    },
+    {
+      "name":  "3,4-Dimethoxybenzoic acid" ,
+      "synonym":  "Benzoic acid, 3,4-dimethoxy-"
+    }
+
+Much cleaner. The important thing is that the join data is just another stream or array 
+and we can do transformation on it.
+
+As you may see, We don't need to specify an index on above query. When we don't
+specify index, RethinkDB use primary key of table. In this case, the primary key
+is `id` field of `compounds`. Now loking at the query, it seems a bit awkard 
+because `compound_synonyms` com first? Can we make it more nature, follow above
+syntax: for each document on `compounds`, fetch all document on
+`compound_synonyms` where document's `compound_id` field match id of document
+on `compounds` table. So we see that we have to have an index on 
+`compound_synonyms` table for `compound_id` field. Let's create an index for it:
 
         r.db("foodb").table("compounds")
           .indexCreate("compound_id")
 
 Note that we can always query index status by using `indexStatus`
 
-        r.db("foodb") .table("compound_synonyms") .indexStatus()
-Until we get status ready:
+        r.db("foodb").table("compound_synonyms").indexStatus()
+
+Until we get status ready(this table is really big btw):
 
         [
         {
@@ -192,11 +244,22 @@ Until we get status ready:
 
 Let's try it out:
 
-        r.db("foodb")
-          .table("compounds")
-          .eqJoin("id", r.db("foodb").table("compound_synonyms"), {index: 'compound_id'})
-          .zip()
+    r.db("foodb")
+      .table("compounds")
+      .eqJoin("id", r.db("foodb").table("compound_synonyms"), {index: 'compound_id'})
+      .map(function (doc) {
+        return {synonym: doc("right")("synonym"), name: doc("left")("name")}
+      })
+    //=>
+    {
+    "name":  "Butein" ,
+    "synonym":  "3-(3,4-Dihydroxy-phenyl)-1-(2,4-dihydroxy-phenyl)-propenone"
+    } {
+    "name":  "Butein" ,
+    "synonym":  "2',3,4,4'-Tetrahydroxychalcone"
+    }
 
+With proper index, a query may looks cleaner and more natural.
 
 As you can see, we don't have `left join`, `right join` equivalents in RethinkDB. We achieve it by swapping left and right on eqJoin with approriate index. So far we only join on a single field. How do we join in multile field condtion? Such as in MySQL we can do
 
@@ -211,6 +274,317 @@ How about complex join where we want either or ? Like in MySQL
     LEFT JOIN tabl2 as t2 ON t1.field1= t2.field1  OR 
 
 
+To join, we usually need index. But can we join data without using any index
+via two arbitray sequence? Even if it's not very efficient but usefl to have.
+The answer is yes, we can do inner join.
+
+## innerJoin
+
+innerJoin returns an inter section of two sequences where as each row of first
+sequence will be put together with each row of second sequence then evaluate
+a predicate function to find pair of row which predicate function returns true.
+The syntax of `innerJoin` is:
+
+    sequence.innerJoin(otherSequence, predicate) → stream
+    array.innerJoin(otherSequence, predicate) → array
+
+Predicate function accepts two parameters of each row of first and second
+sequence.
+
+Let's say the first sequence has `m` rows, and second sequence has `n` rows,
+the innerJoin will loop ***M x N*** times and pass the pair of rows into
+predicate function. Let's say we have two sequences:
+
+    [2,5,8,12,15,20,21,24,25]
+    [2,3,4]
+
+And we want to find all pair of data where the first element module second
+element equal zero.
+
+We can write this:
+
+    r.expr([2,5,8,12,15,20,21,24,25])
+      .innerJoin(
+        r.expr([2,3,4]),
+        function (left, right) {
+          return left.mod(right).eq(0)
+        }
+      )
+    //=>
+    [
+    {
+    "left": 2 ,
+    "right": 2
+    } ,
+    {
+    "left": 8 ,
+    "right": 2
+    } ,
+    {
+    "left": 8 ,
+    "right": 4
+    } ,
+    {
+    "left": 12 ,
+    "right": 2
+    } ,
+    {
+    "left": 12 ,
+    "right": 3
+    } ,
+    {
+    "left": 12 ,
+    "right": 4
+    } ,
+    {
+    "left": 15 ,
+    "right": 3
+    } ,
+    {
+    "left": 20 ,
+    "right": 2
+    } ,
+    {
+    "left": 20 ,
+    "right": 4
+    } ,
+    {
+    "left": 21 ,
+    "right": 3
+    } ,
+    {
+    "left": 24 ,
+    "right": 2
+    } ,
+    {
+    "left": 24 ,
+    "right": 3
+    } ,
+    {
+    "left": 24 ,
+    "right": 4
+    }
+    ]
+
+RethinkDB will loop 27 times(9x3) and evaluate function to find rows. Because
+of the evaluation, this function is slow.
+
+Other real example with real data. Let's find all `foods` and its `compound_foods`.
+
+    r.db("foodb")
+      .table("foods")
+      .innerJoin(
+        r.db("foodb")
+          .table("compounds_foods")
+        , function(food, compound_food) {
+          return food("id").eq(compound_food("food_id"))
+        })
+    //=>
+    {
+    "left": {
+    "created_at": Wed Feb 09 2011 00:37:15 GMT-08:00 ,
+    "creator_id": null ,
+    "description": null ,
+    "food_group":  "Vegetables" ,
+    "food_subgroup":  "Cabbages" ,
+    "food_type":  "Type 1" ,
+    "id": 2 ,
+    "itis_id": null ,
+    "legacy_id": 2 ,
+    "name":  "Savoy cabbage" ,
+    "name_scientific":  "Brassica oleracea var. sabauda" ,
+    "picture_content_type":  "image/jpeg" ,
+    "picture_file_name":  "2.jpg" ,
+    "picture_file_size": 155178 ,
+    "picture_updated_at": Fri Apr 20 2012 09:39:54 GMT-07:00 ,
+    "updated_at": Fri Apr 20 2012 16:39:55 GMT-07:00 ,
+    "updater_id": null ,
+    "wikipedia_id": null
+    } ,
+    "right": {
+    "citation":  "DTU" ,
+    "citation_type":  "DATABASE" ,
+    "compound_id": 13831 ,
+    "created_at": Tue Dec 13 2011 18:54:33 GMT-08:00 ,
+    "creator_id": null ,
+    "food_id": 2 ,
+    "id": 15619 ,
+    "orig_citation": null ,
+    "orig_compound_id":  "0014" ,
+    "orig_compound_name":  "Vitamin A, total" ,
+    "orig_content":  "0.5E2" ,
+    "orig_food_common_name":  "Cabbage, savoy, raw" ,
+    "orig_food_id":  "0674" ,
+    "orig_food_part": null ,
+    "orig_food_scientific_name": null ,
+    "orig_max": null ,
+    "orig_method": null ,
+    "orig_min": null ,
+    "orig_unit":  "RE" ,
+    "orig_unit_expression": null ,
+    "updated_at": Tue Dec 13 2011 18:54:33 GMT-08:00 ,
+    "updater_id": null
+    }
+    } {
+    "left": {
+    "created_at": Wed Feb 09 2011 00:37:15 GMT-08:00 ,
+    "creator_id": null ,
+    "description": null ,
+    "food_group":  "Vegetables" ,
+    "food_subgroup":  "Cabbages" ,
+    "food_type":  "Type 1" ,
+    "id": 2 ,
+    "itis_id": null ,
+    "legacy_id": 2 ,
+    "name":  "Savoy cabbage" ,
+    "name_scientific":  "Brassica oleracea var. sabauda" ,
+    "picture_content_type":  "image/jpeg" ,
+    "picture_file_name":  "2.jpg" ,
+    "picture_file_size": 155178 ,
+    "picture_updated_at": Fri Apr 20 2012 09:39:54 GMT-07:00 ,
+    "updated_at": Fri Apr 20 2012 16:39:55 GMT-07:00 ,
+    "updater_id": null ,
+    "wikipedia_id": null
+    } ,
+    "right": {
+    "citation":  "DTU" ,
+    "citation_type":  "DATABASE" ,
+    "compound_id": 1014 ,
+    "created_at": Tue Dec 13 2011 18:54:33 GMT-08:00 ,
+    "creator_id": null ,
+    "food_id": 2 ,
+    "id": 15630 ,
+    "orig_citation": null ,
+    "orig_compound_id":  "0038" ,
+    "orig_compound_name":  "Niacin, total" ,
+    "orig_content":  "0.522E0" ,
+    "orig_food_common_name":  "Cabbage, savoy, raw" ,
+    "orig_food_id":  "0674" ,
+    "orig_food_part": null ,
+    "orig_food_scientific_name": null ,
+    "orig_max": null ,
+    "orig_method": null ,
+    "orig_min": null ,
+    "orig_unit":  "NE" ,
+    "orig_unit_expression": null ,
+    "updated_at": Tue Dec 13 2011 18:54:33 GMT-08:00 ,
+    "updater_id": null
+    }
+    }
+
+It will runs forever, because we have 888 documents in `food` table, and `10959` document
+in `compound_foods` table. It has to run the predicate function
+888 * 10959 = 9,731,592 time. On my laptop, it runs in:
+
+C> Executed in 2min 25.86s. 40 rows returned, 40 displayed, more available
+
+Basically `innerJoin` is equivalent of table scan in MySQL. We should avoid
+using it on any significant data.
+
+## outerJoin
+
+`innerJoin` is intersection of two sequence where a pair of documents sastify
+a condition. How about an `union`? Let's meet `outerJoin`
+
+`outerJoin` will return all documents of left sequence. With each of document,
+it will try to match with every documens of right hand, if the pair sastifies
+a predicate function. The pair is return. If not, the only document of left
+sequence is returned. At very least, the finaly sequence will includes all
+document of left sequence. Using same data set, but for `outerJoin`:
+
+    r.expr([2,5,8,12,15,20,21,24,25])
+      .outerJoin(
+        r.expr([2,3,4]),
+        function (left, right) {
+          return left.mod(right).eq(0)
+        }
+      )
+    //=>
+    [
+    {
+    "left": 2 ,
+    "right": 2
+    } ,
+    {
+    "left": 5
+    } ,
+    {
+    "left": 8 ,
+    "right": 2
+    } ,
+    {
+    "left": 8 ,
+    "right": 4
+    } ,
+    {
+    "left": 12 ,
+    "right": 2
+    } ,
+    {
+    "left": 12 ,
+    "right": 3
+    } ,
+    {
+    "left": 12 ,
+    "right": 4
+    } ,
+    {
+    "left": 15 ,
+    "right": 3
+    } ,
+    {
+    "left": 20 ,
+    "right": 2
+    } ,
+    {
+    "left": 20 ,
+    "right": 4
+    } ,
+    {
+    "left": 21 ,
+    "right": 3
+    } ,
+    {
+    "left": 24 ,
+    "right": 2
+    } ,
+    {
+    "left": 24 ,
+    "right": 3
+    } ,
+    {
+    "left": 24 ,
+    "right": 4
+    } ,
+    {
+    "left": 25
+    }
+    ]
+
+**5** and **25** didn't divide by any of number on right hand. Therfore,
+the return document contains only left hand document.
+
+
+## Name conflict
+
+In SQL worlds, we can alias column to avoid conflicting when joining. What
+RethinkDB gives us, when we used `zip` command to merge the document? We
+will lost the column on left sequence. We have several ways to address this.
+
+First, if we want to use `zip`:
+
+    *  Removing conflict fields: By simply remove the field we don't want,
+       we can get what we want.
+
+    *  What if we want to keep both fields? We can rename it, using `map`.
+
+Second, we don't have to use `zip` and we can merge document outself with
+`map`, and only keep what we want.
+
+So we are not able to address this issues. Those are just work-around. Luckily
+RethinkDB team aware of it and working it[^collapse].
+
+[^collapse]: https://github.com/rethinkdb/rethinkdb/issues/1855
 
 ## Using primary key
 
@@ -218,8 +592,8 @@ How about complex join where we want either or ? Like in MySQL
 
 ## Using sub queries
 
-# Wrap up 
-    
+# Wrap up
+
 At the end of this chapter, we should know how to join based on these concept:
 
   * Primary key: the ID field of document
