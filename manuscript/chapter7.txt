@@ -502,16 +502,12 @@ We can use `row` function too:
     //=>
     1
 
-## Map Reduce
+We also have some other aggregation functions such as `sum`, `min`, `max` but
+they are very simple and you can read from API page in aggregation section[^Aggregation].
 
-Since RethinkDB call itself `The open-source database for the realtime web`, it
-has support for map-reduce. Map reduce is a way to aggregation a large data set,
-run parallel on many servers, since RethinkDB is distributed.`, it has support
-for map-reduce. Map reduce is a way to aggregation a large data set, run
-parallel on many servers, since RethinkDB is distributed.
-
-Sometimes 
+[^Aggregation]: http://www.rethinkdb.com/api/javascript/max/#
 
 # Wrap up
 
-You know how to group data, set a default value
+When finishing this chapter, you should know how to aggregation. How to group data, counting,
+and call function on grouped data
