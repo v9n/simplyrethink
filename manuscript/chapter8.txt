@@ -39,7 +39,7 @@ PST time is `[-08]:[00]`.
 When you are setting a native time object to a RethinkDB document, if the object
 includes a timezone value, RethinkDB picks up it and use it, otherwise, it
 defaults to UTC time. Let's say I was born in Vietnam, 1987/05/23, 10:10PM.
-Vietnam timezone is **UTC+07:00**, so I will write:
+Vietnam timezone is **UTC+08:00**, so I will write:
 
     r.db("foodb")
       .table("users")
@@ -97,6 +97,13 @@ Likewise, if we have **epoch time** we can convert it into a timeobject with
     r.epochTime(548734200)
     //=>
     Sat May 23 1987 02:10:00 GMT+00:00
+
+The original time that I have inserted is: **1987/05/23, 10:10PM**. We then
+get it out, converting to epoch, then convert to time object again and we got
+
+  Sat May 23 1987 02:10:00 GMT+00:00
+
+That's exactly **Sat May 23 1987 10:10:00 PM in GMT+8.
 
 # WRAP UP
 
