@@ -472,6 +472,36 @@ Calling `distinct` on table, passing that index:
 So when passing index, the value of index is returned and therefore that value is
 used to detect duplication.
 
+## count
+
+You already knew `count`. It also has an extra useful way to count is passing a
+value or a function. When passing a value, it counts the document whose value matches
+the value. Such as counting users who are 18 year olds:
+
+    r.db("foodb")
+      .table("users")("age")
+      .count(18)
+
+When passing a function, it counts the document whose function evaulation returns true
+on document, very similar to filter function. But filter returns document, and `count`
+counts them. Such as counting user who are 19 years old and name stars with K:
+
+    r.db("foodb")
+      .table("users")
+      .count(function(user) {
+        return user("age").eq(23).and(user("name").match("^L"))
+      })
+    //=>
+    1
+
+We can use `row` function too:
+
+    r.db("foodb")
+      .table("users")
+      .count(r.row("rowage").eq(23).and(r.row("name").match("^L")))
+    //=>
+    1
+
 ## Map Reduce
 
 Since RethinkDB call itself `The open-source database for the realtime web`, it
