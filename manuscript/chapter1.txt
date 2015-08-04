@@ -2,36 +2,36 @@
 
 # Introduction
 
-Welcome the readers. I appreciate your purchase. This will help me continue
+Welcome to my readers. I appreciate your purchase. This will help me continue
 improving the book content.
 
-Before we go into the technical detail, I have something to say.
+Before we go into the technical details, I have something to say.
 
-Firsly, I'm not a RethinkDB expert at all. I'm just the average guy who love
-programming and new technolgy. To me, RethinkDB is very joyful to use.
-However, due to its age, it doesn't have many book, document comparing to other
-database system. RethinkDB Doc/API document is very good. However, at the entry
-level, it can be hard to understand how to use an API or where to start, I cannot
-just jump direcly into API document and use it.
+Firsly, I'm not a RethinkDB expert at all. I'm just the average guy who loves
+programming and new technologies. To me, RethinkDB is very joyful to use.
+However, due to its age, there are not many books and documents about it comparing to other
+database systems. RethinkDB Doc/API document is very good. However, at the entry
+level, it can be hard to understand how to use an API or where to start, it's hard for people to
+jump direcly into API document and use it.
 
-This books try to organize the concept of RethinkDB, hopefully make you able to 
-read and understand RethinkDB API directly. At the end of the book, you can quite 
-easily extend your knowledge by browsering more RethinkDB document.
+The purpose of this book is to organize the concepts of RethinkDB in order to help you to
+read and understand RethinkDB API directly. Upon finishing the book, hopefully you will be able to 
+easily extend your knowledge with many other RethinkDB documents that are out there.
 
-If I do my job well, this book is what I wish I had read when I started with 
-RethinkDB instead of spending hours on API docs then trying and fail in console.
+If I do my job well, this book is what I wished I had on hands when I started with 
+RethinkDB, instead of spending hours on API docs and then trying and fail in console.
 
 Secondly, I'm a fan of Mixu's[^mixu] writing style[^mixu_write]. I won't cover
 deeply stuff like installing RethinkDB, and so on. Those topics are covered 
 very good on RethinkDB document itself. I also won't cover extensively
-parameter, option of command. Indeed, you can easily look up for a particular 
+parameter, option of command either since you can easily look up for a particular 
 API and find all its argument, option. I will just make sure you understand what
-is the command, what it does do, and how to apply it in a real scenario.
+is the command, what does it do, and how to apply it in a real scenario.
 
 [^mixu]:http://blog.mixu.net/
 [^mixu_write]:http://blog.mixu.net/2012/07/26/writing-about-technical-topics-like-its-2012/
 
-Thirdly, I'm not fluent in English. If you found any mistake, you can report in
+Thirdly, I'm not fluent in English. If you found any mistake, you can report the
 issue on [repository](https://github.com/kureikain/simplyrethink) or email me.
 
 Forthly, RethinkDB is changing so fast that something in this book may not reflect
