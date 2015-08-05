@@ -1,17 +1,17 @@
 -# Data Modeling With JOIN
 
-Join is a joy to work with, im my opinion. It makes data model easier to design. Without joy, we have to either embed or joinging
-data with our code instead of database take care of that for us. With embedding
+Join is a joy to work with in my opinion. It makes data model easier to design. Without joy, we have to either embed or joinging
+data with our code instead of database taking care of that for us. With embedding
 document, we will hit a limit point about document size because the document 
-will be usually load into the memory. Embedding document has its own advantages
+will usually loaded into the memory. Embedding document has its own advantages
 such as: query data is simple, but this section will focus on data modeling with
 *JOIN*.
 
-In RethinkDB, **JOIN** are automatically distributed, meaning if you run on a cluster, the data
+In RethinkDB, **JOIN** is automatically distributed, meaning if you run on a cluster, the data
 will be combined from many clusters and presents final result to you.
 
-In SQL, ideally you can join whatever you want, by make sure the records on 2
-tables match an condition. Example:
+In SQL, ideally you can join whatever you want by making sure that the records on 2
+tables match a condition. An example:
 
 
     SELECT post.*
@@ -24,16 +24,16 @@ tables match an condition. Example:
       FROM post
       JOIN comment ON comment.author_id=post.author_id
 
-You don't event need to care about the index. The database is usually smart enough to figure out what index to use, or do an full scall table for you.
+You don't even need to care about the index. The database is usually smart enough to figure out what index to use, or will scan the full table for you.
 
-Join is a bit different in RethinkDB. Similarly to how we have primary index and
-second index. In RethinkDB, we usually need index to join
+Join is a bit different in RethinkDB. Similar to how we have primary index and
+second index, we usually need index to join in Rethink DB.
 
 * primary keys
 * secondary indexes
 * sub queries
 
-Let's explorer why we need joins. Starting with one-to-many relation ship. Let's find alll compound and its synonyms. `eq_join` is used to join data:
+Let's explore why we need joins. Starting with one-to-many relationship. Let's find all compound and its synonyms. `eq_join` is used to join data:
 
     sequence.eqJoin(leftField, rightTable[, {index:'id'}]) → sequence
     sequence.eqJoin(function, rightTable[, {index:'id'}]) → sequence
@@ -162,7 +162,7 @@ And we get this:
           }
           }
 
-We get back an array, with element on both table match our condition. We can see that item on the left has its `compound_id` matchs `id` field of item on the right. However, the above result with left, right is not very useful. It's more useful if we can merge both side into a single document. To do that we use `zip`
+We get back an array, with element on both table match our condition. We can see that the item on the left has its `compound_id` matchs `id` field of the one on the right. However, the above result with left, right is not very useful. It will be more useful if we can merge both side into a single document. To do that, we use `zip`
 
     r.db("foodb")
       .table("compound_synonyms")
@@ -185,11 +185,11 @@ We get back an array, with element on both table match our condition. We can see
     },
     //other document here as well
 
-What `zip` does is it merge right document into left document, and return that document instead a document
+What `zip` does is that it merges right document into left document and returns that document, instead of a document
 with two **left** and **right** field.
 
 `zip` is not really flexible because it simply merges all the field. We can use some **transform** function
-to transform the document into a more read-able document. Such as we only care about `name` and its `synonym`
+to transform the document into a more read-able document since we only care about `name` and its `synonym`:
 
     r.db("foodb")
       .table("compound_synonyms")
@@ -210,16 +210,16 @@ to transform the document into a more read-able document. Such as we only care a
       "synonym":  "Benzoic acid, 3,4-dimethoxy-"
     }
 
-Much cleaner. The important thing is that the join data is just another stream or array 
+Much cleaner now! The important thing is that the join data is just another stream or array 
 and we can do transformation on it.
 
-As you may see, We don't need to specify an index on above query. When we don't
+As you may see, we don't need to specify an index on above query. When we don't
 specify index, RethinkDB use primary key of table. In this case, the primary key
 is `id` field of `compounds`. Now loking at the query, it seems a bit awkard 
-because `compound_synonyms` com first? Can we make it more nature, follow above
+because `compound_synonyms` comes first. We can make it more natural, just follow above
 syntax: for each document on `compounds`, fetch all document on
 `compound_synonyms` where document's `compound_id` field match id of document
-on `compounds` table. So we see that we have to have an index on 
+on `compounds` table. So now we see that we have to have an index on 
 `compound_synonyms` table for `compound_id` field. Let's create an index for it:
 
         r.db("foodb").table("compounds")
@@ -261,7 +261,7 @@ Let's try it out:
 
 With proper index, a query may looks cleaner and more natural.
 
-As you can see, we don't have `left join`, `right join` equivalents in RethinkDB. We achieve it by swapping left and right on eqJoin with approriate index. So far we only join on a single field. How do we join in multile field condtion? Such as in MySQL we can do
+As you can see, we don't have `left join`, `right join` equivalents in RethinkDB. We achieve it by swapping left and right on eqJoin with approriate index. So far, we only join on a single field. How do we join in multile field condtion? Such as in MySQL we can do
 
     SELECT * 
       FROM table1 as t1
@@ -275,7 +275,7 @@ How about complex join where we want either or ? Like in MySQL
 
 
 To join, we usually need index. But can we join data without using any index
-via two arbitray sequence? Even if it's not very efficient but usefl to have.
+via two arbitray sequence? Even if it's not very efficient but useful to have.
 The answer is yes, we can do inner join.
 
 ## innerJoin
@@ -298,7 +298,7 @@ predicate function. Let's say we have two sequences:
     [2,5,8,12,15,20,21,24,25]
     [2,3,4]
 
-And we want to find all pair of data where the first element module second
+And we want to find all pair of data where the first element module and second
 element equal zero.
 
 We can write this:
@@ -369,7 +369,7 @@ We can write this:
 RethinkDB will loop 27 times(9x3) and evaluate function to find rows. Because
 of the evaluation, this function is slow.
 
-Other real example with real data. Let's find all `foods` and its `compound_foods`.
+Here is another real example with real data. Let's find all `foods` and its `compound_foods`.
 
     r.db("foodb")
       .table("foods")
@@ -472,7 +472,7 @@ Other real example with real data. Let's find all `foods` and its `compound_food
     }
     }
 
-It will runs forever, because we have 888 documents in `food` table, and `10959` document
+It will run forever, because we have 888 documents in `food` table, and `10959` document
 in `compound_foods` table. It has to run the predicate function
 888 * 10959 = 9,731,592 time. On my laptop, it runs in:
 
@@ -483,13 +483,13 @@ using it on any significant data.
 
 ## outerJoin
 
-`innerJoin` is intersection of two sequence where a pair of documents sastify
+`innerJoin` is an intersection of two sequences where a pair of documents sastify
 a condition. How about an `union`? Let's meet `outerJoin`
 
-`outerJoin` will return all documents of left sequence. With each of document,
-it will try to match with every documens of right hand, if the pair sastifies
-a predicate function. The pair is return. If not, the only document of left
-sequence is returned. At very least, the finaly sequence will includes all
+`outerJoin` will return all documents of left sequences. With each document,
+it will try to match with every documents of right hand. If the pair sastify
+a predicate function, the pair is returned. If not, the only document of left
+sequence is returned. At very least, the finaly sequence will include all
 document of left sequence. Using same data set, but for `outerJoin`:
 
     r.expr([2,5,8,12,15,20,21,24,25])
@@ -561,28 +561,28 @@ document of left sequence. Using same data set, but for `outerJoin`:
     }
     ]
 
-**5** and **25** didn't divide by any of number on right hand. Therfore,
+**5** and **25** were not divided by any of the number on right hand. Therfore,
 the return document contains only left hand document.
 
 
 ## Name conflict
 
-In SQL worlds, we can alias column to avoid conflicting when joining. What
+In SQL worlds, we can alias column to avoid conflict when joining. What
 RethinkDB gives us, when we used `zip` command to merge the document? We
-will lost the column on left sequence. We have several ways to address this.
+will loose the column on left sequence. We have several ways to address this.
 
-First, if we want to use `zip`:
+Firstly, if we want to use `zip`:
 
     *  Removing conflict fields: By simply remove the field we don't want,
        we can get what we want.
 
     *  What if we want to keep both fields? We can rename it, using `map`.
 
-Second, we don't have to use `zip` and we can merge document outself with
+Secondly, we don't have to use `zip`, and we can merge document itself with
 `map`, and only keep what we want.
 
-So we are not able to address this issues. Those are just work-around. Luckily
-RethinkDB team aware of it and working it[^collapse].
+However, we are still not able to address this issues. Those are just work-around. Luckily,
+RethinkDB team are aware of that and is working on it now[^collapse].
 
 [^collapse]: https://github.com/rethinkdb/rethinkdb/issues/1855
 
@@ -594,7 +594,7 @@ RethinkDB team aware of it and working it[^collapse].
 
 # Wrap up
 
-At the end of this chapter, we should know how to join based on these concept:
+At the end of this chapter, we should know how to join based on these concepts:
 
   * Primary key: the ID field of document
   * Secondary index: join using secondary index
