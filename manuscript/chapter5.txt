@@ -2,9 +2,9 @@
 
 ## Index
 
-Quickly you will realize that `filter` is slow. If you have a table
-with more than 100,000 records, `filter` stops working. All of that is becuase
-we haven't used index yet. Without index, we cannot even order data
+Soon enough you will realize that `filter` is slow. If you have a table
+with more than 100,000 records, `filter` stops working. All of that is because
+we haven't used index yet. Without an index, we cannot even order data.
 
     r.db("foodb").table("compounds_foods").orderBy(r.desc("id"))
     #->
@@ -12,17 +12,17 @@ we haven't used index yet. Without index, we cannot even order data
     r.db("foodb").table("compounds_foods").orderBy(r.desc("id"))
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Without an index, RethinkDB hold all data in memory and sort or filter in
-memory. A limit has to lie somewhere else. That 100,000 the magic number of the limit
+Without an index, RethinkDB holds all data in memory and sorts or filters in
+memory. A limit has to lie somewhere else. 100,000 is the magic number of the limit
 RethinkDB set to read data without index.
 
 
-To properpely fetching data, we have to create an Index. And really, in real application, we almost always endup creating index on MySQL  to fetch data efficiently. 
+In order to properly fetching data, we have to create an Index. And in real application, we almost always ending up creating index on MySQL  to fetch data efficiently. 
 
-We have two kind of indexes in RethinkDB
+We have two kinds of indexes in RethinkDB
 
 * primary index: our ID key is this. This index is created automatically by
-RethinkDB. Coming back above query, if we change it to use primary `index`
+RethinkDB. Coming back to the above query, if we change it to use primary `index`
 
     r.db("foodb").table("compounds_foods").orderBy({index: r.desc("id")})
 
@@ -34,9 +34,9 @@ Seconday index is the index we created ourselve on one or many fields. Secondary
 index can be simple, just index the value of fields directly, or doing some
 pre-calculate on data before indexing.
 
-While index helps to decrease the reading time, it decreases writing time, also cost
-storage space. It reduces write performance becuase whenever we inserted a
-document, the index has to be calculate and writing into the database.
+While index helps to decrease the reading time, it decreases writing time, and also cost
+storage space. It reduces write performance because whenever we insert a
+document, the index has to be calculated and written into the database.
 
 RethinkDB supports those kinds of index:
 
@@ -49,14 +49,14 @@ RethinkDB supports those kinds of index:
 *Indexes 
 :based on arbitrary expressions.
 
-So now you know what index is. But a sad news is that filter cannot use those secondary index. FOr that purpose we have to use other functions: `getAll` and `between`. 
+So now you know what index is. But the sad news is that filter cannot use those secondary index. For that purpose, we have to use other functions: `getAll` and `between`. 
 ### Creating index
 
 Let's start with simple index first.
 
 ## Simple index
 
-As its name, simple index is simply a single field. Let's say we want to find all `compounds_foods` whose name contains `banana`. We cannot use `filter` here because this table has more than 100,000 item. `filter` also doesn't use index. Let's meet `getAll`. `getAll` grabs all document where a given key match the index which we specified.
+As its name, simple index is simply a single field. Let's say, we want to find all `compounds_foods` whose name contains `banana`. We cannot use `filter` here because this table has more than 100,000 item. `filter` also doesn't use index. Let's meet `getAll`. `getAll` grabs all documents where a given key match the index which we specified.
 
 First, we create index follow this syntax
 
@@ -68,7 +68,7 @@ Apply it on our case, for a single column:
       .table("compounds_foods")
       .indexCreate("match_orig_food_common_name", r.row.match)
 
-If we don't pass an index function, RethinkDB try to create index for the column of same name as requested index name.
+If we don't pass an index function, RethinkDB will try to create index for the column that has the same name as requested index name.
 
 Time to use it:
 
@@ -77,7 +77,7 @@ Time to use it:
       .getAll('Bananas', {index:'orig_food_common_name'})
     #=> Executed in 10ms. No results returned.
 
-No result. Strange, we cannot believe we have no document where its
+No result. It's strange that we have no document where its
 orig_food_common_name doesn't contain banana. Why so? Well, the simple
 index does an exact match, or in other world, it's an equal comparison.
 Let's try an exact match:
@@ -126,13 +126,13 @@ We can chain to `count` to count how many document we have
       .count()
     #=> 256
 
-Not only use to find document, index can be used for sorting as well. To sort,
+Not only used to find document, index can also be used for sorting as well. To sort,
 we call `orderBy` and passing index name.
 
     r.db("foodb").table("compounds_foods")
       .orderBy({index: "orig_food_common_name"})
 
-When passing index, we can wrap it in other expression to change ordering:
+When passing index, we can wrap it in other expression to change the ordering:
 
     r.db("foodb").table("compounds_foods")
       .orderBy({index: r.desc("orig_food_common_name")})
@@ -155,39 +155,39 @@ range. In RethinkDB, `between` syntax is:
     table.between(lowerKey, upperKey[, {index: 'id', leftBound: 'closed',
 rightBound: 'open'}]) → selection
 
-As you see, we can only use between on table type. So, note that.
-Use this we can find the document between "Apple" and "Banana" range.
+As you can see, we can only use between on table type. So, take note that
+using this, we can find the document between "Apple" and "Banana" range.
 
     r.db("foodb").table("compounds_foods")
       .between("Apple", "Banana", {index: 'orig_food_common_name'})
       .orderBy({index: r.desc("orig_food_common_name")})
       .withFields("orig_food_common_name")
 
-Without specifying an index, `between` operates on primary index. Many RethinkDB 
-function has same behaviour
+Without specifying an index, `between` operates on primary index, many RethinkDB 
+function has the same behaviour
 
     r.db("foodb").table("compounds_foods")
       .between(1, 200)
       .count()
     #=> 198
 
-This work when we want to find data based on a single field. How about find
-value base on multiple field. Let's meet compound index
+This works when we want to find data based on a single field. How about find
+value base on multiple field? Let's meet compound index
 
 ## Compound index
 
 Compound index is created by using value of multiple fields. It's very similar to
 single index in syntax, just different on how many fields we pass to index
-create. Let's look at `compounds_foods` table, it contains relation ship of
+create. Let's take a look at `compounds_foods` table, it contains relationship of
 `foods` and `compounds`. We will learn more about JOIN later. For now, let's say
 we want to find all `compounds_foods` document where its `compound_id` is 3524
-and `food_id` is 287. We are finding on two columnds, so we need an index
+and `food_id` is 287. We are finding on two columns, so we need an index
 contains those 2 columns:
 
     r.db("foodb").table("compounds_foods")
       .indexCreate("compound_food_id", [r.row(row"compound_id"), r.row("food_id")]) 
 
-The only different with simple index is we have to pass an array of field to
+The only different with simple index is that we have to pass an array of field to
 create index. Let's try it:
 
     r.db("foodb").table("compounds_foods")
@@ -220,13 +220,13 @@ We can query index status:
     }
     ]
 
-The field ready is false. We can only wait until it finish. This table is very
+The field ready is false. We can only wait until it finishes. This table is very
 big. We can verify:
 
     r.db("foodb").table("compounds_foods").count()
     #=> 737089
 
-Let's just wait for bit, make a cup of coffee and come back :). When it's ready
+Let's just wait for a bit, make a cup of coffee and come back :). When it's ready,
 you should see:
 
     r.db("foodb").table("compounds_foods")
@@ -273,25 +273,25 @@ Now, try it:
     "updater_id": null
     }
 
-With above indexing approach, you found that you have to crate a dedicated index
+With above indexing approach, you found that you have to create a dedicated index
 for whatever you want to find. An index contains a single value for a document:
 either a single value of field, or an order set of value in case of compound
-index. But life is not that simple. Let's looking at `users` table. It contains
-a list of user and their three of most faviroute food, store in field
-`favfoods`. That's a single column. But it hold many elements. Because of that,
-we cannot simple answer the question who liked `Mushroom`:
+index. However, life is not that simple. Let's looking at `users` table. It contains
+a list of users and their three most favourite foods, stored in field
+`favfoods`. That's a single column but it holds many elements. Because of that,
+we cannot simply answer the question of who liked `Mushroom`:
 
 let's create an index
 
     r.db("foodb").table("users").indexCreate('favfoods')
 
-Try to find all user who liked mushrooms.
+Try to find all users who liked mushrooms.
 
     r.db("foodb").table("users")
       .getAll('Mushrooms', {index: 'favfoods'})
     #=> Executed in 6ms. No results returned.
 
-Why so? Because we index the whole field as a single value, we have to match the
+Why so? Because since we index the whole field as a single value, we have to match the
 whole value of field:
 
     r.db("foodb").table("users")
@@ -313,18 +313,18 @@ whole value of field:
     "name":  "Arthur Hegmann"
     }
 
-*Multi index* is used to solve above question: who likes Banana. An multi index
+*Multi index* is used to solve the above question: who likes Banana. A multi index
 is used on multiple value, or in other word, an array of value. When RethinkDB
-see that we want to use a *multi index*, it try to loop over all value in the
-array of index, and match to each of element of array.
+see that we want to use a *multi index*, it tries to loop over all values in the
+array of index, and match to each of element of the array.
 
-To create a multi index, all we have to do is pass the option flag:` multi:
+To create a multi index, all we have to do is to pass the option flag:` multi:
 true`
 
 
     r.db("foodb").table("users").indexCreate('favfoods_multi', r.row("favfoods"), {multi: true})
 
-Now, try it:
+Now, let's try it:
 
     r.db("foodb").table("users")
       .getAll('Mushrooms', {index: 'favfoods_multi'})
@@ -342,10 +342,10 @@ Now, try it:
     }
 
 If you notice, we have to pass `r.row(favfoods)` to create an index. Remember
-that to create an index where its name doesn't match any field, we have to pass
+that in order to create an index where its name doesn't match any field, we have to pass
 an expression or an anonymous fuction to `indexCreate` to caculate its value.
-But we defined `favfoods` index before, so now we cannot create other index with
-same name. Can we go back, delete index to clear thing up and save our
+But we defined `favfoods` index before, so now we cannot create other index with the
+same name. We can go back, delete index to clear thing up and save our
 namespace:
 
     r.db("foodb").table("users").indexDrop('favfoods')
@@ -355,7 +355,7 @@ namespace:
     #=> 
     { "dropped": 1 } 
 
-Now, let create an multile index with same field name:
+Now, let's create a multile index with the same field name:
 
     r.db("foodb").table("users").indexCreate('favfoods', {multi: true})
     r.db("foodb").table("users").getAll('Mushrooms', {index: 'favfoods'})
@@ -372,8 +372,8 @@ Now, let create an multile index with same field name:
     "name":  "Annabelle Lindgren"
     }
 
-Another question come up? Can we find all user who like `Mustrooms` and
-`Banana`. We may try this:
+Then another question comes up, can we find all user who like `Mustrooms` and
+`Banana`? We may try this:
 
     r.db("foodb").table("users")
       .getAll('Kiwi', 'Banana', {index: 'favfoods'})
@@ -394,8 +394,8 @@ As its name, the returned value of expression is used to calculate index.
 
 Unfortunately at this moment, we cannot simple answer who like both of banana
 and kiwi. We will save it for later chapter when we learn about `map` function.
-Now, let's find user
-who like kiwi most. With assumption that the first element of `favfoods` array
+Now, let's find users
+who like kiwi the most. With assumption that the first element of `favfoods` array
 is what an user like most.
 
     r.db("foodb").table("users")
@@ -441,7 +441,7 @@ engine. Let's say we want to find all user who like `Kiwi` most and is a female.
       })
 
 Here, we are trying to create non-multi index. The index is an array of gender
-and most like food item. Now, let's try our index
+and most favorite food item. Now, let's try our index
 
     r.db("foodb").table("users")
       .getAll(['f', 'Kiwi'], {index: 'most-favourite-food-gender'})
@@ -470,12 +470,12 @@ and most like food item. Now, let's try our index
     "name":  "Luma Ramses"
     }
 
-One thing I want to remind you(well, myself actually) is that the return
+One thing I want to remind you is that the return
 function in any RethinkDb expression is evaludated on RethinkDB, not on client
 language. You cannot just write anything. You have to use RethinkDB expression
-in return value so that RethinkDB can calculated it. In previous chapter, we
+in return value so that RethinkDB can calculate it. In previous chapter, we
 learn about `expr`, you can use that to turn native object into RethinkDb object
-when wanting.
+when needed.
 
 Let's look at this example:
 
@@ -495,14 +495,14 @@ However, even if you see something like
 
     return user("last_name") + user("first_name")
 
-That's doesn't mean RethinkDB understand your native expression. It's actually
+That doesn't mean RethinkDB understands your native expression. It's actually
 your driver overload operator (`+` operator) in this case because your host
 language apparently support operator overloading.
 
-If you notice, we don't pass `multi: true` in any of above examples. Can we use
+If you notice, we don't pass `multi: true` in any of the above examples. Can we use
 multi index with arbitray expression index? Yes, we can.
 
-Let's say if we can find any users who like `Kiwi` or used to eat Kiwi. We will
+Let's say if we want to find any users who like `Kiwi` or have eaten Kiwi before. We will
 create an multi index by concat array `favfoods` and `eatenfoods`
 
 
@@ -560,7 +560,7 @@ Now, we can use that index:
     "name":  "Luma Ramses"
     }
     
-How about finding user liked Kiwi most and have eaten kiwi? We just need to
+How about finding users that liked Kiwi most and have eaten kiwi? We just need to
 change the index function, this time we will use anonymous function:
 
     r.db("foodb").table("users")
@@ -571,7 +571,7 @@ change the index function, this time we will use anonymous function:
         }
         , {multi: true})
 
-Really, function is just a special case of expression where expression is
+Actually, function is just a special case of expression where expression is the
 result of function executing. Now, we can try to find:
 
     r.db("foodb").table("users")
@@ -640,7 +640,7 @@ result of function executing. Now, we can try to find:
 
 ## Checking index status
 
-As I said above, indexing reduces write performance, therefore it takes time to
+As I've said, indexing reduces write performance, therefore it takes time to
 create after we issue creating command. Depend on the table size, how many
 records we have, we have to wait for an amout of time before using it. We can
 check the status of an index to see if it's ready to use
@@ -662,7 +662,7 @@ Such as:
     "ready": false
     }
 
-The `ready` field indicate if the index is ready to use.
+The `ready` field indicates if the index is ready to use.
 
 Sometimes we just want to say, when the index is ready, please run this:
 
@@ -677,7 +677,7 @@ Sorting with order without index limit to 100k issue
 
 ### Pagination
 
-To pagination data, we will use a a combination of `skip`, `limit` and `slice`.
+To pagination data, we will use a combination of `skip`, `limit` and `slice`.
 
 **skip(n)**
 
@@ -695,10 +695,10 @@ T> These command can be called on a selection, an array or stream. So you ca
 
 ## Transform data
 
-So far, we always take the value that return from RethinkDB to work with it? In
-any real application, you prolly want to do some transform around it. If we do
-it at applcation level, for complex thing, it make sense. But for simple thing,
-we may waste another extra loop. Or sometime we want to do thing at RethinkDB
+So far, we always taking the value that return from RethinkDB to work with it. In
+any real application, you probably want to do some transform around it. If we do
+it at application level, for complex thing, it makes sense. But for simple thing,
+we might waste another extra loop. Sometime we want to do thing at RethinkDB
 level, or we want to use transform data in other ReQL expression.
 
 An example is the function `nth` or `count`. We call them on a sequence, or an
@@ -707,22 +707,22 @@ into a different piece of data. But `nth` and `count` are simple function. They
 don't have any complex logic inside them. Some transform function has complex
 logic. With those logic, we have to use some kind of `if ...else...` command, or
 loop. To help us with that, RethinkDB has some control structure functions such
-as `branch` (similar to `if`) or `forEach`, `do`. RethinkDb shines in those
-area because database engine now seems has an embedded language in it.
+as `branch` (similar to `if`) or `forEach`, `do`. RethinkDb shines in these
+areas because database engine now seems to have an embedded language in it.
 
-Let's cover more of those functions. Along the way we learn somne structure
+Let's cover more of those functions. Along the way, we will learn somne structure
 control command. Now, move on to our next function, **map**.
 
 ### Map
 
 Let's say we want to divide our users into 3 groups, who are under 18 years old
 are **teenager**, between 18-50 are **adult**, and over 50 years old are
-**older**. We have a pattern here, with each of document in table, we want to
+**older**. We have a pattern here, with each document in table, we want to
 calculate a new data, depend on their existed data. In RethinkDB, we used
 ***map*** function.
 
-Map apply a function on document, and return value of fuction is returned from
-query. With our example, in a normal programming language, such as Ruby we can
+Map apply a function on document, and return value of function is returned from
+query. With our example, in a normal programming language such as Ruby, we can
 write:
 
     users.map do |user|
@@ -742,7 +742,7 @@ In RethinkDB, the format of map is:
     r.map(sequence1[, sequence2, ...], mappingFunction) → stream
     r.map(array1[, array2, ...], mappingFunction) → array
 
-With our example, we have to represent `if` in RethinkDB function. We do that
+With this example, we have to represent `if` in RethinkDB function. We do that
 with `branch`:
 
     r.branch(test, true_branch, false_branch) → any
@@ -767,8 +767,8 @@ Time to write our function:
     "older" "older" "adult" "adult" "older" "adult" "older" "older" "older" "adult"
     "older" "older" "older"
 
-Yay, we get what we want. But it only return the value from fuction, we don't
-know who is who. Well, that's `map` job. It transform the whole document into
+Yay, we get what we want. But it only returns the value from fuction, we don't
+know who is who. Well, that's `map` job. It transforms the whole document into
 the return value. How about we return an object, with original `name` field, and
 our `group` field, like this:
 
@@ -800,7 +800,7 @@ our `group` field, like this:
 
 
 Great. But if we want to return whole document, with extra `group` field, do we
-have to repeatedly write every fields. Well, let's meet `merge`.
+have to repeatedly write every fields? Well, let's meet `merge`.
 
     r.db("foodb").table("users").map(function (user) {
       return user.merge({
@@ -815,9 +815,8 @@ have to repeatedly write every fields. Well, let's meet `merge`.
         )})
     })
 
-If you question can we use `row` in `map` expression instead of using function.
-Yes, we can. But we cannot in above example. Because `row` doesn't work in
-nested query. In above example. we nested `r.branch` inside `merge`, and inside
+If you wondering whether we can use `row` in `map` expression instead of using function, I would say: Yes, we can. But we cannot do that in the above example because `row` doesn't work in
+nested query. In above example, we nested `r.branch` inside `merge`, and inside
 other `branch`. 
 
 Let's see an example where we can use `r.row`: couting how many foods they have
@@ -836,13 +835,13 @@ eaten:
     "total_eaten": 7
     }
 
-By using `map`, we can pre-calculated some data, either using function or
+By using `map`, we can pre-calculate some data, either using function or
 expression. Let's meet other kind of `mapping` function.
 
 ### concatMap
 
 ***concatMap*** is very similar to map. It applies function to every element of
-sequence. But it's different because it also try to flatten, or concat all
+sequence. But it's different since it also try to flatten, or concat all
 element into a single sequence.
 
     r.expr([1, 2, 3]).map(function(x) { return [x, x.mul(2)] })
@@ -853,8 +852,8 @@ However, `concatMap` will concat all sub sequence/array into final return data.
     r.expr([1, 2, 3]).concatMap(function(x) { return [x, x.mul(2)] })
     #=> [1, 2, 2, 4, 3, 6]
 
-When is it useful? It looks like very useless, right. Well, let's look at
-`favfoods` field. If we want to get a list of `favfoods` on entire system, we
+When is it useful? It looks like very useless, right? Well, let's look at
+`favfoods` field. If we want to get a list of `favfoods` on the entire system, we
 can do:
 
     r.db("foodb").table("users").map(
@@ -876,7 +875,7 @@ can do:
       "Spirit"
     ]
 
-Well, as expecting, we get an array of array. That's when `concapMap` shines:
+As expected, we get an array of array. That's when `concapMap` shines:
 
     r.db("foodb").table("users").concatMap(
       r.row("favfoods")
@@ -898,7 +897,7 @@ Well, as expecting, we get an array of array. That's when `concapMap` shines:
     ...
 
 If you notice, we have duplicate data. That's natural because many users may
-like same foods. To get distinct value, you can call `distinct` on the sequence:
+like the same foods. To get distinct value, you can call `distinct` on the sequence:
 
     r.db("foodb").table("users").concatMap(
       r.row("favfoods")
@@ -915,10 +914,10 @@ like same foods. To get distinct value, you can call `distinct` on the sequence:
 
 `distinct` accepts an index and use it to differentce document, without any
 specified index, it uses primary index, or the `id` value, which is good enough
-in our case, because we don't have foods with same name. Sometimes, you may want
+in our case, because we don't have foods with the same name. Sometimes, you may want
 to create extra index for the field and call `distinct` using that index.
 
-Let's dig into more complex example. For each of foods, let's find all of its
+Let's dig into a more complex example. For each of foods, let's find all of its
 compound.
 
 Let's create an index first:
@@ -986,7 +985,7 @@ see error clearly:
     #=> RqlRuntimeError: Expected type DATUM but found SEQUENCE:
 
 `concatMap` can operator on sequence value from funciton, and try to flatten it
-for us. Let's back to this and break down how it works:
+for us. Let's get back to this and break down how it works:
 
     r.db("foodb")
       .table("foods")
@@ -1002,7 +1001,7 @@ for us. Let's back to this and break down how it works:
           })
       })
 
-For every documents of foods, it's transform into a document similar to this:
+For every document of foods, it's transformed into a document similar to this:
 
     [
       {id: id1, name: name1, compound: compound_food_document1}, 
@@ -1010,7 +1009,7 @@ For every documents of foods, it's transform into a document similar to this:
       {id: id1, name: name1, compound: compound_food_documentn},a
     ]
 
-That mean, with an sequence of foods, we will have this(without concatMap):
+That mean, with a sequence of foods, we will have this(without concatMap):
 
     [
       {id: id1, name: name1, compound: compound_food_document1}, 
@@ -1037,7 +1036,7 @@ But concat map will fallten array and we have this:
 
 That's power of `concatMap`. We can use it to do a join effect. But one problem
 remains, as you can see, we have many document with same `food` but different
-compound of that food. Can we somehow compile them into an array like this:
+compound of that food. We can somehow compile them into an array like this:
 
     {id: id1, name: name1, 
       compound: [compound_food_document1, compound_food_document2, ...]
@@ -1066,17 +1065,17 @@ Let's tweak our `concatMap` a bit.
 First off, you notice that we wrap food.merge in array. Why so? Because
 `concatMap` expects return value from function is a sequence. `map` expects
 return value from function is DATUM, likewise. We also call `limit(10)` on the
-`compound_foods` sequence to limit first 10 result, sort by primary key, `id`
+`compound_foods` sequence to limit first 10 results, sort by primary key, `id`
 field of `compound_foods` table in this case.
 
-Instead of create a map to loop over the `compound_foods` sequence and create a
+Instead of creating a map to loop over the `compound_foods` sequence and creating a
 document, we simply bring the whole `compound_foods` array to merge into
 **food** document. Looks good, run this and here come the error:
 
     RqlRuntimeError: Expected type DATUM but found SEQUENCE:
 
-Well, merge expect a `DATUM`. A datum is like a single primitive value. Such as
-a number, an array. But we are passing SEQUENCE. You can understand that we are
+Well, merge expect a `DATUM`. A datum is like a single primitive value such as
+a number, an array. However, we are passing SEQUENCE. You can understand that we are
 expecting an primitive value, but we passed a cursor. Like in Ruby, when we
 expect an array, but we pass an enumarator. In RethinkDB, to make this kind of
 merge work, we have to explicitly convert it to an array, using `coerceTo` with
@@ -1128,14 +1127,14 @@ simpler:
       })
 
 We no longer have to wrap it in `[]` because `map` can work with OBJECT. With
-this example, we see that `concatMap` and `map` sometime can be use
+this example, we see that `concatMap` and `map` sometime can be used
 interchangably depend on how we want to model the data.
 
 ## Index and Map
 
 I promised you an answer to quesiton who like both of Kiwi and banana. As you
-can guest, we have to create a multi index with each of value is a pair of
-favourite foods. It's very hard to do this without `map`. We prolly thinking of
+can guess, we have to create a multi index with each of value is a pair of
+favourite foods. It's very hard to do this without `map`. We are thinking of
 two nested loops. With map, we can do this:
 
 
@@ -1152,8 +1151,8 @@ two nested loops. With map, we can do this:
             })
       }, {multi: true})
 
-We will do a map. With each of element of `favfoods` we try to create a new
-array of two element, by combine the element with each of element of `favfoods`
+We will do a map. With each of element of `favfoods, we try to create a new
+array of two elements by combining the element with each of element of `favfoods`
 itself. We use `concatMap` to flatten array, and set `multi: true` because this
 is a multi indexer: we are returning an array from index function.
 
@@ -1182,11 +1181,11 @@ And now, we can use that index, pass a pair of value:
     }
 
 The order isn't important here, because we create the pair of array on every
-element if itself. Such as with [a,b,c] array we will have this array via map:
+element if itself. Such as with [a,b,c] array, we will have this array via map:
 
   [a,a], [a,b], [a,c], [b,a], [b,b], [b,c], [c, a], [c, b], [c, a]
 
-Can we elimiate [a,a], [b,b], [c,c] because they are useless. We just need to
+We can elimiate [a,a], [b,b], [c,c] because they are useless. We just need to
 put them in `branch` command:
 
     r.db("foodb")
@@ -1202,20 +1201,20 @@ put them in `branch` command:
         })
       }, {multi: true})
 
-With each element, if we see the value of two elements are same, we return an
+With each element, if we see the value of two elements are the same, we return an
 empty array, otherwise, we return combination array of them.
 
 # Wrap up
 
-This chapter is quite long. So far we learn about index. We know how to create:
+This chapter is quite long. So far we've learned about index. We know how to create:
 
   * Simple index
   * Compound index
   * Multi value index
   * Arbitrary expression index
 
-We also learn how to leverage index to sort, filter data. Two important
-transform function you also learn:
+We've also learned how to leverage index to sort, filter data. Two important
+transform functions you also learn:
 
   * map:
   * concatMap: 
