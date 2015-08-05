@@ -119,7 +119,6 @@ When we don't need the data to be consitent, such as writing a cache, or an
 unimportant log, we should set durability to soft to speed up the writing.
 However, for any important, serious data, keep it default.
 
-
 ## Drop
 
 To list what table we have, call `tableList()`. To get rid of the table, use
@@ -212,8 +211,7 @@ Let's change our server name:
 
 You will notice that the Admin UI will change the server name:
 
-![Server name changes to SimplyRethinkDB]
-(images/chapter4/server_name.png)
+![Server name changes to SimplyRethinkDB](images/chapter4/server_name.png)
 
 By modifying those table, we change the configuration of our server. We can get
 RethinkDB version by querying `server_status`.
@@ -347,12 +345,39 @@ With our example, we can retreive back the document again.
 Notice the `*uuid*` field? Our table has primary field is `*uuid*` and its value
 is set automatically by RethinkDB. 
 
+
+
 ### Multi insert
 
 If you have a large data set, you may want to do a batch insert.
 
 @TODO
 example batch insert
+
+### Effect of **durability**
+
+Let's see the difference of **durability**. We will insert a big document.
+
+First, I will create a temporary table
+    r.tableCreate("git")
+
+Then insert data, to have a big amount of data. I use `http`, which is a
+command that fetch external JSON data.
+
+    r.table('git').insert(
+      r.http('https://api.github.com/repos/rethinkdb/rethinkdb/stargazers')),
+      {durability:soft}
+    )
+    Executed in 773ms. 1 row returned
+
+Now, if I turn on **durability**.
+
+    r.table('git').insert(
+      r.http('https://api.github.com/repos/rethinkdb/rethinkdb/stargazers')),
+      {durability:soft}
+    )
+    Executed in 1.18s. 1 row returned
+
 
 ## Update
 
