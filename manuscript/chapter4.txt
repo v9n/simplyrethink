@@ -1,44 +1,90 @@
 -# Modifying data
 
-We will address database command, table command, and then document command
+We know how to fetch the data. But a database is useless without ability of
+writing data. In this chapter, we will learn about writing data. We will
+address database command, table command, and then document command
 in this chapter.
 
 # Database
 
-All commands on database levels start at the top namespace `r`. 
+All commands on database levels start at the top namespace `r` since they are
+like genesis item in any database system. Let's start out journey by creating
+a database. Remember, we need a database to hold everything.
 
 ## Create
 
-These are very simple. With example, you will get it easily.
+Very simple. With example, you will get it easily.
 
     //Create database
     r.dbCreate("db1")
     #=>
     {
-      "created": 1
+    "config_changes": [
+    {
+    "new_val": {
+    "id":  "5e4a85fa-d867-4a93-aa01-2d08ed6f0b14" ,
+    "name":  "db1"
+    } ,
+    "old_val": null
+    }
+    ] ,
+    "dbs_created": 1
     }
 
-If creating succesfully, we get back the object with `created` is *1*. We can
-confirm by listing what we have:
+If creating succesfully, we get back the object with `created` is always *1*.
+**config_changes** will have **new_val** field is the database's config value.
+**old_val** is always *null* becase this is a new database. **config value**
+is the configuration for an individual database or table. What is the 
+configuration? Usually, when we create any object in RethinkDB (a database, 
+a table) we can pass a list of option to that creating command. That option
+has to be stored somewhere and we should have ability to read it back.
+For a database, configuration is just its name and its id. That's why you see
+the id and name are returned in above query. We will learn more about this
+configuration very quick in this chapter.
+
+
+We can confirm by listing what we have:
 
     r.dbList()
     #=>
     [
-    "test" ,
-    "db1"
+    "foodb" ,
+    "rethinkdb" ,
+    "superheroes" ,
+    "test"
     ]
 
+Notice a special database call ***rethinkdb***. This is a special database that
+is created by RethinkDB to hold meta data, configuration. It's very similar to
+**mysql** database in a MySQL server. Remember the configuration of `dbCreate`
+function? Those configuration is stored in table `db_config` inside this
+database `rethinkdb`.
+
+
 ## Drop
+
 So we got the default test and db1 is what we just have. Since we don't use db1,
 let's delete it to keep it clean. 
 
     r.dbDrop('db1')
     #=>
     {
-      "dropped": 1
+    "config_changes": [
+    {
+    "new_val": null ,
+    "old_val": {
+    "id":  "5e4a85fa-d867-4a93-aa01-2d08ed6f0b14" ,
+    "name":  "db1"
+    }
+    }
+    ] ,
+    "dbs_dropped": 1 ,
+    "tables_dropped": 0
     }
 
-The object that we got back let us know the result in `*dropped*` field.
+Very similar with `dbCreate` but in an opposite way. Now `new_val` is **null**
+because the database is no longer existed. **old_val** is the id and name of
+old database, or the old configuration of database. 
 
 # Table
 
