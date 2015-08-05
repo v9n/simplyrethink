@@ -1,6 +1,13 @@
 -# Getting to know RethinkDB
 
-Let's warm up with some RethinkDB concepts, ideas and tools.
+Let's warm up with some RethinkDB concepts, ideas and tools. In this chapter, thing
+may a bit confuse because sometime to understand concept A, you need to
+understand B. To understand B, you need C, which is based on A. So plese
+use your feeling and don't hestitate to do some quick lookup on offical
+docs to clear thing out a bit.
+
+From now on, we will use term **ReQL** to mean anything related to RethinkDB
+query language, or query API.
 
 # Getting Started
 
@@ -8,10 +15,13 @@ It's not uncommon to see someone write an interactive shell in browser for
 evaluation purpose such as mongly, tryRedis. This isn't applied for RethinkDB
 because it comes with an excellent editor where you can type code and run it.
 
-Install RethinkDB by downloading package for your platform http://rethinkdb.com/docs/install/. Run it after installing.
+Install RethinkDB by downloading package for your platform http://rethinkdb.com/docs/install/.
+Run it after installing.
 
+[^mongly]: http://mongly.openmymind.net/tutorial/index
+[^tryredis]: http://try.redis.io/
 
-## Ports
+## The Ports
 
 By default, RethinkDB runs on 3 ports
 
@@ -33,8 +43,8 @@ with eath others via this port
 Open your browser at http://127.0.0.1:8080 and welcome RethinkDB. You can play
 around to see what you have:
 
-Navigate to the Explrer tab, you can type the command from there. Let's start
-with 
+Navigate to the Explorer tab, you can type the command from there. Let's start
+with
 
     r.dbList()
 
@@ -45,19 +55,19 @@ Run it and you can see a list of database.
 
 Similar to traditonal database system, we also have database in RethinkDB. A
 database contains many tables. Each table contains your JSON document. Those
-JSON documents can contain any field. A table doesn't force a schema for those
-fields. 
+JSON document can contains any fields. A table doesn't force a schema for those
+fields.
 
-A JSON document is similar to a row in MySQL. Each of the field in the document is
-similar to column in MySQL. The document on a table doesn't have to contain some
-fields, they can contain whatever.
+A JSON document is similar to a row in MySQL. Each of field in the document is
+similar to column in MySQL. When I say *JSON document*, I mean an JSON object
+with fields, not a single number, an array or a string. However, each field
+can content whatever JSON data type.
 
 # Durability
 
-You will see an option/argument call `durability`
-`*durability` appears a lot in many options of ReQL db. Because it's so
-common and it's very important, I want to address it here. Durability accepts 
-value of *'soft'* or *'hard'*. 
+You will see an option/argument call `durability` `*durability` appear a lot
+in many option of ReQL. Because it's so common and it's very important, I
+want to address it here. Durability accepts value of *'soft'* or *'hard'*.
 
 soft
 : means the writes will be acknowledge by server immdediately and data will be flushed to disk in
