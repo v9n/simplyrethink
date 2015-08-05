@@ -1,6 +1,6 @@
 -# Aggregation
 
-Any database has to offer some kind of aggregation functions. RethinkDb is not
+Any database has to offer some kind of aggregation functions, and RethinkDb is not
 an exception here. 
 
 The most popular function is `group`. Yeah, group is everywhere. Let's see how
@@ -11,7 +11,7 @@ it is handle in RethinkDB.
   sequence.group(fieldOrFunction..., [{index: "indexName", multi: false}]) → grouped_stream
 
 In a nut shell, taking a sequence, depend on the value of field or return value
-of function, group document with same value into a group.
+of function, we can group document with same value into a group.
 
 Looking at `flavors` table, let's group them by their `flavor_group` field:
 
@@ -108,13 +108,13 @@ Looking at `flavors` table, let's group them by their `flavor_group` field:
     },
     ...]
 
-The returned array includes two field:
+The returned array includes two fields:
 
-  * group: value of group field, in our case, value of `flavor_group` field
+  * group: value of group field, in our case is value of `flavor_group` field
   * reduction: an array contains all of document has same value for `flavor_group` field
 
 When we continue to chain function after `group`, the function will operate on `reduction` array.
-Such as we can count how many element of **reduction**:
+For example, we can count how many element of **reduction**:
 
     r.db("foodb")
       .table("flavors")
@@ -146,7 +146,7 @@ T>
 T> It's important to understand `group` make next function call operator
 T> on its `reduction` field.
 
-How about group them, and get the first document of grouped stream.
+How about group them,and get the first document of grouped stream?
 
     r.db("foodb")
       .table("flavors")
@@ -199,12 +199,12 @@ How about group them, and get the first document of grouped stream.
 W> Why null group?
 W>
 W> Why do we have a value ***null*** here. It's because 
-W> some document doesn't have any value for `flavor_group`,
-W> or in other word, NULL value. They are put into same group
+W> some documents don't have any value for `flavor_group`,
+W> or in other words, a NULL value. They are put into the same group
 W> of NULL
 
-Note that we have some limit with `group` where the `group` size is 
-over 100000 element. Example, let's group `compounds_foods` by their
+Note that we have some limitations with `group` where the `group` size is 
+over 100000 elements. For example, let's group `compounds_foods` by their
 `orig_food_common_name`
 
     r.db("foodb")
@@ -216,15 +216,15 @@ And we got this:
     RqlRuntimeError: Grouped data over size limit `100000`.  Try putting a reduction (like `.reduce` or `.count`) on the end in:
       r.db("foodb").table("compounds_foods").group("orig_food_common_name")
 
-Why so? because when we end the chain with `group`, the whole array is loaded
-into memory, and our sequence are greater than 100000 element. We have around
-~668K document. However, when we call `reduce` or `count` on it, RethinkDb won't
-load them all into memory and make it works. I don't know why, honestly, I read
+Why so? Because when we end the chain with `group`, the whole array is loaded
+into memory, and our sequence are greater than 100000 elements. We have around
+~668K documents. However, when we call `reduce` or `count` on it, RethinkDb won't
+load them all into memory and makes it works. Honestly, I don't know why, I've only read about 
 all of this from this issue [^issue2596]
 
 [^issue2596]: https://github.com/rethinkdb/rethinkdb/issues/2596
 
-Let's try what it suggest:
+Let's try what it suggests:
 
     r.db("foodb")
       .table("compounds_foods")
@@ -244,7 +244,7 @@ Let's try what it suggest:
     ...
     ]
 
-Now, this result is of course not what we expect. But why it runs? It is because when we call `count`, the `reduction` field become a single
+Now, this result is of course not what we expected. But why it runs? It is because when we call `count`, the `reduction` field becomes a single
 value instead of an array of grouped data, that makes the size of final group data smaller. As you can see, ***9492*** is returned, and
 that's all loaded into memory.
 
@@ -253,7 +253,7 @@ So keep in mind that we have some limitation with `group`, at least at this mome
 
 ## ungroup
 
-As you see, anything follow `group` operates on sub stream, or `reduction` array.
+As you can see, anything follow `group` operates on sub stream, or `reduction` array.
 Can we make the follow function run on returned sequence of `group` itself? Such as,
 we want to sort by the value of `reduction` field. Let's try to sort `flavors` by
 how many value of `flavor_group`
@@ -290,56 +290,56 @@ includes 2 fields:
     * group
     * reduciton
 
-and let any chain command follow it operator on this sequence.
+and let any chain command follows it operate on this sequence.
 
 ## reduce
 
 I think at this point, you already know what `count()` does. From a sequence, or an array,
-it returns a single number of how many items the sequence holds. So it transform a whole
-array into a single value. Not similar to map, `map` turn each of element of sequence into
-other value, and return a new sequence with all return value from `map` function. 
+it returns a single number of how many items the sequence holds. So it transforms a whole
+array into a single value. Unlike `map` which turns each element of sequence into
+other value, and returns a new sequence with all return value from `map` function. 
 
 `count` is an example of `reduce`. `reduce` accepts a function, let's call it `reduce_function`,
 and produces a single value, by repeating a function with input is the previous output of 
 `reduce_function`. The `reduce_function` can be called with those parameters:
 
-  * two element of sequence
+  * two elements of sequence
   * one element of sequence and one result of previous reduce_function execution
   * two results of previous reductions.
 
-We can guess, and somehow say that, on the first execution, two first elements of 
-sequence are passed into reduce function, on the second execution, one parameter is
+We can say that, on the first execution, two first elements of 
+sequence are passed into reduce function; on the second execution, one parameter is
 third element of sequence, other parameter is the result of reduce function call on
 first and second element. And so on for 4th, 5h execution...
 
-But why do we have two results of previous reductions? It's because reduce function 
+But why do we have two results of previous reductions? It's because reduced function 
 can run parallel across shards and CPU core, or even across computers in a cluster.
-The final result of each reduce functions on each shards, or each computer, finally
-are passed to reduce function again, to create final result.
+The final result of each reduce functions on each shards or each computer,
+are then passed to reduce function again, to create final result.
 
-But what happens if the sequence has a single element? We don't have enough input
+But what will happen if the sequence has a single element? We don't have enough input
 for reduce function. That is a special case, and RethinkDB will simply return 
 value of element as result of reduce function.
 
 Usually, `reduce` will be used with `map` to transform document into a value that can 
-be aggreation. As you saw, the reduce function paramters can be element of sequence, 
-or the result of previous reduce function. Therefore, we will usually needs `map` to
+be aggregated. As you have seen, the reduce function paramters can be element of sequence, 
+or the result of previous reduce function. Therefore, we will need `map` to
 do some transformation so that the type of parameters and result of reduce function are
-same.
+the same.
 
 T> Tail call optimization
 T>
 T> You may already sense that `reduce` is similar to recursion. But recursion is bad, they
-T> are quicjky fill up the heap. However, you can notice that we are also passing return
-T> value to next call of `reduce` function. Therefore the reduce function doesn't need to
-T> know about state of previous call. Or, in other words, we don't have to store a stack
-T> for previous function call. That's tail call optimization where we can reuse
+T> are quicjky fill up the heap. However, you know that we are also passing return
+T> value to next call of `reduce` function. Therefore, the reduce function doesn't need to
+T> know about state of a previous call. In other words, we don't have to store a stack
+T> for previous function call. That's tail called optimization where we can reuse
 T> current stack frame for function call instead of creating new one.
-T> I think that under the hood, reduce function is implement in that sense.
+T> I think that under the hood, reduce function is implemented in that sense.
 
-Let's rewrite `count` in `reduce` style. Giving it a bit thinking, the way we count thing
-is that we have an variable, each time we get a new input, we increment that variable 1,
-until all of input are process. The final value is how many element we have. Such as,
+Let's rewrite `count` in `reduce` style. Giving it some thoughts, you know that the way we count thing
+is by using variable; each time we get a new input, we increment that variable by 1,
+until all of input are processed. The final value is how many element we have such as
 counting in JavaScript:
 
     function count(sequence) {
@@ -351,10 +351,10 @@ counting in JavaScript:
     }
     count(['a', 'b', 'a1', 12, 'a9', 13])
 
-In above ***count*** function of JavaScript, we have a step where we initialize the
+In the above ***count*** function of JavaScript, we have a step where we initialize the
 value of `sum` to 0, and a step where we increment `sum` to 1. 
 
-Let's re-write it in recursion way so we can simulate `reduce` style:
+Let's re-write it in a recursion way, so we can simulate `reduce` style:
 
     function count(element, sum) {
       if (typeof element == 'undefined') {
@@ -392,14 +392,14 @@ Let's re-write it in recursion way so we can simulate `reduce` style:
 
 ## distinct
 
-Given an sequence, `distinct` remove duplication from it. When giving an index,
+Given a sequence, `distinct` remove duplication from it. When giving an index,
 the duplication is detected by value of index. Its syntax is:
 
     sequence.distinct() → array
     table.distinct([:index => <indexname>]) → stream
 
 As you can tell, whenever we return an array, we will run into 100,000 element
-isues if the return array has more than 100,000 element. So keep that in mind,
+isues if the return array has more than 100,000 elements. So keep that in mind
 and try to call distinct with a proper index.
 
 Let's count how many distinct `user` we have:
@@ -439,10 +439,10 @@ Let's see what kind of `age` our users are:
     "age": 14
     } ,]
 
-So we have 152 unique user's name, and 71 unique `age`. 
+So we have 152 unique user's name and 71 unique `age`. 
 
 
-What happens when using an index?  Let's try to create an index for user age, we 
+What will happen when using an index?  Let's try to create an index for user age, we 
 divide them into 3 groups:
 
     r.db("foodb")
@@ -469,22 +469,22 @@ Calling `distinct` on table, passing that index:
     "older"
     "teenager"
 
-So when passing index, the value of index is returned and therefore that value is
+So when passing index, the value of index is returned; and therefore that value is
 used to detect duplication.
 
 ## count
 
-You already knew `count`. It also has an extra useful way to count is passing a
+You already knew `count`. It also has an extra useful way to count is by passing a
 value or a function. When passing a value, it counts the document whose value matches
-the value. Such as counting users who are 18 year olds:
+the value such as counting users who are 18 year olds:
 
     r.db("foodb")
       .table("users")("age")
       .count(18)
 
 When passing a function, it counts the document whose function evaulation returns true
-on document, very similar to filter function. But filter returns document, and `count`
-counts them. Such as counting user who are 19 years old and name stars with K:
+on document, very similar to filter function. However, filter returns document while `count`
+counts them such as counting users who are 19 years old and name starts with a K:
 
     r.db("foodb")
       .table("users")
@@ -503,11 +503,11 @@ We can use `row` function too:
     1
 
 We also have some other aggregation functions such as `sum`, `min`, `max` but
-they are very simple and you can read from API page in aggregation section[^Aggregation].
+they are very simple, and you can read from API page in aggregation section[^Aggregation].
 
 [^Aggregation]: http://www.rethinkdb.com/api/javascript/max/#
 
 # Wrap up
 
-When finishing this chapter, you should know how to aggregation. How to group data, counting,
-and call function on grouped data
+When finishing this chapter, you should know how to aggregation, how to group data, counting,
+and call function on grouped data.
