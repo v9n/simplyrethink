@@ -23,8 +23,8 @@ RethinkDB, instead of spending hours on API docs and then trying and fail in con
 
 Secondly, I'm a fan of Mixu's[^mixu] writing style[^mixu_write]. I won't cover
 deeply stuff like installing RethinkDB, and so on. Those topics are covered 
-very good on RethinkDB document itself. I also won't cover extensively
-parameter, option of command either since you can easily look up for a particular 
+very well on RethinkDB document itself. I also won't cover extensively
+parameter, option of command either, since you can easily look up for a particular 
 API and find all its argument, option. I will just make sure you understand what
 is the command, what does it do, and how to apply it in a real scenario.
 
@@ -34,19 +34,19 @@ is the command, what does it do, and how to apply it in a real scenario.
 Thirdly, I'm not fluent in English. If you found any mistake, you can report the
 issue on [repository](https://github.com/kureikain/simplyrethink) or email me.
 
-Forthly, RethinkDB is changing so fast that something in this book may not reflect
-to the current state. Bear with it and let me know, via my email or Github. Since this is a LeanPub
+Fourthly, RethinkDB is changing so fast that something in this book may not reflect
+it's current state. Bear with it and let me know, via my email or Github. Since this is a LeanPub
 book, once I updated you can download it again free of charge.
 
 And finally, due to my limited knowledge with RethinkDB (again, I'm nowhere a
-RethinkDB expert), I want to keep this book short and to the point. Expect around 100
-pages. A book that you can pick up and read on the train when riding to work, and after
-a week you can sitdown and start the first RethinkDB power project.
+RethinkDB expert), I want to keep this book short and straight sto the points. Expect a book of around 200
+pages. A book that you can pick up, read on the train while riding to work; and after
+a week you can sitdown and actually start the first RethinkDB power project.
 
 # Why learning RethinkDB
 
-RethinkDB is a mind blowing to me. I like the beauty, nature of ReQL which is
-built into your language. It's also very developer friendly with its own
+RethinkDB is a mind-blowing to me. I like the beauty, nature of ReQL which is
+built into the language. It's also very developer friendly with its own
 administrator UI. RethinkDB is very easy to learn, because its query language is
 nature to what we think. We can easily tell what a ReQL do, what is the
 execution order.
@@ -65,15 +65,15 @@ Compare with ReQL(RethinkDB Query Language):
     r.table('users').getAll('vinh', {index: 'name'}).order_by(r.desc(id)).limit(10)
 
 We can guess what it does from query, and the order of execution is clear too
-us. Because it looks like function call and chaning, from left too right.
-Learning ReQL is like lean the API of an ORM.
+us. Because it looks like function call and chaning, from left too right; therefore
+learning ReQL is like lean the API of an ORM.
 
 We can also guess it will use an index call **name** when finding data. The way
 query is constructed, somehow feel like `jQuery` if you are a front-end
-dev who never works with database. Or if you are a functional programming guys
+dev who never works with database. Or if you are a functional programming guy,
 you probably see the pattern.
 
-If above example didn't convince you then take this:
+If above example didn't convince you, then take this:
 
     SELECT *
     FROM foods as f
@@ -81,7 +81,7 @@ If above example didn't convince you then take this:
     WHERE f.id IN (10, 20)
     ORDER By f.id DESC, c.id ASC
 
-It will takes you sometime to learn that. In ReQL, it's:
+It will take you sometime to learn that in ReQL, it's:
 
 
     r.db("foodb")
@@ -91,7 +91,7 @@ It will takes you sometime to learn that. In ReQL, it's:
       })
       .eqJoin("id", r.db("foodb").table("compounds_foods"), {index: "food_id"})
 
-Even you are not familar with syntax. You can tell what is going to happen. The
+Even if you are not familar with syntax, you can tell what is going to happen. The
 query looks like a chain of API call. The order of execution is clear to me.
 
 RethinkDB really makes me rethinking about how we work with database. I don't
@@ -100,7 +100,7 @@ to use a syntax that I don't like because I have no choice.
 
 # Feedback
 
-I appreciate all feedback to improve this book. Below is my handle on internet:
+I appreciate all of your feedbacks to improve this book. Below is my handle on internet:
 
 * twitter: [http://twitter.com/kureikain](http://twitter.com/kureikain)
 * email: [kurei@axcoto.com](kurei@axcoto.com)
