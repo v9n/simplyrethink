@@ -98,7 +98,9 @@ The syntax to create a table is
 
     db.tableCreate(tableName[, options])
 
-The second parameter is optional, some important ones are:
+The second parameter is optional. This is what we consider configuration for
+a table. It's similar to database configuration. But table configuration is
+much richer. Some important ones are:
 
 *primaryKey
 
@@ -110,10 +112,13 @@ The second parameter is optional, some important ones are:
 
 : accept value of *soft* or *hard*. *soft* means the writes will be
 acknowledged by server immdediately, and data will be flushed to disk in the
-background. If you write a large chunk of data,the default behaviour is to acknowledge after data is written to disk.
-Therefore, it will be longer. When you don't need the data to be consitent, such as
-writing a cache, or an important log, you should set durability to soft to
-speed up the writing.
+background. If that flushing fail, we may not know. The default behaviour is
+to acknowledge after data is written to disk. That means *hard*. It's default
+because it's much safety.
+When we don't need the data to be consitent, such as writing a cache, or an
+unimportant log, we should set durability to soft to speed up the writing.
+However, for any important, serious data, keep it default.
+
 
 ## Drop
 
@@ -165,6 +170,101 @@ To list what table we have, call `tableList()`. To get rid of the table, use
 
 Notice how RethinkDB returns a consitent JSON schema for database and table
 creating, droping with `created`, `dropped` field. 
+
+# System table
+
+Usually a database server have to keep some meta data, or configuration
+information somewhere else. In case of RethinkDB, it stores those data in
+**rethinkdb** data. Let's discover this database: 
+
+    r.db("rethinkdb").tableList()
+    [
+    "cluster_config" ,
+    "current_issues" ,
+    "db_config" ,
+    "jobs" ,
+    "logs" ,
+    "server_config" ,
+    "server_status" ,
+    "stats" ,
+    "table_config" ,
+    "table_status"
+    ]
+
+The name of each table should suggest what it contains. Let's inspect **server_config**
+
+    r.db("rethinkdb").table("server_config")
+    //=>
+    {
+    "cache_size_mb":  "auto" ,
+    "id":  "fdc5dade-2f0c-498f-8c4b-59ad0d976471" ,
+    "name":  "Vinh_local_u27" ,
+    "tags": [
+    "default"
+    ]
+    }
+
+Let's change our server name:
+
+  r.db("rethinkdb").table("server_config")
+    .get("fdc5dade-2f0c-498f-8c4b-59ad0d976471")
+    .update({name: "SimplyRethinkDB"})
+
+You will notice that the Admin UI will change the server name:
+
+![Server name changes to SimplyRethinkDB]
+(images/chapter4/server_name.png)
+
+By modifying those table, we change the configuration of our server. We can get
+RethinkDB version by querying `server_status`.
+
+    r.db("rethinkdb").table("server_status")("process")("version")
+
+In other world, those system table refelects information related to how the
+system operates. We can query to fetch or modify system information.
+
+We can get configuration that we set when creating table with `tableCreate` of
+any table:
+
+    r.db("rethinkdb").table("table_config")
+    //=>
+    {
+    "db":  "foodb" ,
+    "durability":  "hard" ,
+    "id":  "2e41fc0b-ea5e-4460-bd3b-5d33a5ec49af" ,
+    "name":  "health_effects" ,
+    "primary_key":  "id" ,
+    "shards": [
+    {
+    "primary_replica":  "SimplyRethinkDB" ,
+    "replicas": [
+    "SimplyRethinkDB"
+    ]
+    }
+    ] ,
+    "write_acks":  "majority"
+    } {
+    "db":  "foodb" ,
+    "durability":  "hard" ,
+    "id":  "3fbf59ad-35df-445c-9fa9-be19071d38d7" ,
+    "name":  "compounds_flavors" ,
+    "primary_key":  "id" ,
+    "shards": [
+    {
+    "primary_replica":  "SimplyRethinkDB" ,
+    "replicas": [
+    "SimplyRethinkDB"
+    ]
+    }
+    ] ,
+    "write_acks":  "majority"
+    }
+
+Looking at the above result, we can see that table `health_effects` of database
+`foodb` has **primary_key** is **id**, and **write_acks** is **majority**.
+
+You can have more fun and some deep understanding under the hood by inspecting
+those tables.
 
 # Document
 
