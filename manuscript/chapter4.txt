@@ -42,7 +42,6 @@ For a database, configuration is just its name and its id. That's why you see
 the id and name are returned in above query. We will learn more about this
 configuration very quick in this chapter.
 
-
 We can confirm by listing what we have:
 
     r.dbList()
@@ -54,12 +53,11 @@ We can confirm by listing what we have:
     "test"
     ]
 
-Notice a special database call ***rethinkdb***. This is a special database that
+Notice a special database call ***rethinkdb***? This is a special database that
 is created by RethinkDB to hold meta data, configuration. It's very similar to
 **mysql** database in a MySQL server. Remember the configuration of `dbCreate`
 function? Those configuration is stored in table `db_config` inside this
 database `rethinkdb`.
-
 
 ## Drop
 
@@ -119,56 +117,63 @@ When we don't need the data to be consitent, such as writing a cache, or an
 unimportant log, we should set durability to soft to speed up the writing.
 However, for any important, serious data, keep it default.
 
-## Drop
+RethinkDB stores configuration of each table in a special table call
+**table_config** inside database **rethinkdb**.
 
-To list what table we have, call `tableList()`. To get rid of the table, use
-`*tableDrop(tablename)*`.
+## List table
 
-    r.tableList()
+To list what table we have inside a database, we use `tableList` command. It's
+similar to **SHOW TABLE** in MySQL.
+
+    r.db("foodb").tableList()
     //=>
     [
-        "county_stats" ,
-        "input_polls"
+    "compound_synonyms" ,
+    "compounds" ,
+    "compounds_flavors" ,
+    "compounds_foods" ,
+    "compounds_health_effects" ,
+    "flavors" ,
+    "foods" ,
+    "health_effects" ,
+    "t1" ,
+    "users"
     ]
 
-    r.tableCreate('foo')
+## Drop table
+
+To get rid of the table, use `tableDrop` command. 
+
+    r.db("foodb").tableDrop("t1")
     //=>
     {
-      "created": 1
-    }    
-    r.tableCreate('foo2', {durability: 'soft'})
-    //=>
-    {
-      "created": 1
+        "config_changes": [{
+            "new_val": null,
+            "old_val": {
+                "db": "foodb",
+                "durability": "hard",
+                "id": "d20fe79e-9e90-4625-95f7-c9e1953bf773",
+                "name": "t1",
+                "primary_key": "id",
+                "shards": [{
+                    "primary_replica": "SimplyRethinkDB",
+                    "replicas": [
+                        "SimplyRethinkDB"
+                    ]
+                }],
+                "write_acks": "majority"
+            }
+        }],
+        "tables_dropped": 1
     }
 
-    r.tableList()
-    //=>
-    [
-      "foo2" ,
-      "county_stats" ,
-      "input_polls" ,
-      "foo"
-    ] 
-    r.tableDrop('foo') 
-    //=>
-    {
-      "dropped": 1
-    }
-    r.tableDrop('foo2') 
-    //=>
-    {
-      "dropped": 1
-    }
-    r.tableList()
-    //=>
-    [
-        "county_stats" ,
-        "input_polls"
-    ]
+Very similar to `dbDrop`, we also have **config_changes**. **new_val** always
+null because the table is gone now. **old_val** is the configuration of removed
+table. Table configuration is usually what we passed in when we create it with
+**tableCreate**.
 
-Notice how RethinkDB returns a consitent JSON schema for database and table
-creating, droping with `created`, `dropped` field. 
+We see that some **db** and **table** command returns **config_changes**. Let's
+discover where those configs are stored.
 
 # System table
 
