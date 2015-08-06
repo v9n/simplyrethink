@@ -387,30 +387,38 @@ Now, if I turn on **durability**.
 ## Update
 
 To make it easier, you can think of updating like selecting data, then change
-their value. We chain `update` method from a selection to update its data.
+their value. We chain `update` method from a selection range to update its data.
+With that being said, we can update one or many documents at a time. Similar to
+MySQL, we can update a full table, or update only rows that sastify a **WHERE**
+condition.
 
-Think of modification is like a transform process where you get a list of document(one or many),
-then transform by adding fields, rewrite value for some fields. By that definition, it 
-doesn't matter if you update one document, or many document. As long as you have an array, or
-a stream of data, you can update them all. 
+Think of modification is like a transform process where you get a list of
+document(one or many), then transform by adding fields, rewrite value for some fields.
+By that definition, it doesn't matter if you update one document, or many 
+document.As long as you have an array, or a stream of data, you can update them
+all.
 
 For example, to update an attribute for a single element
 
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+    // Let create a fake user
+    r.db("foodb").table("users")
+      .insert({id: "user-foo1", name: "foo", age: 12})
+    // Let update age and add a new field
+    r.db("foodb").table("users")
+      .get("user-foo1")
       .update({
-          'Dem': 120
+        age: 13,
+        gender: "f"
       })
     //=>
     {
-
-        "deleted": 0 ,
-        "errors": 0 ,
-        "inserted": 0 ,
-        "replaced": 1 ,
-        "skipped": 0 ,
-        "unchanged": 0
+      "deleted": 0 ,
+      "errors": 0 ,
+      "inserted": 0 ,
+      "replaced": 1 ,
+      "skipped": 0 ,
+      "unchanged": 0
     }
-     
 
 RethinkDB returns an object for the updating result. We can look into `replaced`
 field to see if the data is actually updated. If we re-run the above command,
@@ -420,55 +428,103 @@ nothing is replaced and we will got 1 `unchanged`.
       .update({
           'Dem': 120
       })
-    //=>{
-
+    //=>
+    {
       "deleted": 0 ,
       "errors": 0 ,
       "inserted": 0 ,
       "replaced": 1 ,
       "skipped": 0 ,
       "unchanged": 0
-
     }
 
-That's just how awesome RethinkDB is. All query result is very verbose. 
+That's just how awesome RethinkDB is. All query result is very verbose. And
+easy to understand.
 
-To add a new field to an exsited document, we just need to set its value.
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+In above example, you can see when we update **age**, we also add a new field
+**gender**. The updating process can be understand as a merge process of
+return values from update function or update expression into current existed
+document. Let's verify if **gender** field are really there:
+
+    r.db("foodb").table("users")
+      .get("user-foo1")
+    //=>
+    {
+      "age": 13 ,
+      "gender":  "f" ,
+      "id":  "user-foo1" ,
+      "name":  "foo"
+    }
+
+We can also update nested field. Let's add an address field:
+
+    r.db("foodb").table("users")
+      .get("user-foo1")
       .update({
-          'authors': ['foo']
+        "address" : {
+        country: "USA",
+        state: "CA",
+        city: "Cuppertino",
+        street: "Infinite Loop",
+        number: "1",
+        ste: "1205"
+      }
       })
     //=>
     {
-
-        "deleted": 0 ,
-        "errors": 0 ,
-        "inserted": 0 ,
-        "replaced": 1 ,
-        "skipped": 0 ,
-        "unchanged": 0
-
+      "deleted": 0 ,
+      "errors": 0 ,
+      "inserted": 0 ,
+      "replaced": 1 ,
+      "skipped": 0 ,
+      "unchanged": 0
     }
-    //Verify
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
-    #=>
+
+**replaced** is 1, that means we update succesfully. Now, let's say I moved,
+I can change the address:
+
+    r.db("foodb").table("users")
+      .get("user-foo1")
+      .update({
+        "address" : {
+        ste: 880,
+        number: 11
+      }
+      })
+    //=>
     {
-
-        "Date": "May 2" ,
-        "Day": 120 ,
-        "Dem": 120 ,
-        "New Value": 1 ,
-        "authors": [
-            "foo"
-        ] ,
-        "id": "foo" ,
-        "uuid": "13556cd8-034c-4c0e-91c0-666230740121"
-
+      "deleted": 0 ,
+      "errors": 0 ,
+      "inserted": 0 ,
+      "replaced": 1 ,
+      "skipped": 0 ,
+      "unchanged": 0
     }
 
-The value of the updated field, as you can see is a single value. In practice,
-you usually want the updated value is returned value from other ReQL expression.
-So how do we do that? Let's move to next section.
+Here, we are updating field `ste` of field `address`.
+
+    r.db("foodb").table("users")
+      .get("user-foo1")
+    //=>
+    {
+      "address": {
+      "city":  "Cuppertino" ,
+      "country":  "USA" ,
+      "number":  11 ,
+      "state":  "CA" ,
+      "ste":  880 ,
+      "street":  "Infinite Loop"
+      } ,
+      "age": 13 ,
+      "gender":  "f" ,
+      "id":  "user-foo1" ,
+      "name":  "foo"
+    }
+
+The value of the updated field, as you can see in above example, is a single
+value.  In practice, you usually use the updated value which is the returned
+value from other ReQL expression. So how do we do that? Let's move to next
+section.
 
 ### Update data for complex field
 
