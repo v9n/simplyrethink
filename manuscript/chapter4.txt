@@ -528,101 +528,245 @@ section.
 
 ### Update data for complex field
 
-Now, we got `authors` is an array with only one value of foo. How do we add more
-data into its. We can pass an value to the `update`. A naive way, we have to know
-the current value, and append a new element. That's just not so efficient
-because the array can be big. What we should do is to say: *Hey, let append this value
-into the `authors` array*. We can do that by using manipulation document method.
-`r.row` is a special method returns the currently visited document. By using it,
-we can get the value of field we want.
+First, we see that an user can have many address. Right now, our *address*
+field is a single object. Let's make it an array so it can accepts many
+address. Using previous array that we created.
 
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+    r.db("foodb").table("users")
+      .get("user-foo1")
       .update({
-    		authors: r.row("authors").append('bar')
-			})
+        address: [r.row("address")]
+      })
+
+Here we are using `r.row`, it allows access to current document we are
+referencing to. We turn **address** into an array by wrap it in `[]`
+to turn it into array.
+
+Now, we got `address` is an array with a single address, How do we add more
+data into that array. The simple form, we can pass an value to the `update`.
+First, we get the value of current address, append a new element using what
+our language offer. In JavaScript code, we may have:
+
+    addresses = r.db("foodb").table("users")
+              .get("user-foo1")("address")
+    addresses.push(new_add_ress)
+    r.db("foodb").table("users")
+      .get("user-foo1")
+      .update({address: addresses})
+
+That's work but it's very inefficent. For example, if we have to append a new
+element to an array for 1000 users. We have to fetch the data, change it,
+update by sending new array again. It's would be great if we can move
+the logic into RethinkDB. Just like how in SQL we can do:
+
+    UPDATE TABLE user SET login=login+1
+
+We tell MySQL to increment value of login by 1 instead of doing that outself.
+Luckily, we have that in RethinkDB. Some of them falls under **Document
+manipulation**[^Documentmanipulation] section on RethinkDB docs. They allow us
+do some logic to the document.
+
+[^Documentmanipulation]: http://www.rethinkdb.com/api/ruby/pluck/
+
+Our example above can be written using `append`. **append** command add a new
+element to array.
+
+    r.db("foodb").table("users")
+      .get("user-foo1")
+      .update({
+        address: r.row("address")
+        .append({country: "Vietnam", 
+                    city: "Hue", 
+                          street: "Tran Phu",
+                    number: "131"})
+      })
     //=>
     {
-
-        "deleted": 0 ,
-        "errors": 0 ,
-        "inserted": 0 ,
-        "replaced": 1 ,
-        "skipped": 0 ,
-        "unchanged": 0
-
+      "deleted": 0 ,
+      "errors": 0 ,
+      "inserted": 0 ,
+      "replaced": 1 ,
+      "skipped": 0 ,
+      "unchanged": 0
     }
 
-However, if `authors` field isn't existed yet, an error will be thrown out. To avoid
-that, we can tell RethinkDB to set and use a default value when the field isn't
-existed.
+What if an user has not **address** field on it yet? Well, an error will be
+thrown out. let's try:
 
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+
+
+    r.db("foodb").table("users")
+      .get("user-foo1")
       .update({
-    		lol_authors: r.row("lol_authors").append('bar').default([])
-			})
+        another_address_field: r.row("another_address_field")
+        .append({country: "Vietnamnam", 
+                    city: "Hue", 
+                    street: "Tran Phu",
+                    number: "131"})
+      })
     //=>
     {
-
-        "deleted": 0 ,
-        "errors": 0 ,
-        "inserted": 0 ,
-        "replaced": 1 ,
-        "skipped": 0 ,
+        "deleted": 0,
+        "errors": 1,
+        "first_error": "No attribute `another_address_field` in object: {
+            "address": [{
+                "city": "Cuppertino",
+                "country": "USA",
+                "number": 11,
+                "state": "CA",
+                "ste": 880,
+                "street": "Infinite Loop"
+            }, {
+                "city": "Hue",
+                "country": "Vietnam",
+                "number": "131",
+                "street": "Tran Phu"
+            }],
+            "age": 13,
+            "gender": "f",
+            "id": "user-foo1",
+            "name": "foo"
+        }
+        " ,
+        "inserted": 0,
+        "replaced": 0,
+        "skipped": 0,
         "unchanged": 0
-
     }
 
-By calling `default`, we can set an default value for the field. In our case, we
-use an empty array [] as a default value. 
+To avoid that, we have tell RethinkDB what value should be used when that
+field doesn't exist. Such as for an array, we can consider that value is
+an empty array. For a string we can consider that value is an empty string.
+For a positive number, that can be zero.
 
-`append` is a method to manipulation. Besides `append` we can also use
-`prepend`. It adds a new element to an array but at the bottom. 
+We use `defaul(default_value)` command for this purpose. Let's try it:
 
-Take another example, we want to count how many time the input_polls is viewed.
-We increased its `views` field for one. 
-
-
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+    r.db("foodb").table("users")
+      .get("user-foo1")
       .update({
-        views: r.row('views').add(1)
-			})
+        another_address_field: 
+                r.row("another_address_fieldess_field")
+                  .default([])
+                  .append({country: "Vietnamnamam", 
+                    city: "Hue", 
+                    street: "Tran Phu",
+                    number: "131"})
+      })
     //=>
     {
-
-        "deleted": 0 ,
-        "errors": 1 ,
-        "first_error": "No attribute `views` in object: { "Date": "May 2", "Day": 120, "Dem": 120, "New Value": 1, "authors": ["foo"], "id": "foo", "lol_author": [], "uuid": "13556cd8-034c-4c0e-91c0-666230740121" }" ,
-        "inserted": 0 ,
-        "replaced": 0 ,
-        "skipped": 0 ,
-        "unchanged": 0
-
-    } 
-
-Oops, we got an error here because the *views* field has not existed. Let's set
-a default value for 1.
-
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
-      .update({
-        views: r.row('views').add(1).default(1)
-			})
-    //=>
-    {
-
-        "deleted": 0 ,
-        "errors": 0 ,
-        "inserted": 0 ,
-        "replaced": 1 ,
-        "skipped": 0 ,
-        "unchanged": 0
-
+    "deleted": 0 ,
+    "errors": 0 ,
+    "inserted": 0 ,
+    "replaced": 1 ,
+    "skipped": 0 ,
+    "unchanged": 0
     }
 
-You can actually use `add` on string, numeric, array fields too. 
+When we call command `default` on a value or a sequence, it will try to evalute
+to the default value in case of non-existence error for the value. We can verify
+address again:
+
+    r.db("foodb").table("users")
+      .get("user-foo1")
+    //=>
+    {
+        "address": [{
+            "city": "Cuppertino",
+            "country": "USA",
+            "number": 11,
+            "state": "CA",
+            "ste": 880,
+            "street": "Infinite Loop"
+        }, {
+            "city": "Hue",
+            "country": "Vietnam",
+            "number": "131",
+            "street": "Tran Phu"
+        }],
+        "age": 13,
+        "another_address_field": [],
+        "gender": "f",
+        "id": "user-foo1",
+        "name": "foo"
+    }
+
+So we had `append` to add element at the end of array, we can also use
+`prepend`. It adds a new element to an array but at the top.
+
+Take another example, we want to count how many **like** an user has. We will
+use a fiel call **like** and we increase it by 1 whenever someone like the user.
+
+    r.db("foodb").table("users")
+      .get("user-foo1")
+      .update({like: r.row("like").add(1)})
+
+You notice that we have to use `add` command instead of writing like:
+
+    like: r.row("like") +1
+
+Because these expressions are evaluated on RethinkDB server, not on client. When I
+first learn RethinkDB, somehow I didn't understand it. I'm probably dumb. I
+keep thinking those run on client and it makes my life harder. So I'm trying
+to remind this several time through the book just in case someone confuse
+like me. In some language that support operator overloading, you may use 
+
+    like: r.row("like") + 1
+
+That's because the driver override **+** operator to make it easy to write
+expression. They are still serialized to ReQL syntax by driver.
+
+Now, with above **update* command, we got error, which is expeteced:
+
+    {
+        "deleted": 0,
+        "errors": 1,
+        "first_error": "No attribute `like` in object: {
+            "address": [{
+                "city": "Cuppertino",
+                "country": "USA",
+                "number": 11,
+                "state": "CA",
+                "ste": 880,
+                "street": "Infinite Loop"
+            }, {
+                "city": "Hue",
+                "country": "Vietnam",
+                "number": "131",
+                "street": "Tran Phu"
+            }],
+            "age": 13,
+            "another_address_field": [{
+                "city": "Hue",
+                "country": "Vietnam",
+                "number": "131",
+                "street": "Tran Phu"
+            }],
+            "gender": "f",
+            "id": "user-foo1",
+            "name": "foo"
+        }
+        " ,
+        "inserted": 0,
+        "replaced": 0,
+        "skipped": 0,
+        "unchanged": 0
+    }
+
+We have to set a default value for it. Let's default to 0. 
+
+    r.db("foodb").table("users")
+      .get("user-foo1")
+      .update({like: r.row("like").default(0).add(1)})
+    // Get back like
+    r.db("foodb").table("users").get("user-foo1")("like")
+    //=>
+    1
+
+`add` is not limited on numeric data, it works on **array**, **string** too.
+I will leave that part for you as an exercise.
 
 Now we know how to work with an array as value of a field and how to work with an
 object as a value of a field. Considering that we have this:
-
 
     r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
       .update({
