@@ -1065,9 +1065,9 @@ set a field **social_status** to *extrovert*, otherwise, it's *introvert*.
 
     r.db('foodb').table('users')
       .get('user-foo1')
-      .update(function (user) {
+      .update(function (u) {
         return {
-          social_status: r.branch(user('friend_counts').gt(10), 'extrovert', 'introvert')
+          social_status: r.branch(u('friend_counts').gt(10), 'extrovert', 'introvert')
         }
       }, {nonAtomic: true})
 
@@ -1077,11 +1077,9 @@ third argument. We use `user('friend_count')` to get value of `friend_count`
 as you know. We calling `gt` command on it. `gt` means greater, it returns
 **TRUE** if the value is greater than what we pass to `gt`.
 
-
-
 When using a function, the parameter pass into function will be the current
 visited document. Therefore, you can use many document manipulation command in
-it such as: pluck, without, merge, append, prepend. Just remember this, so
+it such as: **pluck**, **without**, **merge**, **append**, **prepend**. Just remember this, so
 you know what you can do with that parameter.
 
 #### Expr
@@ -1112,8 +1110,9 @@ either `m` or `f` randomly. I create a two element array `[m, f]`, turn them
 into ReQL object with `expr`, so that I can call `nth` on them, passing a random
 number of either 0 or 1.
 
-
-let's try a more complex example to generate some data. We want to r
+let's try a more complex example to generate some data. For every users, we
+generate a list of *eatenfoods* name randomly by select all food name, and use
+`sample(number)` command to select a number of random element.
 
     r.db("foodb").table("users")
       .update({
@@ -1123,8 +1122,9 @@ let's try a more complex example to generate some data. We want to r
         {nonAtomic: true}
       )
 
-For every document, we try to find a number of random food from `foods` table,
-get only its name and return the array, and assign to `eatfoods`
+We have two random here. First, we random how many of number of food we want to
+get from 0 to 10 by calling `r.random` with a range. Then we use `sample`
+command to get us that number of random document. 
 
 Now, we have `eatenfoods` field. Let's say we want to create a field contains
 the foods that an user has eaten, and his or her most favourite foods (first element
@@ -1135,18 +1135,14 @@ in `favfoods` field)
         eateanorlike : r.add(r.row("eatenfoods"), [r.row("favfoods").nth(0)])
       }, {nonAtomic: true})
 
-By combine ReQL expression, looking at its API and find approriate function,
-we can achieve what we want. In the above example, we know we want to concat two
-arrays from `eatenfoods` and first item of `favfoods`. We used `r.add`. We have
+By combine ReQL expression, looking at its RethinkDB API and find approriate
+function, we can achieve what we want. In the above example, we know we want to
+concat two arrays from `eatenfoods` and first item of `favfoods`. We used `r.add`. We have
 to wrap `r.row("favfoods").nth(0)` in `[]` because `nth()` return a document,
 where as `r.add` expects array, so we wrap it in `[]`.
 
-Before we continue, let's remove junk data:
-
-    r.db("foodb").table("users").replace(r.row.without('eateanorlike'))
-
-We also didn't have an `age` field on those user table. Let's generate some fake
-data for it so we can play around later
+We also didn't have an `age` field on those **users** table. Let's generate some fake
+data for it so we can play around later. Here we randomize `age` between 8 and 90.
 
     r.db("foodb").table("users")
       .update({
@@ -1162,180 +1158,288 @@ data for it so we can play around later
     "unchanged": 0
     }
 
-By using function or expression, we can update document in a complex way
+By using function and/or expression, we can update document in a complex way.
+Just carefully look up RethinkDB API, we can find the function we want. If not,
+we can probably whip some logic inside function.
 
 ### Return Values
 
 Sometimes, it can be useful to get back the updated document. This way you can
 verify the result, without issuing a sub sequent `get` command. We just need to
-set `returnVals` flag to true in option parameter of `update` command. Same
+set `returnChanges` flag to true in option parameter of `update` command. Same
 example:
 
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
-      .update(function (poll) {
+    r.db('foodb').table('users')
+      .get('user-foo1')
+      .update(function (user) {
         return {
-          same_day_count: r.table('input_polls')('Date').count(poll('Date'))
+          _social_status: r.branch(user('friend_counts').gt(10), 'extrovert', 'introvert')
         }
-      }, {nonAtomic: true, returnVals: true})
+      }, {nonAtomic: true, returnChanges: true})
     //=>
     {
-
-        "deleted": 0 ,
-        "errors": 0 ,
-        "inserted": 0 ,
-        "new_val": {
-            "Date": "May 2" ,
-            "Day": 120 ,
-            "Dem": 120 ,
-            "New Value": 1 ,
-            "authors": [
-                "foo" ,
-                "bar"
-            ] ,
-            "id": "foo-bar" ,
-            "reviewer": {
-                "age": 25 ,
-                "name": "Vinh" ,
-                "state": "CA"
-            } ,
-            "same_day_count": 1 ,
-            "type": "normal" ,
-            "uuid": "13556cd8-034c-4c0e-91c0-666230740121" ,
-            "views": 100
-        } ,
-        "old_val": {
-            "Date": "May 2" ,
-            "Day": 120 ,
-            "Dem": 120 ,
-            "New Value": 1 ,
-            "authors": [
-                "foo" ,
-                "bar"
-            ] ,
-            "id": "foo-bar" ,
-            "reviewer": {
-                "age": 25 ,
-                "name": "Vinh" ,
-                "state": "CA"
-            } ,
-            "same_day_count": 1 ,
-            "type": "normal" ,
-            "uuid": "13556cd8-034c-4c0e-91c0-666230740121" ,
-            "views": 100
-        } ,
-        "replaced": 0 ,
-        "skipped": 0 ,
-        "unchanged": 1
+        "changes": [{
+            "new_val": {
+                "_social_status": "introvert",
+                "address": [{
+                    "city": "Cuppertino",
+                    "country": "USA",
+                    "number": 11,
+                    "state": "CA",
+                    "ste": 880,
+                    "street": "Infinite Loop"
+                }, {
+                    "city": "Hue",
+                    "country": "Vietnam",
+                    "number": "131",
+                    "street": "Tran Phu"
+                }],
+                "age": 13,
+                "another_address_field": [{
+                    "city": "Hue",
+                    "country": "Vietnam",
+                    "number": "131",
+                    "street": "Tran Phu"
+                }],
+                "friend_counts": 2,
+                "gender": "f",
+                "id": "user-foo1",
+                "name": "foo",
+                "social": {
+                    "facebook": "kureikain3",
+                    "github": "kureikain",
+                    "twitter": "kureikain2"
+                },
+                "social_status": "introvert"
+            },
+            "old_val": {
+                "address": [{
+                    "city": "Cuppertino",
+                    "country": "USA",
+                    "number": 11,
+                    "state": "CA",
+                    "ste": 880,
+                    "street": "Infinite Loop"
+                }, {
+                    "city": "Hue",
+                    "country": "Vietnam",
+                    "number": "131",
+                    "street": "Tran Phu"
+                }],
+                "age": 13,
+                "another_address_field": [{
+                    "city": "Hue",
+                    "country": "Vietnam",
+                    "number": "131",
+                    "street": "Tran Phu"
+                }],
+                "friend_counts": 2,
+                "gender": "f",
+                "id": "user-foo1",
+                "name": "foo",
+                "social": {
+                    "facebook": "kureikain3",
+                    "github": "kureikain",
+                    "twitter": "kureikain2"
+                },
+                "social_status": "introvert"
+            }
+        }],
+        "deleted": 0,
+        "errors": 0,
+        "inserted": 0,
+        "replaced": 1,
+        "skipped": 0,
+        "unchanged": 0
     }
 
 The old value and value are returned in key `old_val` and `new_val`
 correspondingly.
 
+As you see, you started to mess up our data. It's ok, let lean some command
+that destroy data. Let's meep **replace** command.
+
 ## Replace
+
+First, we want to remove `eateanorlike`.
 
 To remove one or many fields from document, we cannot use `update` anymore.
 We can set a field to `null` value(null, nil depends on your language) to make
 it become null. But they key is still in the document with a `null` value.
+In other words, `update` lets us overwrite the fields, but don't remove it.
+That's why we have another command for removing field. The `replace` command
+replaces entire document with new document.
 
-We have to use `replace` method to replace it with a new document. The
-new document is constructed from old document without the data we want to
-eliminate.
+    r.db("foodb").table("users").replace(r.row.without('eateanorlike'))
 
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
-      .replace(r.row.without('lol_author'))
+Here we use `r.row` to get current documents, then calling `without` to remove
+the field.
+
+`without` accepts a list of argument and will remove those fields with that
+name from document. Such as:
+
+    r.db('foodb').table('users')
+      .get('user-foo1')
+      .without("address", "another_fieldaddress_field", "social")
     //=>
     {
-
-        "deleted": 0 ,
-        "errors": 0 ,
-        "inserted": 0 ,
-        "replaced": 1 ,
-        "skipped": 0 ,
-        "unchanged": 0
-
+      "_social_status":  "introvert" ,
+      "age": 13 ,
+      "friend_counts": 2 ,
+      "gender":  "f" ,
+      "id":  "user-foo1" ,
+      "name":  "foo" ,
+      "social_status":  "introvert"
     }
 
-We can replace an entirely new document. However, the primary key cannot be
-updated. It has to be same with the current primary key. An attempt to change
-the primary key will caused an error **Primary key `uuid` cannot be changed**
+`without` can also remove nested field. Such as remove `country` field from
+**address**
 
-
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
-      .replace({
-
-        "Date": "May 2" ,
-        "Day": 120 ,
-        "Dem": 120 ,
-        "New Value": 1 ,
-        "authors": [
-            "foo", "bar"
-        ] ,
-        "id": "foo-bar" ,
-        "uuid": "13556cd8-034c-4c0e-91c0-666230740121" ,
-        "views": 100
-    })
+    r.db('foodb').table('users')
+      .get('user-foo1')
+      .without({address: "country"}, "another_address_field", "social")
     //=>
     {
-
-        "deleted": 0 ,
-        "errors": 0 ,
-        "inserted": 0 ,
-        "replaced": 1 ,
-        "skipped": 0 ,
-        "unchanged": 0
-
+        "_social_status": "introvert",
+        "address": [{
+            "city": "Cuppertino",
+            "number": 11,
+            "state": "CA",
+            "ste": 880,
+            "street": "Infinite Loop"
+        }, {
+            "city": "Hue",
+            "number": "131",
+            "street": "Tran Phu"
+        }],
+        "age": 13,
+        "friend_counts": 2,
+        "gender": "f",
+        "id": "user-foo1",
+        "name": "foo",
+        "social_status": "introvert"
     }
 
+We can use nested style to denote the field that we want to remove. If we want
+to remove many fields, wrap them in array.
 
+Example, we remove all fields of **address** except **country**:
 
-What if we want to remove an attribute of document? Well, let's set it to
-`null`. Depend on your language, you have to use your null value such as in
-Ruby, it's `nil`.
-
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
-      .update({
-          'Dem': null
-      })
+    r.db('foodb').table('users')
+      .get('user-foo1')
+      .without({address: ["number","state", "city", "ste", "street"]}, "another_address_field", "social")
     //=>
     {
-
-        "deleted": 0 ,
-        "errors": 0 ,
-        "inserted": 0 ,
-        "replaced": 1 ,
-        "skipped": 0 ,
-        "unchanged": 0
+        "_social_status": "introvert",
+        "address": [{
+            "country": "USA"
+        }, {
+            "country": "Vietnam"
+        }],
+        "age": 13,
+        "friend_counts": 2,
+        "gender": "f",
+        "id": "user-foo1",
+        "name": "foo",
+        "social_status": "introvert"
     }
 
+Note that, We can replace an entirely new document, however, the primary key
+cannot be changed. It has to be same with the current primary key. An attempt to change
+the primary key will caused an error **Primary key `id` cannot be changed**
+
+    r.db("foodb").table("users")
+      .get("user-foo1")
+      .replace({id: 1})
+
+We will got an error:
+
+    {
+        "deleted": 0,
+        "errors": 1,
+        "first_error": "Primary key `id` cannot be changed (`{
+        "_social_status": "introvert",
+        "address": [{
+            "city": "Cuppertino",
+            "country": "USA",
+            "number": 11,
+            "state": "CA",
+            "ste": 880,
+            "street": "Infinite Loop"
+        }, {
+            "city": "Hue",
+            "country": "Vietnam",
+            "number": "131",
+            "street": "Tran Phu"
+        }],
+        "age": 13,
+        "friend_counts": 2,
+        "gender": "f",
+        "id": "user-foo1",
+        "name": "foo",
+        "social": {
+            "facebook": "kureikain3",
+            "github": "kureikain",
+            "twitter": "kureikain2"
+        },
+        "social_status": "introvert"
+    }
+    ` -> ` {
+        "id": 1
+    }
+    `)." ,
+    "inserted": 0 ,
+    "replaced": 0 ,
+    "skipped": 0 ,
+    "unchanged": 0
+    }
+
+Of course, changing primary key is actually simply removing old one and insert
+a new document. Let's learn about removing data.
 
 ## Delete
 
-Just go ahead and type those command if you want to. We can at any point, reset
-to the original data set.
+Delete is similar to `update` or `replace`. We select a sequence, and call
+`delete` command on them.
 
-To remove one ore more document, use ReQL to select what we want and
-execute `*delete*` on them.
+This will delete a single document, by using primary to select it with `get` 
+then calling `delete` on that single document.
 
-This will delete a single document. 
-    r.table('input_polls').get('id').delete()
+    r.db("foodb").table("users")
+      .get("user-foo2")
+      .delete()
 
-Let clear out the vote from florda on may
+We cal also clear a whole table or a selection. Let's play with it via some
+temporary table:
 
-    r.table('input_polls').filter(function (row) {
-      r.row()
-    })
+    r.db("foodb").tableCreate("test1")
+    r.db("foodb").table("test1").insert({field: 'foo', field2: 'bar'})
+    r.db("foodb").table("test1").insert({field: 'foo2', field2: 'bar2'})
+    r.db("foodb").table("test1").insert({age: 10, name: 'abc'})
+    r.db("foodb").table("test1").insert({age: 12, name: 'abc2'})
 
-Or just wipe an entire table
+Let's remove user who are under age of 11.
 
-    r.table().delete()
+    r.db("foodb")
+      .table("test1")
+      .filter(r.row('age').lt(11))
+      .delete()
 
+We using `r.row` to get current document, then get the **age** field value, and
+call `lt` to do compare **less than**.
 
-`delete` method accepts an optional object with:
+Basically with any selection, we can call `delete` on them, it goes over and
+remove data.
 
-  * durability: 'hard' or 'soft'. default 'hard' and will override the value of
-run.
-  * returnVals: 'false' or true. True mean if the document fail to removed for
-any reason, it will be returned to your result set. 
+So you can alredy guess command to delete all table:
+
+    r.db("foodb").table("test1").delete()
+
+Like `update`, `delete` method accepts an optional object with:
+
+  * durability: 'hard' or 'soft'. default is 'hard'
+  * returnChanges: 'false' or true. default is false. When setting to true,
+    a changes array will be return with **old_val** and **new_value** if the document is succesfully to remove
 
 ## Sync
 
@@ -1344,14 +1448,24 @@ write isn't guarantees to be written to the permanent storage. So after doing a
 bunch of those `soft durability`, you may want to say `Hey, I am done all task,
 let's make sure you write those change` you can call sync
 
+Using JavaScript driver:
+
   r.table('t').sync().run(connection, function () {
     console.log('Syncing is done. All data is safe now')
   })
 
-A sync will run the callback will be called when all change are written to disk.
+**sync** command will block until all previous write to the table are persited.
+With that being said, `sync` will be only called on **table**.
+
+It's good idea to do a bunch of `soft durability` and call `sync` at the end
+to ensure data persitent and still avoid blocking during executing of other
+logic.
 
 # Wrap up
 
 Some important concept you should remember:
 
   * atomicity
+  * sync
+  * update with function
+  * using nested field style to remove nested field
