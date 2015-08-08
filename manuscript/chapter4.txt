@@ -102,9 +102,11 @@ much richer. Some important ones are:
 
 *primaryKey
 
-: the name of primary key. As I mentioned before, default name of primary key is
-**id**. Using this option, you can change that default behavior like we used
-`uuid` with our input_polls table.
+: the name of primary key. Default name of primary key is **id**. The value of
+**id** field will always be indexed automatically and using as primary key.
+Using this option, you can change that default behavior such as using **uuid**
+as default primary key. When a new document is inserted, RethinkDB will fetch
+value of **uuid** field to create index instead of field **id**
 
 *durability
 
@@ -119,6 +121,10 @@ However, for any important, serious data, keep it default.
 
 RethinkDB stores configuration of each table in a special table call
 **table_config** inside database **rethinkdb**.
+
+Let's try to create a table.
+
+    r.db("foodb").tableCreate("t1",  {primaryKey: 'uuid'})
 
 ## List table
 
@@ -277,26 +283,37 @@ table.
 ## Insert
 
 As you can guess, we will start from the database, chain the table, and use
-`*insert*` method to insert a document into the table. Eg
+`insert` command to insert a document into the table. Eg
 
-    r.db('test').table('input_polls').insert({
-      id: 'foo',
-      Day: 120,
-      Date: 'May 2',
-      Dem: '49'
-    })
-
-    #=>
+    // Let create a fake user
+    r.db("foodb").table("users")
+      .insert({id: "user-foo1", name: "foo", age: 12})
+    //=>
     {
       "deleted": 0 ,
       "errors": 0 ,
-      "generated_keys": [
-      "13556cd8-034c-4c0e-91c0-666230740121"
-      ] ,
       "inserted": 1 ,
       "replaced": 0 ,
       "skipped": 0 ,
       "unchanged": 0
+    }
+
+Here, we set our own primary key for **id** field. If we don't set it. RethinkDB
+will generate it and return for us via the return object.
+
+    r.db("foodb").table("users")
+      .insert({name: "foo", age: 12})
+    //=>
+    {
+    "deleted": 0 ,
+    "errors": 0 ,
+    "generated_keys": [
+    "b7e23aa4-e7d8-4d3e-9020-4c5b1ec413c6"
+    ] ,
+    "inserted": 1 ,
+    "replaced": 0 ,
+    "skipped": 0 ,
+    "unchanged": 0
     }
 
 The return object contains the following attributes: 
@@ -329,35 +346,98 @@ old_val
 new_val
 : if returnVals is set to true, contains the inserted/updated document.
 
-Notice the generated_keys. If you insert a document without set a value for
+Notice the generated_keys. If we insert a document without set a value for
 primary key, whose field name is `*id*` by default, RethinkDB will generate an
-UUID[^uuid] for it and return here.
+UUID[^uuid] for it and use it as value of `*id*` field.
 
 [^uuid]: http://en.wikipedia.org/wiki/Universally_unique_identifier
 
-With our example, we can retreive back the document again.
+With our example, the primary key is **b7e23aa4-e7d8-4d3e-9020-4c5b1ec413c6**.
+We can retreive back the document again.
 
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
-    #=>
+    r.db("foodb").table("users")
+      .get('b7e23aa4-e7d8-4d3e-9020-4c5b1ec413c6')
+    //=>
     {
-        "Date":  "May 2" ,
-        "Day": 120 ,
-        "Dem":  "49" ,
-        "id":  "foo" ,
-        "uuid":  "13556cd8-034c-4c0e-91c0-666230740121"
+      "age": 12 ,
+      "id":  "b7e23aa4-e7d8-4d3e-9020-4c5b1ec413c6" ,
+      "name":  "foo"
     }
-
-Notice the `*uuid*` field? Our table has primary field is `*uuid*` and its value
-is set automatically by RethinkDB. 
-
-
 
 ### Multi insert
 
-If you have a large data set, you may want to do a batch insert.
+If we have a large array of data, we don't have to insert one by one, we can
+pass the whole array to insert to do batch insert, which is much efficient than
+update one by one
 
-@TODO
-example batch insert
+Let's play with it a bit. Create a test table on our **test** db.
+
+    r.db("test").tableCreate("users", {primaryKey: 'myid'})
+
+We also use primary key as field **myid** insetead of usind **id**.
+We can insert multiple data at a time. Some document has **myid**,
+some of them don't have. We will see how RethinkDB generate primary key for
+those documents:
+
+    r.db("test").table("users")
+      .insert([
+        {
+          myid: 1,
+          name: 'Hydra'
+        },
+        {
+          name: 'Pluto'
+        },
+        {
+          name: 'Styx',
+          myid: 'abcxyz'
+        }
+      ])
+    //=>
+    {
+      "deleted": 0 ,
+      "errors": 0 ,
+      "generated_keys": [
+      "8c3a1d6c-2b7b-4a4f-91dc-d6855c5aed15"
+      ] ,
+      "inserted": 3 ,
+      "replaced": 0 ,
+      "skipped": 0 ,
+      "unchanged": 0
+    }
+
+Here, **generated_keys** contains a single element **8c3a1d6c-2b7b-4a4f-91dc-d6855c5aed15**.
+The reason is only second inserted element `{name: 'Pluto'}` doesn't have
+`myid` field, the other two we set manually so RethinkDB just use it.
+
+Let's verify:
+
+    r.db("test").table("users")
+    //=>
+    {
+        "myid": 1,
+        "name": "Hydra"
+    } {
+        "myid": "abcxyz",
+        "name": "Styx"
+    } {
+        "myid": "8c3a1d6c-2b7b-4a4f-91dc-d6855c5aed15",
+        "name": "Pluto"
+    }
+
+Yay, how cool is that? We used a custom primary key, we insert multiple document
+at a time and RethinkDb assign a primary key for it.
+
+Let's see if `myid` field is really use as primary index. We can call `get`
+command because `get` operator on primary key:
+
+    r.db("test").table("users")
+      .get('abcxyz')
+    //=>
+    {
+      "myid":  "abcxyz" ,
+      "name":  "Styx"
+    }
 
 ### Effect of **durability**
 
@@ -367,7 +447,10 @@ First, I will create a temporary table
     r.tableCreate("git")
 
 Then insert data, to have a big amount of data. I use `http`, which is a
-command that fetch external JSON data.
+command that fetch external JSON data, which is really useful to deal with
+external API. We can treat the result of `r.http` as a normal JSON document.
+`r.http` takes care of fetching data via HTTP and turn document into valid
+JSON.
 
     r.table('git').insert(
       r.http('https://api.github.com/repos/rethinkdb/rethinkdb/stargazers')),
@@ -383,6 +466,9 @@ Now, if I turn on **durability**.
     )
     Executed in 1.18s. 1 row returned
 
+So it's slower because it takes time to write to hard drive. You may not see
+the effect if you have a very fast hard drive or SSD. I tried it on an external
+spin drive :).
 
 ## Update
 
@@ -400,9 +486,6 @@ all.
 
 For example, to update an attribute for a single element
 
-    // Let create a fake user
-    r.db("foodb").table("users")
-      .insert({id: "user-foo1", name: "foo", age: 12})
     // Let update age and add a new field
     r.db("foodb").table("users")
       .get("user-foo1")
@@ -424,18 +507,20 @@ RethinkDB returns an object for the updating result. We can look into `replaced`
 field to see if the data is actually updated. If we re-run the above command,
 nothing is replaced and we will got 1 `unchanged`.
 
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+    r.db("foodb").table("users")
+      .get("user-foo1")
       .update({
-          'Dem': 120
+        age: 13,
+        gender: "f"
       })
     //=>
     {
       "deleted": 0 ,
       "errors": 0 ,
       "inserted": 0 ,
-      "replaced": 1 ,
+      "replaced": 0 ,
       "skipped": 0 ,
-      "unchanged": 0
+      "unchanged": 1
     }
 
 That's just how awesome RethinkDB is. All query result is very verbose. And
@@ -1466,6 +1551,8 @@ logic.
 Some important concept you should remember:
 
   * atomicity
-  * sync
+  * synca
+  * multiple insert
+  * change primary field
   * update with function
   * using nested field style to remove nested field
