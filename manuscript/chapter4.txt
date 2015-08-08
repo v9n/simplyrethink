@@ -1526,6 +1526,13 @@ Like `update`, `delete` method accepts an optional object with:
   * returnChanges: 'false' or true. default is false. When setting to true,
     a changes array will be return with **old_val** and **new_value** if the document is succesfully to remove
 
+And finally, before we move on. Let's remove use `user-foo1` since we mess with
+it a bit
+
+    r.db("foodb").table("users")
+      .get("user-foo1")
+      .delete()
+
 ## Sync
 
 As you known in the previous chapter, with value of `durability` as 'soft' the
