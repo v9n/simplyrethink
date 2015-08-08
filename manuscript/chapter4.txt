@@ -62,7 +62,7 @@ database `rethinkdb`.
 ## Drop
 
 So we got the default test and db1 is what we just have. Since we don't use db1,
-let's delete it to keep it clean. 
+let's delete it to keep our database clean.
 
     r.dbDrop('db1')
     #=>
@@ -216,14 +216,14 @@ Let's change our server name:
 
 You will notice that the Admin UI will change the server name:
 
-![Server name changes to SimplyRethinkDB](images/chapter4/server_name.png)
+![Server name changes to SimplyRethinkDB](images/chapter4/servername_ui.png)
 
 By modifying those table, we change the configuration of our server. We can get
 RethinkDB version by querying `server_status`.
 
     r.db("rethinkdb").table("server_status")("process")("version")
 
-In other world, those system table refelects information related to how the
+In other words, those system table refelects information related to how the
 system operates. We can query to fetch or modify system information.
 
 We can get configuration that we set when creating table with `tableCreate` of
@@ -285,7 +285,7 @@ As you can guess, we will start from the database, chain the table, and use
       Date: 'May 2',
       Dem: '49'
     })
-    
+
     #=>
     {
       "deleted": 0 ,
@@ -522,8 +522,35 @@ Here, we are updating field `ste` of field `address`.
     }
 
 The value of the updated field, as you can see in above example, is a single
-value.  In practice, you usually use the updated value which is the returned
-value from other ReQL expression. So how do we do that? Let's move to next
+value.
+
+#### Update option
+
+`update` command receive some options that you can pass. In JavaScript, you can
+pass option object as second parameter. In Ruby, you can use optional keyword.
+Such as in JavaScript:
+
+    r.table("posts").get(1).update({
+        num_comments: r.js("Math.floor(Math.random()*100)")
+    }, {
+        nonAtomic: true
+    })
+
+Here, `{nonAtomic: true}` is out option. In Ruby, it's more elegant due:
+
+    r.table("posts").get(1).update({
+        :num_comments => r.js("Math.floor(Math.random()*100)")
+    }, :non_atomic => true)
+
+We have 3 options parameters:
+
+  * *durability*: possible values are hard and soft. You already know what it does. However, setting it here override durability default of tables
+  * *non_atomic*: you should also know what it does. If not, coming back chapter2.
+
+So we know the option. Let's move on. In this section, we learn how to update
+value for a field, update nested value. What if the field contains an array?
+How can we append new element. Or how to
+update value which is the result of other ReQL command. Let's move to next
 section.
 
 ### Update data for complex field
@@ -592,8 +619,6 @@ element to array.
 
 What if an user has not **address** field on it yet? Well, an error will be
 thrown out. let's try:
-
-
 
     r.db("foodb").table("users")
       .get("user-foo1")
@@ -765,12 +790,34 @@ We have to set a default value for it. Let's default to 0.
 `add` is not limited on numeric data, it works on **array**, **string** too.
 I will leave that part for you as an exercise.
 
-Now we know how to work with an array as value of a field and how to work with an
-object as a value of a field. Considering that we have this:
+Now we know how to work with an array as value of a field. Let's dive into how
+to work with an object as a value of a field. Considering that we have this:
 
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+    r.db("foodb").table('users')
+      .get('user-foo1')
       .update({
-        reviewer: {name: 'Vinh', age: 27}
+        social: {twitter: "kureikain"}
+      })
+    //=>
+    {
+
+        "deleted": 0 ,
+        "errors": 0 ,
+        "inserted": 0 ,
+        "replaced": 1 ,
+        "skipped": 0 ,
+        "unchanged": 0
+    }
+
+The `social` field is an object now. Now, the user enters his facebook username
+so we we want to add a new field **facebook** to **social** field to denote the
+**facebook** account of user. We can not use `append` or `add` on an object.
+For object, we use `merge` to add or override a field.
+
+    r.db("foodb").table('users')
+      .get('user-foo1')
+      .update({
+        social: r.row('social').default({}).merge({facebook: "kureikain"})
       })
     //=>
     {
@@ -784,81 +831,59 @@ object as a value of a field. Considering that we have this:
 
     }
 
+Same as `append`, we also have to set a default value to handle non-existence
+error. Since we are working with an object, we set its default value to empty
+object: `{}`. `merge` overide existed key with new value in the object you
+are passing, or create new key from the passing object.
+
+    r.db("foodb").table('users')
+      .get('user-foo1')
+      .update({
+        social: r.row('social').default({}).merge({facebook: "kureikain2", twitter: "kureikain2"})
+      })
+    //=>
+    {
+
+        "deleted": 0 ,
+        "errors": 0 ,
+        "inserted": 0 ,
+        "replaced": 1 ,
+        "skipped": 0 ,
+        "unchanged": 0
+
+    }
     
-The `reviewer` field is an object now. Then we want to add a new field `state` to `reviewer` to denote the `state` of reviewer. We can not use `append` or `add` on an object. We have to merge current document with something new.
-
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
-      .update({
-        reviewer: r.row('reviewer').merge({'state': 'CA'})
-      })
+    // Select it back
+    r.db("foodb").table('users')
+      .get('user-foo1')("social")
     //=>
     {
-
-        "deleted": 0 ,
-        "errors": 0 ,
-        "inserted": 0 ,
-        "replaced": 1 ,
-        "skipped": 0 ,
-        "unchanged": 0
-
+      "facebook":  "kureikain2" ,
+      "twitter":  "kureikain2"
     }
- 
-Same as `append`, you can also use `default`:
 
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+Cool, so we know how to add new fields or override old fields. But do you
+notice they when a field contains an object, they are actually nested field. 
+So we can easily update use nested field knowledge before instead of using
+`merge` command:
+
+    r.db("foodb").table('users')
+      .get('user-foo1')
       .update({
-        reviewer: r.row('reviewer').merge({'state': 'CA'}).default({})
+        social: {facebook: "kureikain3", github: "kureikain"}
       })
- 
-Since we are working with an object, we set its default value to `{}`. `merge`
-overide existed key with new value in the object you are passing, or create new
-key from the passing object.
 
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
-      .update({
-        reviewer: r.row('reviewer').merge({'age': 25, 'state': 'CA'}).default({})
-      })
-    //=>
-    {
-
-        "deleted": 0 ,
-        "errors": 0 ,
-        "inserted": 0 ,
-        "replaced": 1 ,
-        "skipped": 0 ,
-        "unchanged": 0
-
-    }
-    //Select it again
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
-    //=>
-    {
-
-        "Date": "May 2" ,
-        "Day": 120 ,
-        "Dem": 120 ,
-        "New Value": 1 ,
-        "authors": [
-            "foo" ,
-            "bar"
-        ] ,
-        "id": "foo-bar" ,
-        "reviewer": {
-            "age": 25 ,
-            "name": "Vinh" ,
-            "state": "CA"
-        } ,
-        "type": "normal" ,
-        "uuid": "13556cd8-034c-4c0e-91c0-666230740121" ,
-        "views": 100
-
-    }
+It's really up to you to use `merge` or the nested field style. I usually using
+nested field style when doing simple update, and `merge` when I want to merge
+the document to other result from other ReQL function. But that's just opinion.
 
 ### Update multiple documents
 
 Instead of select a single document and update one by one, you can update a
 bunch of documents by calling `update` on a table or a stream, a selection.
-    
+All are same like what we do above, but instead of applying update to a single
+document, it updates all element in the stream.
+
     r.table.filter(r.row('Day').gt(1) && r.row('Day').lt(90))
       .update({quarter: 1})
     //=>
@@ -875,33 +900,56 @@ bunch of documents by calling `update` on a table or a stream, a selection.
 ### ReQL inside the updated object
 
 As you notice, we not only pass value into an updated object, but also passing
-ReQL into updated object. As long as it can be evaluated like:
+ReQL into updated object. As long as it can be evaluated like we increased **like**
+to 1 with:
 
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+    r.db("foodb").table("users")
+      .get("user-foo1")
+      .update({like: r.row("like").default(0).add(1)})
+
+However, `r.row` has a limit. It cannot be called on nested query. Assume that
+we have a **friends** table that we can create with below query:
+
+    // First, creata table
+    r.db("foodb").tableCreate('friends')
+
+    // Insert some faked data
+    r.db("foodb").table("friends")
+      .insert([{
+        friend1_id: '12063f5f-4289-4a4b-b668-0e4a90861575',
+        friend2_id: 'user-foo1'
+      },
+      {
+        friend1_id: '8d4bcd47-3f7f-4670-a31c-2b807e3f7caf',
+        friend2_id: 'user-foo1'
+      }])
+
+So we can see that our user with id **user-foo1** has 2 friends. It will not
+very efficient if we have to count this over and over. So we are going to count
+this and update **users** table with a field **friend_count**.
+
+To count, we can get a sequence of **friend2_id**, and `count` how many items
+has same value as current user id, by passing a value to `count` function. When
+we pass a value to `count`, it only counts the document equal to that value.
+Here, We are trying use `r.row` to reference to current user.
+
+    r.db('foodb').table('users')
+      .get('user-foo1')
       .update({
-        views: r.row('views').add(1).default(1)
-			})
-
-However, this updating method has some limit with `r.row`. It cannot be called on
-nested query. 
-
-Example, for each polls, we want to count how many poll on same `Date`, and
-storing the counting result into a field call `same_day_count` to avoid counting
-everytime we need it. We use another query inside `update`, and reference to
-`r.row` to get current document for comparison. 
-
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
-      .update({
-        same_day_count: r.table('input_polls')('Date').count(r.row('Date'))
+        friend_counts: r.db('foodb').table('friends')('friend2_id').count(r.row('id'))
       })
-    //=>
-    RqlCompileError: Cannot use r.row in nested queries.  Use functions instead in:
-    r.table("input_polls").get("13556cd8-034c-4c0e-91c0-666230740121").update({same_day_count: r.table("input_polls")("Date").count(r.row("Date"))})
 
-This makes sense because we don't know which query to base `r.row` on? Is it the
-main query, or sub query?
+If we run above query we will get this error
 
-Luckily, we can use function to solve this.
+
+C>    RqlCompileError: Cannot use r.row in nested queries.  Use functions instead in:
+C>    r.table("foodb").get("user-foo1").update({friend_counts: r.db("foodb").table("friends")("friend2_id").count(r.row("id"))})
+
+The reason for this error is because RethinkDB doesn't know which query to base
+`r.row` on? Is it the main query, table **users**, or sub query, table
+**friends**. Luckily, We can use an anynoymous function to solve this. Function
+allows access to current document but it solve problem of `r.row` because it 
+clearly binds to a sequence.
 
 ### Expression
 
