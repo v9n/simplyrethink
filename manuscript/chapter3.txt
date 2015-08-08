@@ -6,12 +6,14 @@ the end of previous chapter to import sample dataset. Once you did it, let's sta
 # Getting to Know ReQL
 
 RethinkDB uses a special syntax call *ReQL* to interact with the data. ReQL is
-chainable. You start with a table, and chain to other API to get what you want,
-in a way very natural. Type this into data explorer:
+chainable. You start with a database, chain to table, and chain to other API to
+get what you want, in a way very natural. Type this into data explorer:
 
     r.db("foodb").table('flavors').filter({'flavor_group': 'fruity'})
 
 You should see some interesting data now.
+
+![Result of filter command by flavor_group](images/chapter3/filter_falvor_group.png)
 
 Don't worry about the syntax, just look at it again and even without any
 knowledge you know what it does and easily remember it. A way, for me, to
