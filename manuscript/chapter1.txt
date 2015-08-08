@@ -98,6 +98,14 @@ RethinkDB really makes me rethinking about how we work with database. I don't
 have to write query in a language that I don't like. I'm no longer forced
 to use a syntax that I don't like because I have no choice.
 
+RethinkDB is explicit. Later on, you will also learn that in RethinkDB, you
+have to explicitly tell it to do some *not-very-safely* operation. Such as when a
+non-atomic update is require, you clearly set a flag to do it.
+
+To me, RethinkDB forces us to understand what we are doing. Everything is
+exposed on the query. No magic, no why this query fail on production but
+work on my local.
+
 # Feedback
 
 I appreciate all of your feedbacks to improve this book. Below is my handle on internet:

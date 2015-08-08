@@ -583,8 +583,23 @@ our language offer. In JavaScript code, we may have:
 
 That's work but it's very inefficent. For example, if we have to append a new
 element to an array for 1000 users. We have to fetch the data, change it,
-update by sending new array again. It's would be great if we can move
-the logic into RethinkDB. Just like how in SQL we can do:
+update by sending new array again.
+
+Also a more important issue is updating lock. When we are retriving data, alter
+it
+on client side, push back data to database. During the time since we get the
+data and push it back. The server may changes the data and we didn't aware of
+it in first query to retrieve data, now when we push back, we override that new
+changes. Image this, we have 2 admins on the sites, who are trying to edit an
+user at the same time to update user's address.
+
+First, admin 1 retrieve data, add new address B and push it back. For whatever
+reason, admin 2 retrieve data, right after admin 1 retrieve
+data, then add new address B and update it, but before admin 1 push it back. 
+So when admin 1 pushs data back, the changes admin 2 created is override.
+
+It's would be great if we can move the logic into RethinkDB and let's
+RethinkDB handles lock for it. Just like how in SQL we can do:
 
     UPDATE TABLE user SET login=login+1
 
@@ -955,122 +970,119 @@ clearly binds to a sequence.
 
 Let's get some basic knowledge then we will come back to the previous example.
 
-Beside passing an object into `update` command, we can also pass an expression which
-returns an object. RethinkDB will evaluate it, get the object result and using
-that value for `update` command. It comes in useful when you have some logic
-on your document related to the updating. Example, if `views` is greater than
-100, we set its type to *host*, otherwise, it's *normal*.
+Beside passing an object into `update` command, we can also pass an expression or 
+a function which returns an object. RethinkDB will evaluate it, get the object
+result and use that value for `update` command. It comes in useful when you 
+have some logic on your document related to the updating. In case of function,
+the function receive first parameter is the current document.
 
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
-        update(function(post) {
-            return r.branch(
-                post("views").gt(100),
-                {type: "hot"},
-                {type: "normal"}
-            )
-        })
+With previous example, we can re-write using function:
+
+    r.db('foodb').table('users')
+      .get('user-foo1')
+      .update(function (user) {
+        return {
+          friend_counts: r.db('foodb').table('friends')('friend2_id').count(user("id"))
+        }
+      })
+
+Then, we got an error:
+
+    RqlRuntimeError: Could not prove function deterministic.  Maybe you want to use the non_atomic flag? in:
+    r.db("foodb").table("users").get("user-foo1").update(function(var_58) { return {friend_counts: r.db("foodb").table("friends")("friend2_id").count(var_58("id"))}; })
+
+Well, this is because the updating isn't **atomic**[^atomic1][^atomic2]
+
+[^atomic1]: http://rethinkdb.com/docs/architecture/#query-execution
+[^atomic2]: http://rethinkdb.com/docs/architecture/#query-execution
+
+Atomic update mean that an update to a document either succesfull,
+or fail and no change is made. Such as we update two fields of a document,
+first field update is succesfull but second field fail to update. Atomic
+guarantees that both of fields will be sucesfully updated to new value.
+Any update happen on a single JSON document is guaranteed to be atomic city.
+So what is a non-atomic update? Non atomic update is setting value to
+result of executing JavaScript code, random values, and values obtained as a
+result of a subquery
+
+T> non-atomic updates
+T>
+T> A good way to remember what is non-atomic update is that they are usually
+T> value which cannot be predicate such as random values, result of other query
+
+To run a non-atomic update, we have to clearly tell RethinkDB that with `nonAtomic`
+option:
+
+    r.db('foodb').table('users')
+      .get('user-foo1')
+      .update(function (user) {
+        return {
+          friend_counts: r.db('foodb').table('friends')('friend2_id').count(user("id"))
+        }
+      }, {nonAtomic: true})
     //=>
     {
-
-        "deleted": 0 ,
-        "errors": 0 ,
-        "inserted": 0 ,
-        "replaced": 1 ,
-        "skipped": 0 ,
-        "unchanged": 0
-
+    "deleted": 0 ,
+    "errors": 0 ,
+    "inserted": 0 ,
+    "replaced": 1 ,
+    "skipped": 0 ,
+    "unchanged": 0
     }
 
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
+We can verify the update really succesfully:
+
+    r.db('foodb').table('users')
+      .get('user-foo1')('friend_counts')
     //=>
-    {
-        "Date": "May 2" ,
-        "Day": 120 ,
-        "Dem": 120 ,
-        "New Value": 1 ,
-        "authors": [
-            "foo" ,
-            "bar"
-        ] ,
-        "id": "foo-bar" ,
-        "type": "normal" ,
-        "uuid": "13556cd8-034c-4c0e-91c0-666230740121" ,
-        "views": 100
-    }
+    2
 
-Don't care too much about `r.branch`. It's like an `IF` in MySQL. If the first
-argument is TRUE, the second argument is return, otherwise the third.
+So we can see that in RethinkDB, we have to opt-in to use some features. Later
+on, we know that we have to manually passing an index name to use it. That may
+a little bit verbose at first. But that helps you understand query and let you
+know what you are doing here.
+
+Updating with function is really similar to passing object to update function.
+We have to return an JSON object with key-value similar to the JSON document
+that we pass directly to **update** command.
+
+We can name the parameter of function to whatever. The name isn't important. It
+is just like a callback function, in what RethinkDB will pass the real value
+of current document to it when invoke that function. What we can do with `r.row`
+we can mostly do with that parameter. Such as getting value of field with.
+Let's change **user** to *u* and see if it works:
+
+    r.db('foodb').table('users')
+      .get('user-foo1')
+      .update(function (u) {
+        return {
+          friend_counts: r.db('foodb').table('friends')('friend2_id').count(u("id"))
+        }
+      }, {nonAtomic: true})
+
+Let's do one more complex example. If an users has more than 10 **friends**, we
+set a field **social_status** to *extrovert*, otherwise, it's *introvert*.
+
+    r.db('foodb').table('users')
+      .get('user-foo1')
+      .update(function (user) {
+        return {
+          social_status: r.branch(user('friend_counts').gt(10), 'extrovert', 'introvert')
+        }
+      }, {nonAtomic: true})
+
+Here we are using a new command `r.branch`. It's like an `IF` in MySQL. If the
+first argument is TRUE, the second argument is the return value, otherwise the
+third argument. We use `user('friend_count')` to get value of `friend_count`
+as you know. We calling `gt` command on it. `gt` means greater, it returns
+**TRUE** if the value is greater than what we pass to `gt`.
+
+
 
 When using a function, the parameter pass into function will be the current
 visited document. Therefore, you can use many document manipulation command in
 it such as: pluck, without, merge, append, prepend. Just remember this, so
 you know what you can do with that parameter.
-
-Now, back to our previous example.
-
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
-      .update(function (poll) {
-        return {
-          same_day_count: r.table('input_polls')('Date').count(poll('Date'))
-        }
-      })
-
-The query runs, but throw this error:
-
-    RqlRuntimeError: Could not prove function deterministic.  Maybe you want to use the non_atomic flag? in:
-    r.table("input_polls").get("13556cd8-034c-4c0e-91c0-666230740121").update(function(var_11) { return {same_day_count: r.table("input_polls")("Date").count(var_11("Date"))}; })
-
-Well, this is because the updating isn't atomic. 
-
-T > non-atomic updates 
-T >    
-T > They are updates that require fetching data from another document.
-
-Let's make it atomic and try again:
-
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
-      .update(function (poll) {
-        return {
-          same_day_count: r.table('input_polls')('Date').count(poll('Date'))
-        }
-      }, {nonAtomic: true})
-    //=>
-    {
-
-        "deleted": 0 ,
-        "errors": 0 ,
-        "inserted": 0 ,
-        "replaced": 1 ,
-        "skipped": 0 ,
-        "unchanged": 0
-
-    }
-
-    //Verify
-    r.table('input_polls').get('13556cd8-034c-4c0e-91c0-666230740121')
-    //=>
-    {
-
-        "Date": "May 2" ,
-        "Day": 120 ,
-        "Dem": 120 ,
-        "New Value": 1 ,
-        "authors": [
-            "foo" ,
-            "bar"
-        ] ,
-        "id": "foo-bar" ,
-        "reviewer": {
-            "age": 25 ,
-            "name": "Vinh" ,
-            "state": "CA"
-        } ,
-        "same_day_count": 1 ,
-        "type": "normal" ,
-        "uuid": "13556cd8-034c-4c0e-91c0-666230740121" ,
-        "views": 100
-
-    }
 
 #### Expr
 
@@ -1337,3 +1349,9 @@ let's make sure you write those change` you can call sync
   })
 
 A sync will run the callback will be called when all change are written to disk.
+
+# Wrap up
+
+Some important concept you should remember:
+
+  * atomicity
