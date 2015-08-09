@@ -257,6 +257,62 @@ The data type of a field or column can be change. If you assign a `number` to a
 field, you can still assign an value with different data type to that same
 field. So we don't have a static schema for tables.
 
+We have a very useful command to get the type of any vaue. It's `typeOf`.
+Example:
+
+    r.db('foodb').table('foods')
+      .typeOf()
+    //=>
+    "TABLE"
+
+    r.db('foodb').table('foods')
+      .filter(r.row("name").match('A^'))
+      .typeOf()
+    //=>
+    "SELECTION<STREAM>"
+
+It's seems not very important to understand about data type at first. I really
+hope you should invest some time to use it frequently to understand the data
+type of a value.
+
+To give a story. In MariaDB10.0/MySQL5.6, when data type doesn't match, an index may not be used.
+Let's say you have a field **name** with type `VARCHAR(255)` when you define it,
+then you create an index on that column. Query on that column with exact data
+type will make index kicked in. Let's come back MySQL a bit.
+
+First I insert below records.
+
+    INSERT INTO foods(name) VALUES("100");
+    Query OK, 1 row affected, 1 warning (0.00 sec)
+
+Below query will use index:
+
+    MariaDB [food]> EXPLAIN SELECT * FROM foods WHERE name="100";
+    +------+-------------+-------+-------+---------------------+---------------------+---------+-------+------+-------+
+    | id   | select_type | table | type  | possible_keys       | key                 | key_len | ref   | rows | Extra |
+    +------+-------------+-------+-------+---------------------+---------------------+---------+-------+------+-------+
+    |    1 | SIMPLE      | foods | const | index_foods_on_name | index_foods_on_name | 257     | const |    1 |       |
+    +------+-------------+-------+-------+---------------------+---------------------+---------+-------+------+-------+
+
+But this query won't:
+
+    EXPLAIN select * from foods where name = 9;
+    MariaDB [food]> EXPLAIN SELECT * FROM foods WHERE name=100;
+    +------+-------------+-------+------+---------------------+------+---------+------+------+-------------+
+    | id   | select_type | table | type | possible_keys       | key  | key_len | ref | rows | Extra       |
+    +------+-------------+-------+------+---------------------+------+---------+------+------+-------------+
+    |    1 | SIMPLE      | foods | ALL  | index_foods_on_name | NULL | NULL    | NULL |  890 | Using where |
+    +------+-------------+-------+------+---------------------+------+---------+------+------+-------------+
+    1 row in set (0.00 sec)
+
+When we pass string *'9'*, the index is used. When we pass number *9*, the index
+isn't used.
+
+Of if you have a date time column and you passing time as string, the index
+won't kicked in either.
+
+The lesson here is we aboslutely should understand about data type.
+
 ## Composite data type
 
 We have 3 composite data types.
@@ -309,10 +365,12 @@ Remember data types seems not much important but you should understand them
 well because it helps us understand the efficient of a query. If a query
 returns an array, it consumes lot of memory to hold the array.
 
+## Sorting data
+
 When talking about data type, let think of how we sort them. It really doesn't
 matter in the order, what is important is the definition of sorting data.
 
-Understanding sorting is important in RethinkDB because the primary key may not
+Understanding sorting is important in RethinkDB because of its schemaless. The primary key may not
 be a numeric field, it can be a string. Moreover than that, a field can have
 whatever data type, how are we going to compare an object to a string when
 sorting.
@@ -333,6 +391,7 @@ Mixed sequences of data sort in the following order:
  * times
  * strings
 
+That mean array < booleans < null < numbers < objects < binary objects < geometry objects < times < strings.
 
 # Selecting data
 
@@ -344,43 +403,47 @@ time, we will choose a db to work with, and chain into command `table`.
 Let's find all foods. This is same as `SELECT * FROM foods` in SQL.
 
     r.db('foodb').table('foods')
+    //=>
 
-    [
-      {
-      "Date":  "Jan 16" ,
-      "Day": 14 ,
-      "Dem": 50 ,
-      "EV": 12 ,
-      "GOP": 39 ,
-      "Len": 5 ,
-      "Pollster":  "SurveyUSA-5" ,
-      "id":  "Washington" ,
-      "uuid":  "0670d6e4-7b56-4259-b5f2-4dbc5186fcca"
-      } ,
-      {
-      "Date":  "Apr 05" ,
-      "Day": 93.5 ,
-      "Dem": 47 ,
-      "EV": 15 ,
-      "GOP": 47 ,
-      "Len": 4 ,
-      "Pollster":  "Marist Coll.-4" ,
-      "id":  "North Carolina" ,
-      "uuid":  "0788843d-a342-4402-9c47-f6522e7bc216"
-      } ,
-      {
-      "Date":  "May 14" ,
-      "Day": 131.5 ,
-      "Dem": 49 ,
-      "EV": 14 ,
-      "GOP": 39 ,
-      "Len": 6 ,
-      "Pollster":  "Quinnipiac U.-6" ,
-      "id":  "New Jersey" ,
-      "uuid":  "08acce74-9d7d-4baa-a0ee-2b5d6520ae82"
-      } ,
-      ...
-    ]
+    {
+        "created_at": Wed Feb 09 2011 00: 37: 17 GMT - 08: 00,
+        "creator_id": null,
+        "description": null,
+        "food_group": "Herbs and Spices",
+        "food_subgroup": "Spices",
+        "food_type": "Type 1",
+        "id": 43,
+        "itis_id": "29610",
+        "legacy_id": 46,
+        "name": "Caraway",
+        "name_scientific": "Carum carvi",
+        "picture_content_type": "image/jpeg",
+        "picture_file_name": "43.jpg",
+        "picture_file_size": 59897,
+        "picture_updated_at": Fri Apr 20 2012 09: 38: 36 GMT - 07: 00,
+        "updated_at": Fri Apr 20 2012 16: 38: 37 GMT - 07: 00,
+        "updater_id": null,
+        "wikipedia_id": null
+    } {
+        "created_at": Wed Feb 09 2011 00: 37: 18 GMT - 08: 00,
+        "creator_id": null,
+        "description": null,
+        "food_group": "Herbs and Spices",
+        "food_subgroup": "Spices",
+        "food_type": "Type 1",
+        "id": 67,
+        "itis_id": "501839",
+        "legacy_id": 73,
+        "name": "Cumin",
+        "name_scientific": "Cuminum cyminum",
+        "picture_content_type": "image/jpeg",
+        "picture_file_name": "67.jpg",
+        "picture_file_size": 73485,
+        "picture_updated_at": Fri Apr 20 2012 09: 32: 32 GMT - 07: 00,
+        "updated_at": Fri Apr 20 2012 16: 32: 33 GMT - 07: 00,
+        "updater_id": null,
+        "wikipedia_id": null
+    }
 
 You should get back an array of JSON object. By default, the data explorer will
 automatically paginate it and display a part of data.
@@ -388,36 +451,45 @@ automatically paginate it and display a part of data.
 Typing `r.db(db_name)` all the time is insane. We can drop it to use `r.table()`
 without calling `r.db()` if the table is in current selected database. Without 
 any indication, the default database is `test`. On Data Exploer, without a 
-`r.db` command, RethinkDB will use `test` as default database. 
+`r.db` command, RethinkDB will use `test` as default database. Unfortunately we
+cannot set a default database with data exploer[^defaultdbui]
+
+[^defaultdbui]: https://github.com/rethinkdb/rethinkdb/issues/829
 
 ## Select a single document by its primary key
 
 To select a single element, we call `get` on a table, and passing its primary
 key value.
 
-    r.table('input_polls').get('08acce74-9d7d-4baa-a0ee-2b5d6520ae82')
-    # will return
+    r.db('foodb').table('foods')
+      .get(108)
+    //=>
     {
-      "Date":  "May 14" ,
-      "Day": 131.5 ,
-      "Dem": 49 ,
-      "EV": 14 ,
-      "GOP": 39 ,
-      "Len": 6 ,
-      "Pollster":  "Quinnipiac U.-6" ,
-      "id":  "New Jersey" ,
-      "uuid":  "08acce74-9d7d-4baa-a0ee-2b5d6520ae82"
+        "created_at": Wed Feb 09 2011 00: 37: 20 GMT - 08: 00,
+        "creator_id": null,
+        "description": null,
+        "food_group": "Herbs and Spices",
+        "food_subgroup": "Herbs",
+        "food_type": "Type 1",
+        "id": 108,
+        "itis_id": "32565",
+        "legacy_id": 115,
+        "name": "Lemon balm",
+        "name_scientific": "Melissa officinalis",
+        "picture_content_type": "image/jpeg",
+        "picture_file_name": "108.jpg",
+        "picture_file_size": 30057,
+        "picture_updated_at": Fri Apr 20 2012 09: 33: 54 GMT - 07: 00,
+        "updated_at": Fri Apr 20 2012 16: 33: 54 GMT - 07: 00,
+        "updater_id": null,
+        "wikipedia_id": null
     }
-
-> Note: This time, we drop `.db('test')` and just use `r.table()`. It's shorter
-> and it works. If you are working on database `test` and want to access table
-> in database `db1`, u have to use `r.db('db1').table(...)`
 
 Every document in RethinkDB includes a primary key field, its value is
 unique across cluster and is used to identify the document. The name of primary 
-field is `id` by default. However, when you create a table, you have an option to change name of primary field.
-Like in above table, the primary field's name is `uuid`, not `id`. We will learn
-more about it later. Just keep a note here.
+field is `id` by default. However, when you create a table, you have an option 
+to change name of primary field. We will learn more about it later. Just keep a
+note here.
 
 In RethinkDB, using of incremental primary key isn't recommended because that's
 hard in a cluster environment. To make sure
@@ -428,19 +500,77 @@ incremental value.
 [^pr]: [http://stackoverflow.com/questions/21020823/unique-integer-counter-in-rethinkdb](http://en.wikipedia.org/wiki/Universally_unique_identifier)
 [^uuidinfo]: [http://en.wikipedia.org/wiki/Universally_unique_identifier](http://en.wikipedia.org/wiki/Universally_unique_identifier)
 
-However, we usually know what we want and only need a couple of fields instead of the whole document. We can do that
+`get` command returns the whole document. What if we get a single field? Such
+as we only care about name? RethinkDB has a command call **bracket** for that
+purpose. In Ruby it's `[]`, and in JavaScript it's `()`.
 
-some document on how to use get and select some field
+We can do this in JavaScript:
 
-Similar to that, to only returns some field for the whole table we can do
+    r.db('foodb').table('foods')
+      .get(108)("name")
+    //=>
+    "Lemon balm"
 
-    r.table("foods").getField("a")("b")
+Or in Ruby
 
+    r.connect.repl
+    r.db('foodb').table('foods').get(108)[:name].run
+
+What special about **bracket** is that it return a single value of the field.
+The type of value is same type of value, not a subset of document. We can verify
+that with `typeOf` command:
+
+    r.db('foodb').table('foods')
+      .get(108)
+      ("name")
+      .typeOf()
+    //=>
+    "STRING"
+
+You can even get nested field with bracket:
+
+    r.db('foodb').table('test')
+      .get(108)("address")("country")
+
+with assumption that the document has **address** field is an object contains a
+field name **country**.
+
+If you don't like the using of bracket, you can use `getField`(JavaScript) or
+`get_field`(Ruby) which have same effect:
+
+    r.db('foodb').table('foods')
+      .get(108)
+      .getField('name')
+    //=>
+    "Lemon balm"
+
+How about getting a sub set of document, we can use `pluck` like this:
+
+    r.db('foodb').table('foods')
+      .get(108)
+      .pluck(get"name", "id")
+    //=>
+    {
+      "id": 108 ,
+      "name":  "Lemon balm"
+    }
+
+`pluck` probably existed in many standard library of your favourite language.
+This example shows you how friendly ReQL is.
 
 ## Select many documents by value of fields
 
-We used `filter` method, and passing an object with expected value.
-Let's find all poll on May 14.
+To select many document based on value of field, We used `filter` method, and
+passing an object with expected value.
+
+Let's find all food that were inserted into database on `2011`, the year I come
+to the US.
+
+    r.db('foodb').table('foods')
+      .filter(r.row('created_att').year().eq(2011))
+
+
+ 
 
     r.table('input_polls').filter({day: 'May 14'})
     #=>  
