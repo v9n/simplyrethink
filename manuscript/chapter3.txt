@@ -461,6 +461,14 @@ cannot set a default database with data exploer[^defaultdbui]
 
 [^defaultdbui]: https://github.com/rethinkdb/rethinkdb/issues/829
 
+### Counting
+
+We can also `count` the table or any sequence by calling `count` command.
+
+    r.db('foodb').table('foods').count()
+    //=>
+    863
+
 ## Select a single document by its primary key
 
 To select a single element, we call `get` on a table, and passing its primary
@@ -692,44 +700,6 @@ those fiels from document.
     },...
     ]
 
-We can event filter nested document with `filter`. Let's try it. For now, just
-copy and paste below query into data exploer, we will learn more about those
-kind of query in later chapter.
-
-First, create a test table to hold sample data:
-
-    r.db('foodb').tableCreate('test_filter')
-
-Then insert those sample document:
-
-    r.db('foodb').table('test_filter')
-      .insert([
-        {
-          name: "Simply RethinkDB",
-          address: {
-            country: {
-              code: "USA",
-              name: "The United State of America"
-            }
-          }
-        },
-        {
-          name: "TKKG",
-          address: {
-            country: {
-              code: "GER",
-              name: "Germany"
-            }
-          }
-        }
-        ])
-
-Now we have two document in above table. Let's find document whose country is
-`USA`
-
-
-
-
 With simple filterting, we can easily pass an filter object as above. But what
 up with complex searching? Such as finding all foods whose name starts with
 character **N**. As you see at the beginning, we used `r.row` command to do a
@@ -740,15 +710,26 @@ bit complex query.
 
 Let's dive more into it.
 
+T> Counting filter result
+T>
+T> By calling `count` at the end of filter, we can count the result set of
+T> sequence
+T>     r.db('foodb').table('foods')
+T>         .filter({food_type: 'Type 1',food_group: 'Fruits'})
+T>         .count()
+T>     //=>
+T>     122
+
 ## r.row
 
 `r.row` is our swiss army knife. It refers to current visited document.
 Literally, it's the document at which RethinkDB is accessing. You can think of
 it like **this** in a JavScript callback/iterator. Or think of it like current
-element in an iterator loop.
+element in an iterator loop. It's very handy because we can call other ReQL
+command on it to achieve our filtering.
 
-An example, we write this in JavaScript to filter all DOM element whose
-`data-type` value is *anime*.
+It somehow feel like jQuery filtering command. For an instance, we write this 
+in JavaScript to filter all DOM element whose `data-type` value is *anime*.
 
     $('.db').find('.table').filter(function() {
       return $(this).data('type')=='anime'
@@ -778,23 +759,11 @@ cannot be any arbitrary language expression. You cannot write:
 
     r.db('db').table('table').filter(r.row('type') == 'anime')
 
-RethinkDB has a several method as below, they are
-usually grouped into Document Manipulation Command on RethinkDB
-docs[^doc_mani_cmd].
-
-[^doc_manu_cmd]: [http://rethinkdb.com/api/javascript/#row](http://rethinkdb.com/api/javascript/#row)
-
-  * *r.row('field_name')* passing a field name into `r.row` return value of the field in document
-  * *pluck('field_1', 'field_2', 'another_field' [,...])* pluck will get us the
-   document with only fields in the parameters are included. 
-  * *without([selector1, selector2...])* opposite of pluck. It returns document
-   and eliminated the fields in the parameters list.
-  * *merge(object)* it merges the current document with the object we pass, and
-  return new document. 
-
-So with `r.row` we can transform document into our want, but we wanted to
-filter data. We want a way to run some check, compare data. Well, RethinkDB
-gives us some command that we can call on a value for logic checking.
+In manner of filter action, we usually execute comparison or some condition to
+be matched, RethinkDB gives us some kind of those method. You should refer to
+its API for extensive command. Usually, we can use `r.row` in combine with
+`pluck` or `without` or `bracket` command to narrow down data before
+comparing. Below are some function for that purpose:
 
   * *eq(value)* check equal to value. similar to `==`.
   * *ne(value)* check not equal to value. similar to `!=`.
@@ -805,39 +774,319 @@ gives us some command that we can call on a value for logic checking.
   * *add(value)* Sum two numbers, concatenate two strings, or concatenate 2 arrays.
   * *sub()* Subtract two numbers.
 
-Each of above command can be call on different data type. Eg, when you call `add` on an array, it will append the element to array. when you call on a string, it concat parameter to the original string. Or calling on a number and they just do arithmetic operation.
-  
-  ["foo", "bar"].add('forbar') => ['foo', 'bar', 'foobar']
-  2.add(10) => 12
-  'foo '.add("bar") => 'foo bar'
-      
-You can find more about them in RethinkDB doc, in group Math and
-logic[^math_logic]. 
+Each of above command can be call on different data type. Eg, when you call `add`
+on an array, it will append the element to array. when you call on a string, it
+concat parameter to the original string. Or calling on a number and they just 
+do arithmetic operation.
 
-[^math_logic]: [http://rethinkdb.com/api/javascript/#mod](http://rethinkdb.com/api/javascript/#mod)     
+Run those command in data explorer:
 
-Time to use them now.    
+    r.expr(["foo", "bar"]).add(['forbar'])
+    //=>
+    [
+      "foo" ,
+      "bar" ,
+      "forbar"
+    ]
 
-How about if we want to get only a single fields, like we want to get a list of
-id of input_polls. `pluck` works of course, but we have a shortcut here.
+    r.expr(2).add(10)
+    //=>
+    12
 
-    r.table('input_polls')(field)
+    r.expr('foo').add("bar")
+    //=>
+    "foobar"
+
+T> Note that the reason we use `r.expr` is that we have to turn the native
+T> object(array, number, string in our language) into RethinkDB data type, so that
+T> we can call command on those.
+T>
+T> However, in Ruby it can be even shorter with
+T> r(r(['foo', 'bar']) + ['foorbar'])
+T>
+T> Basically, you have to remember that everything is evaluated on server, and
+T> RethinkDB command only callable on RethinkDB data type
+
+You can find more about those document in RethinkDB doc, in group *Math and
+logic*[^math_logic].
+
+[^math_logic]: [http://rethinkdb.com/api/javascript/#mod](http://rethinkdb.com/api/javascript/#mod)
+
+Let's apply what we learn, by finding al food where its name starts with
+character `R` and is a tropical fruits.
+
+    r.db("foodb").table("foods")
+      .filter(
+          r.row("name").match("^R")
+          .and(
+            r.row("food_subgroup").eq('Tropical fruits')
+          )
+      )
+    //=>
+    {
+      "created_at": Wed Feb 09 2011 00:37:27 GMT-08:00 ,
+      "creator_id": null ,
+      "description": null ,
+      "food_group":  "Fruits" ,
+      "food_subgroup":  "Tropical fruits" ,
+      "food_type":  "Type 1" ,
+      "id": 234 ,
+      "itis_id":  "506073" ,
+      "legacy_id": 249 ,
+      "name":  "Rambutan" ,
+      "name_scientific":  "Nephelium lappaceum" ,
+      "picture_content_type":  "image/jpeg" ,
+      "picture_file_name":  "234.jpg" ,
+      "picture_file_size": 71055 ,
+      "picture_updated_at": Fri Apr 20 2012 09:43:04 GMT-07:00 ,
+      "updated_at": Fri Apr 20 2012 16:43:05 GMT-07:00 ,
+      "updater_id": null ,
+      "wikipedia_id": null
+    }
+
+Here we are usinbg `match` with an regular expression *^R* means any name starts
+with R, and using `and` to do an **and** operator with other boolean. Other
+boolean is result of getting field **food_subgroup** and compare with *tropical
+fruits*.
 
 `filter` seems handy but it's actually limited. `filter` didn't leverage index.
 It scan and hold all data in memory. Of course, this isn't scale infinite. Only
-100,000 record can be filter.
+100,000 records can be filter. For anything large than that, we have to use
+`getAll` or `between` which we will learn in chapter 5.
 
-RethinkDB doesn't order docuement based on time they are inserted by default. The order seems in an unpredicted way. In MySQL, for
-example, even without any index, the default order will be exactly same as you
-insrted the document. However, in RethinkDB it doesn't. I guess this is because
-it's distributed.
+Now, let's try to find all *foods* which has more than 10 foods document in its
+group. We probably think of a simple solution like this: for each of document,
+we get its **food_group** and count how many items has that same food group, if
+the result is greater than 10, we return true, so that it will be included in
+`filter` result. We may have duplicate result but let's try this naieve
+soltuion:
 
+    r.db('foodb').table('foods')
+      .filter(
+        r.db('foodb').table('foods')
+          .filter(
+            {food_group: r.row("food_group")}
+          )
+          .count()
+          .gt(10)
+      )
+
+Query looks good but when we run, we get this:
+
+    RqlCompileError: Cannot use r.row in nested queries.  Use functions instead in:
+    r.db("foodb").table("foods").filter(r.db("foodb").table("foods").filter({food_group:
+    r.row("food_group")}).count().gt(10))
+
+Basically, we have nested query here, and RethinkDB doesn't know which query
+`r.row` should belong to, is it parent query, or the sub query? In those case,
+we have to use filter with function. Let's move to next chapter.
+
+### Filter with function
+
+Beside passing an ReQL expression, we can also use a function which return true
+or false to `filter`.
+
+Let's try previous example.
+
+    r.db('foodb').table('foods')
+      .filter(function (food) {
+       return r.db('foodb').table('foods').filter({food_group: food("food_group")}).count().gt(10)
+      })
+
+Now, we no longer using `r.row`, we pass an anonymous function with a single
+parameter(which we can name whatever), when itereating over the table, RethinkDB
+call this function, and passing current document as its first argument. By using
+function, we can still access current document, without using `r.row`, and
+clearly bind current document to a variable, so that we can access its value and
+avoid conflicting. Here, we name our argument **food**, instead of writing:
+
+    filter({food_group: r.row("food_group")})
+
+We will write:
+
+    filter({filter_group: food("food_group")})
+
+And we using boolean value, `count().gt(10)` here, as result of function.
+Filter with function helps us write query with complex logic.
+
+### Pagination data
+
+We rarely want a whole sequence of document, usually we care about a subset of
+data such as pagination data. In this section, we go over commands: order, limit
+and skip.
+
+#### Order data
+
+So far, we only select data and accept default ordering. Let's control how they
+appear:
+
+    r.db('foodb').table('foods')
+      .filter(function (food) {
+       return r.db('foodb').table('foods').filter({food_group:
+food("food_group")}).count().gt(10)
+      })
+      .orderBy("name")
+    //=>Executed in 5.69s. 821 rows returned
+    [
+    {
+        "created_at": {
+            "$reql_type$": "TIME",
+            "epoch_time": 1297240650,
+            "timezone": "-08:00"
+        },
+        "creator_id": null,
+        "description": null,
+        "food_group": "Aquatic foods",
+        "food_subgroup": "Mollusks",
+        "food_type": "Type 1",
+        "id": 280,
+        "itis_id": "69493",
+        "legacy_id": 307,
+        "name": "Abalone",
+        "name_scientific": "Haliotis",
+        "picture_content_type": "image/jpeg",
+        "picture_file_name": "280.jpg",
+        "picture_file_size": 99231,
+        "picture_updated_at": {
+            "$reql_type$": "TIME",
+            "epoch_time": 1334940073,
+            "timezone": "-07:00"
+        },
+        "updated_at": {
+            "$reql_type$": "TIME",
+            "epoch_time": 1334965273,
+            "timezone": "-07:00"
+        },
+        "updater_id": null,
+        "wikipedia_id": null
+    },
+    ...
+    ]
+
+We re-used above `filter` query, but append `orderBy("name")`. If you notice,
+the above command run quite long **Executed in 5.56s. 821 rows returned** and
+all rows are returned instead of a streams as usual. When we are calling
+`orderBy` without specifing an index, it load all data into memory to sort,
+which is both of slow and in-efficient. We will learn more about ordering with
+index in chapter 5. For now, let's continue with this method because, well, they
+are easy to use, at first :D
+
+We can reverse order by applying `r.desc` command:
+
+    r.db('foodb').table('foods')
+      .filter(function (food) {
+        return r.db('foodb').table('foods').filter({food_group: food("food_group")}).count().gt(10)
+      })
+      .orderBy(r.desc("name"))
+
+We can order on `table` too, not just filter:
+
+    r.db('foodb').table('foods')
+      .orderBy(r.desc("name"))
+
+We can order by multiple field, at a time
+
+    r.db('foodb').table('foods')
+      .orderBy(r.desc("name"), r.asc("created_at"))
+
+We order by descending order on field `name` and ascending on field
+`created_at`.
+
+T> One more thing to note is that RethinkDB doesn't order document based on time 
+T> they are inserted by default. The order seems in an unpredicted way without
+T> explicitly setting an order . In MySQL, for
+T> example, even without any index, the default order will be exactly same as you
+T> insrted the document. However, in RethinkDB it doesn't. I guess this is because
+T> it's distributed.
+
+We can combine some document commands with `orderBy` too. Such as `pluck` only
+an useful set of fields:
+
+    r.db('foodb').table('foods')
+      .pluck("id", "name", "food_group")
+      .orderBy(r.desc("name"), r.asc("created_at"))
+    //=>Executed in 122ms. 863 rows returned
+    [
+      {
+          "food_group": "Milk and milk products",
+          "id": 634,
+          "name": "Yogurt"
+      },
+      {
+          "food_group": "Milk and milk products",
+          "id": 656,
+          "name": "Ymer"
+      },
+      {
+          "food_group": "Aquatic foods",
+          "id": 523,
+          "name": "Yellowtail amberjack"
+      },
+      ...
+    ]
+
+
+#### Limiting data
+
+Once we have an ordering sequence, we usually want to select a limit number of
+document instead of the whole sequence. We use command `limit(n)` for this
+purpose. It get *n* elements from the sequence or array.
+
+    r.db('foodb').table('foods')
+      .pluck("id", "name", "food_group")
+      .orderBy(r.desc("name"), r.asc("created_at"))
+      .limit(4)
+    //=>Executed in 107ms. 2 rows returned
+    [{
+        "food_group": "Milk and milk products",
+        "id": 634,
+        "name": "Yogurt"
+    }, {
+        "food_group": "Milk and milk products",
+        "id": 656,
+        "name": "Ymer"
+    }, {
+        "food_group": "Aquatic foods",
+        "id": 523,
+        "name": "Yellowtail amberjack"
+    }, {
+        "food_group": "Aquatic foods",
+        "id": 522,
+        "name": "Yellowfin tuna"
+    }]
+
+`limit` get us a number of document that we want, but it always start from the
+beginning of sequence. To start selecting data starts from a position, we used
+`skip`.
+
+#### Skip
+
+As its name, `skip(n)` ignore a number of element from the head of sequence. 
+
+    r.db('foodb').table('foods')
+      .pluck("id", "name", "food_group")
+      .orderBy(r.desc("name"), r.asc("created_at"))
+      .skip(2)
+      .limit(2)
+    //=> Executed in 97ms. 2 rows returned
+    [{
+        "food_group": "Aquatic foods",
+        "id": 523,
+        "name": "Yellowtail amberjack"
+    }, {
+        "food_group": "Aquatic foods",
+        "id": 522,
+        "name": "Yellowfin tuna"
+    }]
+
+
+## r.expr
 Because ReQL is built into your language. You can do many amazing thing
 without had to deal to crete ugly and complex SQL. 
 
 Look at our `input_polls` table, we want to filter only the poll happen on
 Sunday in Minnesota, and all the poll on Monday at Virginia.
-
+a
     r.table('input_polls').filter(
 		  r.js("(function (p) { var d = new Date(Date.parse(p.Date + ' 2014')); return p.id=='Minnesota' && d.getDay()==0;})")
     )
