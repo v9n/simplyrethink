@@ -909,7 +909,7 @@ We will write:
 And we using boolean value, `count().gt(10)` here, as result of function.
 Filter with function helps us write query with complex logic.
 
-### Pagination data
+## Pagination data
 
 We rarely want a whole sequence of document, usually we care about a subset of
 data such as pagination data. In this section, we go over commands: order, limit
@@ -1079,60 +1079,6 @@ As its name, `skip(n)` ignore a number of element from the head of sequence.
         "name": "Yellowfin tuna"
     }]
 
-
-## r.expr
-Because ReQL is built into your language. You can do many amazing thing
-without had to deal to crete ugly and complex SQL. 
-
-Look at our `input_polls` table, we want to filter only the poll happen on
-Sunday in Minnesota, and all the poll on Monday at Virginia.
-a
-    r.table('input_polls').filter(
-		  r.js("(function (p) { var d = new Date(Date.parse(p.Date + ' 2014')); return p.id=='Minnesota' && d.getDay()==0;})")
-    )
-
-    r.table('input_polls').filter(
-		  r.js("(function (p) { var d = new Date(Date.parse(p.Date + ' 2014')); return (p.id=='Minnesota' && d.getDay()==0) || (p.id=='Virgina' && d.getDay()==2) ;})")
-    )
-
-Example for this query:
-
-r.table("hb")
-  .filter(function(request) {
-    return request("web_environment")("HTTP_X_FORWARDED_FOR").eq("103.246.249.121")
-  })
-  .count()
-
-
-The syntax may ugly at this moment because we have to pass the JavaScript code
-as a single string. But the potential is huge. Those kind of tricky query can
-get hard with SQL. Now we can simply explain in our own language with eventually
-complex business logic rule
-
-We will learn more about advanced query in other chapter. For now, let's move on
-and try to write some data into RethinkDB.
-
-
-### Transforming document with `merge`
-
-The documents from query can be merge into another document to return another
-document. Or we can also merge two arrays.
-
-Eg, simple merging with an object:
-
-    r.table('input_polls').get('5da46eba-5717-40aa-93c5-9f5c50e1e20e')
-      .merge({'foo': 'bar', 'foobar' : 'bar'})
-     
-`merge` shines when we merge it with result from other query
-    
-  r.table('county_stats').get('0189da60-2501-40c2-a16e-2f69eb0feb30')
-      .pluck('Births2010', 'Births2011', 'Deaths2010', 'Deaths2011', 'Stname', 'ctyname')
-      .merge()
- 
-
-We can also merge the nested object
-
-
 ## Access Nested field
 
 As you know, RethinkDB document is a JSON object. Very likely we have two or
@@ -1274,4 +1220,5 @@ We now have some basic understanding:
     4. Access table data and filter data by some condition
     5. Access nested field
 
-Let's move to next chapter to write some data into RethinkDB.
+We will learn more about advanced query in other chapter. For now, let's move on
+and try to write some data into RethinkDB.
