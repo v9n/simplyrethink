@@ -106,6 +106,20 @@ To me, RethinkDB forces us to understand what we are doing. Everything is
 exposed on the query. No magic, no why this query fail on production but
 work on my local.
 
+In Vietnam culture, we usually do something 3 times before we end it. Being a
+Vietnamese, let's me end this show with the third example.
+
+Do you understand below query:
+
+    r
+      .db('foodb')
+      .table('foods')
+      .filter(r.row('created_at').year().eq(2011))
+
+This query is used to find all foods which were inserted in year **2011**. I
+don't even give equivalent SQL example, because it just cannot be as beautiful
+and verbose as above query.
+
 # Feedback
 
 I appreciate all of your feedbacks to improve this book. Below is my handle on internet:

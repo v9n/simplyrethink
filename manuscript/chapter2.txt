@@ -63,6 +63,9 @@ similar to column in MySQL. When I say *JSON document*, I mean an JSON object
 with fields, not a single number, an array or a string. However, each field
 can content whatever JSON data type.
 
+More than that, the same field can accept whatever data type. On same table,
+two document can contains diferent data type for same field.
+
 # Durability
 
 You will see an option/argument call `durability` `*durability` appear a lot
