@@ -129,10 +129,11 @@ dump will just export whole of data of a cluster. Its syntax
     rethinkdb dump -c 127.0.0.1:28015
 
 You will see some status lines:
-    
-    NOTE: 'rethinkdb-dump' saves data and secondary indexes, but does *not* save
+        NOTE: 'rethinkdb-dump' saves data and secondary indexes, but does *not* save
    cluster metadata.  You will need to recreate your cluster setup yourself after
    you run 'rethinkdb-restore'.
+
+
   Exporting to directory...
   [========================================] 100%
   428353 rows exported from 9 tables, with 0 secondary indexes
