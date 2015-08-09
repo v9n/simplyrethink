@@ -2,6 +2,9 @@
 
 If you are lazy(just like me) and skip straigh to this chapter, please go back to
 the end of previous chapter to import sample dataset. Once you did it, let's start.
+Oh, before we start, let me tell you this, sometime if you see an `...` it
+means, we have more data returning, but I cannot paste them all into the book. I
+used `...` to denote for more data available.
 
 # Getting to Know ReQL
 
@@ -405,7 +408,7 @@ Let's find all foods. This is same as `SELECT * FROM foods` in SQL.
     r.db('foodb').table('foods')
     //=>
 
-    {
+    [{
         "created_at": Wed Feb 09 2011 00: 37: 17 GMT - 08: 00,
         "creator_id": null,
         "description": null,
@@ -424,7 +427,7 @@ Let's find all foods. This is same as `SELECT * FROM foods` in SQL.
         "updated_at": Fri Apr 20 2012 16: 38: 37 GMT - 07: 00,
         "updater_id": null,
         "wikipedia_id": null
-    } {
+    }, {
         "created_at": Wed Feb 09 2011 00: 37: 18 GMT - 08: 00,
         "creator_id": null,
         "description": null,
@@ -443,7 +446,9 @@ Let's find all foods. This is same as `SELECT * FROM foods` in SQL.
         "updated_at": Fri Apr 20 2012 16: 32: 33 GMT - 07: 00,
         "updater_id": null,
         "wikipedia_id": null
-    }
+    },
+    ...
+    ]
 
 You should get back an array of JSON object. By default, the data explorer will
 automatically paginate it and display a part of data.
@@ -567,131 +572,213 @@ Let's find all food that were inserted into database on `2011`, the year I come
 to the US.
 
     r.db('foodb').table('foods')
-      .filter(r.row('created_att').year().eq(2011))
-
-
- 
-
-    r.table('input_polls').filter({day: 'May 14'})
-    #=>  
-    [
-        {
-        "Date":  "May 14" ,
-        "Day": 131.5 ,
-        "Dem": 49 ,
-        "EV": 14 ,
-        "GOP": 39 ,
-        "Len": 6 ,
-        "Pollster":  "Quinnipiac U.-6" ,
-        "id":  "New Jersey" ,
-        "uuid":  "08acce74-9d7d-4baa-a0ee-2b5d6520ae82"
-        } ,
-        {
-        "Date":  "May 14" ,
-        "Day": 134 ,
-        "Dem": 43 ,
-        "EV": 15 ,
-        "GOP": 51 ,
-        "Len": 1 ,
-        "Pollster":  "Rasmussen-1" ,
-        "id":  "North Carolina" ,
-        "uuid":  "b3d2024b-92c0-4852-bb8c-50c10591cac3"
-        }
-    ]    
-
-
-Not just that, if we pass many value into `filter`, it will be filter as well. 
-
-    r.table('input_polls').filter({Date: 'May 14', Day: 134})
-    #=>  
-    [
-        {
-        "Date":  "May 14" ,
-        "Day": 134 ,
-        "Dem": 43 ,
-        "EV": 15 ,
-        "GOP": 51 ,
-        "Len": 1 ,
-        "Pollster":  "Rasmussen-1" ,
-        "id":  "North Carolina" ,
-        "uuid":  "b3d2024b-92c0-4852-bb8c-50c10591cac3"
-        }
-    ]    
-
-If you notice, we didn't specify any fields in all our above query. That's bad because all fields are returned. We don't need to fetch what we don't want. Let's narrow down them with `pluck`. `pluck` accepts a list of fields to be included in document
-
-    r.table('input_polls').filter({Date: 'May 14', Day: 134})
-      .pluck('Pollster', 'id', 'uuid')
-//=> Result is an array with one element.
-[
-
-    {
-        "Pollster": "Rasmussen-1" ,
-        "id": "North Carolina" ,
-        "uuid": "b3d2024b-92c0-4852-bb8c-50c10591cac3"
+      .filter(r.row('created_at').year().eq(2011))
+    //=>Executed in 59ms. 40 rows returned, 40 displayed, more available
+    [{
+        "created_at": Wed Feb 09 2011 00: 37: 17 GMT - 08: 00,
+        "creator_id": null,
+        "description": null,
+        "food_group": "Herbs and Spices",
+        "food_subgroup": "Spices",
+        "food_type": "Type 1",
+        "id": 43,
+        "itis_id": "29610",
+        "legacy_id": 46,
+        "name": "Caraway",
+        "name_scientific": "Carum carvi",
+        "picture_content_type": "image/jpeg",
+        "picture_file_name": "43.jpg",
+        "picture_file_size": 59897,
+        "picture_updated_at": Fri Apr 20 2012 09: 38: 36 GMT - 07: 00,
+        "updated_at": Fri Apr 20 2012 16: 38: 37 GMT - 07: 00,
+        "updater_id": null,
+        "wikipedia_id": null
     }
+    ...
+    ]
 
-]
+`r.row` is new to you, but no worry, it just means current document. We used
+`r.row('created_at')` to get value of **created_at** field, similar with how we
+use **bracket** on `get` command to get a single value. Because **created_at**
+is a datetime value, I get its year with, well, `year` command, then using `eq`
+to do an equal compare with 2011. Sound a lot, but above query is really simple
+and exlain itself. Sometimes I feel redundant to explain query but I have to
+write this book anyway.
 
-We can call `pluck` on document too. 
+We can also pass an filter object to do matching filter:
 
-    r.table('input_polls').get('b3d2024b-92c0-4852-bb8c-50c10591cac3')
-      .pluck('Pollster', 'id', 'uuid')
-    //=> Return a single object since we used `get`
+    r.db('foodb').table('foods')
+      .filter({
+        food_type: 'Type 1',
+        food_group: 'Fruits'
+      })
+    //=>
+    [
     {
-        "Pollster": "Rasmussen-1" ,
-        "id": "North Carolina" ,
-        "uuid": "b3d2024b-92c0-4852-bb8c-50c10591cac3"
-    }
+      "created_at": Wed Feb 09 2011 00:37:15 GMT-08:00 ,
+      "creator_id": null ,
+      "description": null ,
+      "food_group":  "Fruits" ,
+      "food_subgroup":  "Tropical fruits" ,
+      "food_type":  "Type 1" ,
+      "id": 14 ,
+      "itis_id":  "18099" ,
+      "legacy_id": 14 ,
+      "name":  "Custard apple" ,
+      "name_scientific":  "Annona reticulata" ,
+      "picture_content_type":  "image/jpeg" ,
+      "picture_file_name":  "14.jpg" ,
+      "picture_file_size": 29242 ,
+      "picture_updated_at": Fri Apr 20 2012 09:30:49 GMT-07:00 ,
+      "updated_at": Fri Apr 20 2012 16:30:49 GMT-07:00 ,
+      "updater_id": null ,
+      "wikipedia_id": null
+    },...
+    ]
+
+We can use `pluck` to get a subset of documents in sequence, similar to how we
+use it with `get`.
+
+    r.db('foodb').table('foods')
+      .filter({
+        food_type: 'Type 1',
+        food_group: 'Fruits'
+      })
+      .pluck('id', 'name', 'food_subgroup')
+    //=>Executed in 70ms. 40 rows returned, 40 displayed, more available
+    [
+      {
+      "food_subgroup":  "Berries" ,
+      "id": 75 ,
+      "name":  "Black crowberry"
+      }, {
+      "food_subgroup":  "Tropical fruits" ,
+      "id": 150 ,
+      "name":  "Guava"
+      }, {
+      "food_subgroup":  "Tropical fruits" ,
+      "id": 151 ,
+      "name":  "Pomegranate"
+      }, ...
+    ]
+
+By passing a list of field to `pluck`, we can get only those field.
 
 Opposite of `pluck` is `without`. We passed a list of fields, and it removes
 those fiels from document.
 
-    r.table('input_polls').get('b3d2024b-92c0-4852-bb8c-50c10591cac3')
-      .pluck(Date', 'Day', 'Dem', 'EV', 'GOP', 'Len')
-    //=> Return a single object since we used `get`
+    r.db('foodb').table('foods')
+      .filter({
+        food_type: 'Type 1',
+        food_group: 'Fruits'
+      })
+      .without("created_at", "picture_content_type", 'picture_file_name', 'picture_file_size', 'picture_updated_at')
+    //=> Executed in 52ms. 40 rows returned, 40 displayed, more available
+    [
     {
-        "Pollster": "Rasmussen-1" ,
-        "id": "North Carolina" ,
-        "uuid": "b3d2024b-92c0-4852-bb8c-50c10591cac3"
-    }
+      "creator_id": null ,
+      "description": null ,
+      "food_group":  "Fruits" ,
+      "food_subgroup":  "Berries" ,
+      "food_type":  "Type 1" ,
+      "id": 75 ,
+      "itis_id":  "23743" ,
+      "legacy_id": 81 ,
+      "name":  "Black crowberry" ,
+      "name_scientific":  "Empetrum nigrum" ,
+      "updated_at": Fri Apr 20 2012 16:29:43 GMT-07:00 ,
+      "updater_id": null ,
+      "wikipedia_id": null
+    },...
+    ]
+
+We can event filter nested document with `filter`. Let's try it. For now, just
+copy and paste below query into data exploer, we will learn more about those
+kind of query in later chapter.
+
+First, create a test table to hold sample data:
+
+    r.db('foodb').tableCreate('test_filter')
+
+Then insert those sample document:
+
+    r.db('foodb').table('test_filter')
+      .insert([
+        {
+          name: "Simply RethinkDB",
+          address: {
+            country: {
+              code: "USA",
+              name: "The United State of America"
+            }
+          }
+        },
+        {
+          name: "TKKG",
+          address: {
+            country: {
+              code: "GER",
+              name: "Germany"
+            }
+          }
+        }
+        ])
+
+Now we have two document in above table. Let's find document whose country is
+`USA`
+
+
+
 
 With simple filterting, we can easily pass an filter object as above. But what
-up with complex searching? Like we want to find all polls happen in May, and
-have the GOP greater than 30. It's hard and complex to denote that condition 
-with an object. And to me, that's how MongoDB lost to RethinkDB. Let's meet our
-`r.row`.
+up with complex searching? Such as finding all foods whose name starts with
+character **N**. As you see at the beginning, we used `r.row` command to do a
+bit complex query.
+
+    r.db('foodb').table('foods')
+      .filter(r.row('created_at').year().eq(2011))
+
+Let's dive more into it.
 
 ## r.row
 
 `r.row` is our swiss army knife. It refers to current visited document.
-Literally, it's the document at which RethinkDB is accessing (it's not quite 
-true in sub query). It's similar to `this` in a JavScript
-callback. Eg, we write this in JavaScript to filter all DOM element whose
+Literally, it's the document at which RethinkDB is accessing. You can think of
+it like **this** in a JavScript callback/iterator. Or think of it like current
+element in an iterator loop.
+
+An example, we write this in JavaScript to filter all DOM element whose
 `data-type` value is *anime*.
 
     $('.db').find('.table').filter(function() {
       return $(this).data('type')=='anime'
     })
 
-This simpe ReQL
-    r.db('db').table('table').filter({type: 'anime'})
+In ReQL, using `filter` with filter object:
 
-can re-write with `r.row`
+    r.db('foodb').table('foods').filter({food_group: 'Fruits'})
 
-    r.db('db').table('table').filter(r.row('type').eq('anime'))
+We can re-write it with `r.row`
+
+    r.db('foodb').table('foods').filter(r.row('food_group').eq('Fruits'))
 
 Breaking it down we have:
 
   * r.row        => current document
-  * ('type')     => get value of field type
+  * ('type')     => get value of field **type**
   * .eq('anime') => return true if the value is equal to the argument, anime in this case
 
-On `r.row`, we can also call many method to check for a condition. When we pass
-a ReQL to `filter`, RethinkDB runs it and if the returned value is `true`, the
-document is included into result set.
+`r.row` a RethinkDB object, which we can continue call many method to filter or
+manipulation it. The expression that we pass into `filter` is a normal ReQL
+expression but evaluate to a boolean result. RethinkDB runs it and if the returned value is `true`, the
+document is included into result set. Ideally, any function that returns boolean
+result can used with `filter`. Note that the evaluation of filter expression run
+on RethinkDB server, therefore they has to be a valid ReQL expression, they
+cannot be any arbitrary language expression. You cannot write:
 
-What method `r.row` supports. We have a several method as below, they are
+    r.db('db').table('table').filter(r.row('type') == 'anime')
+
+RethinkDB has a several method as below, they are
 usually grouped into Document Manipulation Command on RethinkDB
 docs[^doc_mani_cmd].
 
