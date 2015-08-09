@@ -1131,110 +1131,147 @@ Eg, simple merging with an object:
  
 
 We can also merge the nested object
-    
 
-## Listing databases
 
-Same as in MySQL, we can use `SHOW DATABASES` to see a list of database. In
-RethinkDB, we can do that with `dbList`
-
-    r.dbList()
-    //=>
-    [
-
-        "test" ,
-        "phim365" ,
-        "yelp" ,
-        "epiphy_test_v001" ,
-        "crawler"
-    ]
-
-## Listing table of a database
-
-    r.db('test').tableList()
-    //or just call direcly on current database
-    r.tableList()
-    [
-
-        "users" ,
-        "article" ,
-        "user" ,
-        "movie" ,
-        "county_stats" ,
-        "LOp" ,
-        "input_polls" ,
-        "LOP" ,
-        "customuser" ,
-        "lop"
-
-    ]    
-    
-
-## Nested field
+## Access Nested field
 
 As you know, RethinkDB document is a JSON object. Very likely we have two or
 more level of data structure. So how we can access those nested field, or to
-drill down the fields. Such as, considering this document:
+drill down the fields. 
 
-    {
-      :id => 10001,
-      :name => "Bob Smith",
-      :contact => {
-        :phone => {
-          :work => "408-555-1212",
-          :home => "408-555-1213",
-          :cell => "408-555-1214"
-        },
-        :email => {
-          :work => "bob@smith.com",
-          :home => "bobsmith@gmail.com",
-          :other => "bobbys@moosecall.net"
-        },
-        :im => {
-          :skype => "Bob Smith",
-          :aim => "bobmoose",
-          :icq => "nobodyremembersicqnumbers"
-        }
-      },
-      :notes => [
-        {
-          :date => r.time(2014,1,1,'Z'),
-          :from => "John Doe",
-          :subject => "My name is even more boring than Bob's"
-        },
-        {
-          :date => r.time(2014,2,2,'Z'),
-          :from => "Bob Smith Sr",
-          :subject => "Happy Second of February"
-        }
-      ]
-    }
+Let's beging this chapter by creating some sample data. Just copy and paste,
+ignore the syntax for now because we save them for chapter 4.
 
-Depend on your language, you will usually have a way to access to nested field,
+First, create table on test db. 
+
+    r.tableCreate("books")
+
+Then, insert sample data:
+
+    r.table("books")
+      .insert([
+            {
+                id: 1,
+                name: "Simply RethinkDB",
+                address: {
+                    country: {
+                        code: "USA",
+                        name: "The United State of America"
+                    }
+                },
+                contact: {
+                    phone: {
+                        work: "408-555-1212",
+                        home: "408-555-1213",
+                        cell: "408-555-1214"
+                    },
+                    email: {
+                        work: "bob@smith.com",
+                        home: "bobsmith@gmail.com",
+                        other: "bobbys@moosecall.net"
+                    },
+                    im: {
+                        skype: "Bob Smith",
+                        aim: "bobmoose",
+                        icq: "nobodyremembersicqnumbers"
+                    }
+                }
+            },
+            {
+                id: 2,
+                name: "TKKG",
+                address: {
+                    country: {
+                        code: "GER",
+                        name: "Germany"
+                    }
+                },
+                contact: {
+                    phone: {
+                        work: "408-111-1212",
+                        home: "408-111-1213",
+                        cell: "408-111-1214"
+                    },
+                    email: {
+                        work: "bob@gmail.com",
+                        home: "bobsmith@axcoto.com",
+                        other: "bobbys@axcoto.com"
+                    },
+                    im: {
+                        skype: "Jon",
+                        aim: "Jon",
+                        icq: "nooneremembersicqnumbers"
+                    }
+                }
+            }
+      ])
+
+Depend on your language, you will usually have some way to access nested field,
 by following the nested path. In above example, let's say we want to access
 ***skype** im, the path is:
 
   contact -> im -> skype
 
-Using JavaScript driver, we will use `(field)` to access field and sub field.
-like this:
+Using JavaScript driver, we will use **bracket** to access field and sub field.
 
-    r.table('user').get(10001)('contact')('im')('skype')
+    r.table('books').get(1)('contact')('im')('skype')
+    //=>
+    "Bob Smith"
 
-While as, in Ruby driver we used `[field]`
+While as, in Ruby driver, bracket notation is `[field]`
 
-    r.table('user').get(10001)['contact']['im']['skype']
+    r.table('books').get(1)['contact']['im']['skype']
 
+We can keep calling bracket to get the final nested field follow the path.
+Not just a single document, we can use bracket on table level too:
 
+    r.table('books')('address')('country')
+    [
+    {
+      "code":  "GER" ,
+      "name":  "Germany"
+    }, {
+      "code":  "USA" ,
+      "name":  "The United State of America"
+    }
+    ]
+
+Or using in combination with filter, on selection:
+
+    r.table('books')
+      .filter({id: 1})('address')('country')('name')
+    //=>
+    "The United State of America"
+
+Beside using **bracket** command, we can also using `getField` if that feel more
+nature:
+
+    r.table('books')
+      .getField('contact')('email')
+    //=>
+    [
+    {
+      "home": bobsmith@axcoto.com, »
+      "other": bobbys@axcoto.com, »
+      "work": bob@gmail.com, »
+    }, {
+      "home": bobsmith@gmail.com, »
+      "other": bobbys@moosecall.net, »
+      "work": bob@smith.com, »
+    }]
+
+At the end of the day all you have to remember is to drill down the path with a
+chain of bracket command.
 
 # Wrap Up
 
 We now have some basic understanding:
 
-1. ReQL always starts with `r`.
-2. ReQL is tie to your language depend on language driver.
-3. Default database
-3. Find an document by its primary
-4. Access table data and filter data by some condition
+    1. ReQL always starts with `r`.
+    2. ReQL is tie to your language depend on language driver.
+    3. Default database
+    3. Find an document by its primary
+    4. Access table data and filter data by some condition
+    5. Access nested field
 
 Let's move to next chapter to write some data into RethinkDB.
