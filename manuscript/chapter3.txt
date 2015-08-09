@@ -17,18 +17,18 @@ You should see some interesting data now.
 
 Don't worry about the syntax, just look at it again and even without any
 knowledge you know what it does and easily remember it. A way, for me, to
-understand ReQL is that every command return an object which can be pass into
-next command.
+understand ReQL is that every command return an object which share some API
+which we can call those API as if method of an object.
 
 ReQL is particular binding to your language. Though, of course, they will look 
 familiar between different language to maintain consitent look and feel. But, 
 they are different. Those querie are constructed by making function call of your
 language, not by concat SQL String, or not by special JSON object like MongoDB.
-Therefore, it feel very natualy to write ReQL. As if the data we manipulate
+Therefore, it feel very natualy to write ReQL, as if the data we manipulate
 is an object or data type in our language. But everything comes with a trade
 off. On the downside, we have to accept differences of ReQL betweens many
 language. No matter how hard we try, different language has different syntax,
-especially when it comes to anonymous function. 
+especially when it comes to anonymous function.
 
 What is `r`? `r` is like a special namespace which is all RethinkDB is exposed 
 via it. It's just a normal variable in your language, or a namespace, a package
@@ -83,13 +83,34 @@ If you curious, you can fire up `tcpdump` and watch the raw query in JSON
 
     tcpdump -nl -w - -i lo0 -c 500 port 28015|strings
 
-A simple command, `r.db("db1").table("table1")` is turned into this JSON:
+An example of what above `tcpdump` return when I run those command(in Ruby):
 
-    [...]
+    r.db("foodb").table("users").with_fields("address").run
 
-You can quickly sense a downside is that each of driver have different API to construct query.
-When you come to another language, you may feel very strange. The driver hide the real query behinds its API.
-Very similar to how you use an ORM in SQL world to avoid writing raw SQL string.
+Once I ran this command, I see this via `tcpdump`:
+
+  [1,[96,[[15,[[14,["foodb"]],"users"]],"address"]],{}]
+
+So basically, the whole query is turned into a special JSON object by client
+driver. If you would like to dig deeper, the above query is actually trslate
+in to this:
+
+  [QUERY_START,
+
+
+You can quickly sense a downside is that each of driver have different API to
+construct query. When you come to another language, you may feel very strange.
+The driver hide the real query behinds its API. It's kind of similar to how you
+use an ORM in SQL world to avoid writing raw SQL string. But it's different
+because the ORM usually has its OWN API to turn query into raw query string,
+which in turns send to server using another driver with that database protocol.
+Here, we are having power of an ORM, but happen at driver level, because
+RethinkDB protocol use a simple but powerful JSON protocol to help model query
+like function call, with argument and follow by parameter. In fact, ReQL is
+modeled after functional languages like Lisp or Hashkell.
+
+If you would like to know more about ReQL at lower level, you should read more
+in [official documents](http://rethinkdb.com/docs/writing-drivers/)
 
 RethinkDB supports 3 official drives:
 
@@ -97,7 +118,10 @@ RethinkDB supports 3 official drives:
 * NodeJS
 * Python
 
-These support all [driver specifications](http://rethinkdb.com/docs/driver-spec/). The community drives such as Go, PHP probably won't support them all, if you used a different language and find something isn't right, it is probably not your fault.
+These support all [driver specifications](http://rethinkdb.com/docs/driver-spec/).
+The community drives such as Go, PHP probably won't support them all, if you
+used a different language and find something isn't right, it is probably not
+your fault.
 
 All ReQL starts with `r`, its top level module to expose its public API. In
 NodeJS, we can use
@@ -134,7 +158,10 @@ specify a default database to work on once connecting succesfully. It's similar
 to the current database of MySQL. Without setting this parameter, RethinkDB
 assumes `test` as default database. 
 
-To understand more, let looks at Go Lang driver[^golang]
+To understand more about difference of API in different language, let looks at
+Go Lang driver[^golang]
+
+[^golang]: [https://github.com/dancannon/gorethink](https://github.com/dancannon/gorethink)
 
    var connection *r.Session
 
@@ -147,16 +174,14 @@ To understand more, let looks at Go Lang driver[^golang]
         log.Fatalln(err.Error())
     }
 
-Notice that we don't have any host, or Database parameter now. They are
+Notice that we don't have any host, or database parameter now. They are
 `Address`and `Database` in Go Lang driver. Therefore, by using an un-official
-language, the API will be totally different with official API. 
+language, the API will be totally different with official API.
 
 That's how beautiful it is because each language has its own design philosophy.
 Such as in Go lang, we cannot have a lower case field of a struct and expect it 
 publicly available to outside. Using names such as `host` or `db` for connection
 option is impossible in Go lang.
-
-[^golang]: [https://github.com/dancannon/gorethink](https://github.com/dancannon/gorethink)
 
 ## Default database
 
@@ -174,9 +199,21 @@ and explicitly call `run` to, obviously, run the query.
 Note that you don't have to switch to another database to access its table, you
 can just call `r.db('another_db')` before building query.
 
+## Repl
+
+Repl means read-eval-print loop. To avoid burden of manually call `run` and passing
+connection object. Some driver offers a `repl` to help call `run` without any parameter.
+
+Such as in Ruby:
+
+    r.connect(:db => 'marvel').repl
+    r.table("test").run
+
+JavaScript doesn't have a repl. I think because we can already used the Data Explorer.
+
 # Data Type
 
-Why do we have to discuss about data type? We have use dynamica language and we almost dicuss about
+Why do we have to discuss about data type? We use dynamic language and we almost dicuss about
 Ruby and JavaScript most of time. But understanding data type allow us to read API document better.
 It helps us to understand why we can can `r.table.insert` but we cannot call like `r.table.filter().insert`.
 Aren't we still selecting data from table, so we should be able to insert data to it?
@@ -194,7 +231,7 @@ document, you see
 
 It means the command can be invoked on a table, or selection (eg: first 30
 element of tables), or a single selection - a document is an example of single
-selection. The behaviour of course is different based on data type, even the
+selection. The behaviour maybe different based on data type, even the
 command is same.
 
 In RethinkDB, we have several data types. We will focus into those 2 kind for
@@ -206,7 +243,7 @@ now:
 
 ## Basic data type
 
-There are usually the native data type in your language too:
+These are usually the native data type in your language too:
 
     * Number: any real numbers. RethinkDB uses double precision (64-bit) floating point numbers internally
     * String
@@ -222,25 +259,79 @@ field. So we don't have a static schema for tables.
 
 ## Composite data type
 
-Taking direcly from RethinkDB doc, we have 3 composite data types.
+We have 3 composite data types.
 
 * Streams
 
-:are lists like arrays, but they're loaded in a lazy fashion. Operations that return streams return a cursor. A cursor is a pointer into the result set. Instead of reading the results all at once like an array, you loop over the results, retrieving the next member of the set with each iteration. This makes it possible to efficiently work with large result sets. (See "Working with Streams," below, for some tips.) Streams are read-only; you can't pass one as an input to an ReQL command meant to modify its input like update or delete.
+:are list or array, but they're loaded in a lazy fashion. Instead of returning
+a whole array at once, meaning all data are read into memory, a cursor is return.
+A cursor is a pointer into the result set. We can loop over cursor to read data
+when we need. Imagine instead of an array, and loop over it, you know iterate
+over the cursor to get next value. It allows you to iterator over a data set
+without building an entire array in memory. It's equivalent to PHP iterator, or
+Ruby iterator, or JavaScript iterator. Stream allows us access current element
+and keep track of current position so
+that we can, ideally
+call `next()` on a cursor to move to next element, until we reach to the end
+of array, it returns nil and iterator can stop. Because of that, we can work
+with large data set because RethinkDB doesn't need to load all of data and
+return to client. The nature of stream make it read-only, you cannot change
+the data while iterating over it.
 
 * Selections
 
-:represent subsets of tables, for example, the return values of filter or get. There are two kinds of selections, Selection<Object> and Selection<Stream>, which behave like objects or streams respectively. The difference between selections and objects/streams are that selections are writable--their return values can be passed as inputs to ReQL commands that modify the database. For instance, the get command will return a Selection<Object> that could then be passed to an update or delete command.
+:represent subsets of tables, for example, the return values of **filter** or **get**.
+There are two kinds of selections, **Selection<Object>** and **Selection<Stream>**,
+which behave like objects or streams respectively. The difference between
+selections and objects/streams are that selections are writable --their return values
+can be passed as inputs to ReQL commands that modify the database. For instance, the
+get command will return a Selection<Object> that could then be passed to an
+**update** or **delete** command. We can think of selection like an array
+where each element keeps an reference back to real document so that we can modify
+them.
 
 * Tables
 
-:are RethinkDB database tables. They behave like selections. However, they're writable, as you can insert and delete documents in them. ReQL methods that use an index, like getAll, are only available on tables, because they require write permission
+:are RethinkDB database tables. They behave like selections. However, they're writable,
+as you can insert and delete documents in them. ReQL methods that use an index, like `getAll`,
+are only available on tables. Because `index` are created on table level.
 
+In short, you cannot modify streams, you can update or change value of selection
+but you cannot remove existed document, or insert new one. Tables allows you
+insert new document or remove existed one.
 
 T> Sequence
 T>
 T> RethinkDB document use `sequence` in lots of places. It's a particular data
-T> type. You can think of it as an shortwords for all: strams, table, seletion
+T> type. You can think of it as an shortwords for all: streams, table, seletion
+
+Remember data types seems not much important but you should understand them
+well because it helps us understand the efficient of a query. If a query
+returns an array, it consumes lot of memory to hold the array.
+
+When talking about data type, let think of how we sort them. It really doesn't
+matter in the order, what is important is the definition of sorting data.
+
+Understanding sorting is important in RethinkDB because the primary key may not
+be a numeric field, it can be a string. Moreover than that, a field can have
+whatever data type, how are we going to compare an object to a string when
+sorting.
+
+Here is sorting order:
+
+Arrays (and strings) sort lexicographically. Objects are coerced to arrays before sorting. Strings are sorted by UTF-8 codepoint and do not support Unicode collations.
+
+Mixed sequences of data sort in the following order:
+
+ * arrays
+ * booleans
+ * null
+ * numbers
+ * objects
+ * binary objects
+ * geometry objects
+ * times
+ * strings
 
 
 # Selecting data
@@ -250,10 +341,9 @@ time, we will choose a db to work with, and chain into command `table`.
 
 ## Select the whole table
 
-Let's get all data in table `county_stat` of database `test` which we imported
-before. This is same as `SELECT * FROM table` in SQL.
+Let's find all foods. This is same as `SELECT * FROM foods` in SQL.
 
-    r.db('tets').table('input_polls')
+    r.db('foodb').table('foods')
 
     [
       {
