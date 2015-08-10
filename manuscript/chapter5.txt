@@ -1204,6 +1204,11 @@ put them in `branch` command:
 With each element, if we see the value of two elements are the same, we return an
 empty array, otherwise, we return combination array of them.
 
+This runs fast but it has its own limitation. We cannot create more than 256
+index on multi index. Other approach, not as fast, but scale better is to use
+double `filter`. First we `getAll` using an index, the `filter` it
+
+
 # Wrap up
 
 This chapter is quite long. So far we've learned about index. We know how to create:

@@ -276,7 +276,7 @@ How about complex join where we want either or ? Like in MySQL
 
 To join, we usually need index. But can we join data without using any index
 via two arbitray sequence? Even if it's not very efficient but useful to have.
-The answer is yes, we can do inner join.
+The answer is yes, we can do inner join and outer join.
 
 ## innerJoin
 
@@ -586,11 +586,23 @@ RethinkDB team are aware of that and is working on it now[^collapse].
 
 [^collapse]: https://github.com/rethinkdb/rethinkdb/issues/1855
 
-## Using primary key
-
-## Using Secondary indexes
-
 ## Using sub queries
+
+Almost above JOIN commands is operator on sequence. What is we have an exactly
+single document which we have by using `get` and we want to join some data.
+If we think a bit, we can see that in RethinkDB, we can query whatever extra
+data inside an anonoymous function. What if we query extra data inside those
+function then merge it with parent document. It will has same effect as a JOIN.
+Let's do it. Let's say we want to select Kiwi and all of its flavor.
+
+  
+
+
+The main different between using sub query is that we have nested document
+instead of **left** **right** field like in JOIN. However, via using some map or
+transform command we can turn them into whatever we can imagine.
+
+
 
 # Wrap up
 
