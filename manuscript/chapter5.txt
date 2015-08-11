@@ -1161,13 +1161,9 @@ And now, we can use that index, pass a pair of value:
     r.db("foodb")
       .table("users")
       .getAll(['Spirit', 'Grapefruit'], {index: "food-test-idx-1"})
-    #=>
+      .withFields("name", "favfoods")
+    #=>Executed in 9ms. 2 rows returned
     {
-    "age": 41 ,
-    "eatenfoods": [
-    "Hummus" ,
-    "Common beet"
-    ] ,
     "favfoods": [
     "Swiss chard" ,
     "Chicory roots" ,
@@ -1175,10 +1171,22 @@ And now, we can use that index, pass a pair of value:
     "Jostaberry" ,
     "Spirit"
     ] ,
-    "gender":  "f" ,
-    "id":  "3700fa48-2806-4cb2-9bfb-a5d90d6cfd38" ,
     "name":  "Wilburn Price"
+    } {
+    "favfoods": [
+    "Chicory roots" ,
+    "Grapefruit" ,
+    "Jostaberry" ,
+    "Spirit" ,
+    "Abiyuch"
+    ] ,
+    "name":  "Audie Muller"
     }
+
+T> Using `withFieds` to quickly pluck some fields
+T>
+T> I often use `withFields` to only pluck some fields that I care
+T> That way the result set is easier to read
 
 The order isn't important here, because we create the pair of array on every
 element if itself. Such as with [a,b,c] array, we will have this array via map:
@@ -1206,7 +1214,65 @@ empty array, otherwise, we return combination array of them.
 
 This runs fast but it has its own limitation. We cannot create more than 256
 index on multi index. Other approach, not as fast, but scale better is to use
-double `filter`. First we `getAll` using an index, the `filter` it
+double finding. First, we find all documents match an value, from that result, we find 
+all documents match second value. First we `getAll` using an index, then `filter` it.
+
+Let's try it again. First create an index:
+
+    r.db("foodb")
+      .table("users")
+      .indexCreate("food-test-idx-3", r.row('favfoods')
+      , {multi: true})
+
+    r.db("foodb")
+      .table("users")
+      .indexCreate("food-test-idx-3", function (food) {
+          return food["favfood"]
+        })
+      }, {multi: true})
+
+Now, we firstly using that index to find all user who like first fruit, then use
+`filter` to filter out user who also like second fruits:
+
+    r.db("foodb")
+      .table("users")
+      .getAll("Spirit", {index: "food-test-idx-3"})
+      .filter(r.row("favfoods").contains("Grapefruit"))
+      .withFields("name", "favfoods")
+    //=>Executed in 9ms. 2 rows returned
+    [
+      {
+      "favfoods": [
+      "Swiss chard" ,
+      "Chicory roots" ,
+      "Grapefruit" ,
+      "Jostaberry" ,
+      "Spirit"
+      ] ,
+      "name":  "Wilburn Price"
+      } {
+      "favfoods": [
+      "Chicory roots" ,
+      "Grapefruit" ,
+      "Jostaberry" ,
+      "Spirit" ,
+      "Abiyuch"
+      ] ,
+      "name":  "Audie Muller"
+      }
+    ]
+
+In the result of `getAll`, we run a `filter` on it. If the result of `getAll`
+contains more than 100,000 element. This method won't work. We cannot continue
+to call `getAll` with specifiying an index from another `getAll` because it
+returns *"SELECTION<STREAM>"*. `getAll` works only on a table.
+
+    r.db("foodb")
+      .table("users")
+      .getAll(['Spirit', 'Grapefruit'], {index: "food-test-idx-1"})
+      .typeOf()
+    //=>
+    "SELECTION<STREAM>"
 
 
 # Wrap up
