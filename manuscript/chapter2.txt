@@ -127,22 +127,23 @@ JSON file can be import using above import command.
 
 ## dump
 
-dump will just export whole of data of a cluster. Its syntax
+dump will just export whole of data of a cluster, it's similar to a gzip follow by export. Its syntax
 
     rethinkdb dump -c 127.0.0.1:28015
 
 You will see some status lines:
-        NOTE: 'rethinkdb-dump' saves data and secondary indexes, but does *not* save
-   cluster metadata.  You will need to recreate your cluster setup yourself after
-   you run 'rethinkdb-restore'.
+
+    NOTE: 'rethinkdb-dump' saves data and secondary indexes, but does *not* save
+    cluster metadata.  You will need to recreate your cluster setup yourself after
+    you run 'rethinkdb-restore'.
 
 
-  Exporting to directory...
-  [========================================] 100%
-  428353 rows exported from 9 tables, with 0 secondary indexes
-    Done (260 seconds)
-  Zipping export directory...
-    Done (25 seconds)
+    Exporting to directory...
+    [========================================] 100%
+    428353 rows exported from 9 tables, with 0 secondary indexes
+      Done (260 seconds)
+    Zipping export directory...
+      Done (25 seconds)
 
 The dump result is a gzip file whose name is in format `rethinkdb_dump_{timestamp}.tar.gz`
 It's very useful when you want to try out something and get back your original data. Note it here because you will need it later.
@@ -156,7 +157,9 @@ Once we got the dump file with `dump` command. We can restore with:
 # Import sample data
 
 It's much nicer to work with real and fun data than boring data. I have used the
-`dump` command, and you can restore them.
+`dump` command to generate sample data[^sampledata]
+
+[^sampledata]: https://github.com/kureikain/simplyrethink/blob/master/data/simply_rethink_dump_2015-07-20T00:54:39.tar.gz
 
     rethinkdb restore -c 127.0.0.1:28015 simply_rethink_dump_2015-07-20T00:54:39.tar.gz
 
