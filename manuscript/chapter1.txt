@@ -128,3 +128,7 @@ I appreciate all of your feedbacks to improve this book. Below is my handle on i
 * email: [kurei@axcoto.com](kurei@axcoto.com)
 * twitter book hashtag: #simplyrethinkdb
 
+# Credit
+
+My friend, [aresta.co](http://aresta.co/) helps to create the cover for this book
+
