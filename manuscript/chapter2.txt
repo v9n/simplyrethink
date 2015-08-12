@@ -180,6 +180,13 @@ The output looks like this:
     Unzipping archive file...
       Done (1 seconds)
     Importing from directory...
+    [                                        ]   0%
+    [                                        ]   0%
+    [                                        ]   0%
+    [                                        ]   0%
+    [========================================] 100%
+    764509 rows imported in 9 tables
+      Done (2166 seconds)
 
 Once this processing is done, you should have a database call **foodb** which
 contains the data we play throught the book. At any point, if you messed up
