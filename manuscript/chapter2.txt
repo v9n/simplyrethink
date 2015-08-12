@@ -168,7 +168,7 @@ chemistry and biolog. To quote their about page:
 
 I import their data into RethinkDB, and generate some sample tables such as
 users table. At the end, I used the `dump` command to generate sample data
-which you can download using below links(^sampledata)
+which you can download using below links[^sampledata]
 
 [https://www.dropbox.com/s/dy48el02j9p4b2g/simplyrethink_dump_2015-08-11T22%3A15%3A51.tar.gz?dl=0](https://www.dropbox.com/s/dy48el02j9p4b2g/simplyrethink_dump_2015-08-11T22%3A15%3A51.tar.gz?dl=0).
 Once you download it, you can import this sample dataset:
