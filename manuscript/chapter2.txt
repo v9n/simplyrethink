@@ -104,49 +104,49 @@ interactive with it. Some of them are:
 
 ## import
 
-In the spirit of giving users the dashboard, RethinkDB also gives us sample data.
-You can download the data in file input_polls and country_stats at []https://github.com/rethinkdb/rethinkdb/tree/next/demos/election and import them into
+In the spirit of giving users the dashboard, RethinkDB also gives us some sample data.
+You can download the data in file input_polls and country_stats at 
+https://github.com/rethinkdb/rethinkdb/tree/next/demos/election and import them into
 test database
 
-~~~~~~~~
-rethinkdb import -c localhost:28015 --table test.input_polls --pkey uuid -f input_polls.json --format json
-rethinkdb import -c localhost:28015 --table test.county_stats --pkey uuid -f county_stats.json --format json
-~~~~~~~~
+    rethinkdb import -c localhost:28015 --table test.input_polls --pkey uuid -f input_polls.json --format json
+    rethinkdb import -c localhost:28015 --table test.county_stats --pkey uuid -f county_stats.json --format json
 
 Notice the `--table` argument, we are passing the table name in format of
 *database_name*.*table_name". In our case, we import the data into two tables:
 `input_polls` and `county_stats` inside database `test`.
 
-We will use those data set through out the book. At any point, if you happen to mess up the
-data, just drop the table, and import again.
+Basically you can easily import any file contains a valid JSON document.
 
 ## export
 
-Export exports your database into many JSON files, each file is a table. The
+`export` exports your database into many JSON files, each file is a table. The
 JSON file can be import using above import command.
 
 ## dump
 
-dump will just export whole of data of a cluster, it's similar to a gzip follow by export. Its syntax
+dump will just export whole of data of a cluster, it's similar to an `export`
+command, then follow by *gzip* to compress all JSON output file. Syntax is as
+easy as.
 
     rethinkdb dump -c 127.0.0.1:28015
 
-You will see some status lines:
+Here is an example output when I run this command:
 
+    rethinkdb dump -c 127.0.0.1:28015
     NOTE: 'rethinkdb-dump' saves data and secondary indexes, but does *not* save
-    cluster metadata.  You will need to recreate your cluster setup yourself after
-    you run 'rethinkdb-restore'.
-
-
+     cluster metadata.  You will need to recreate your cluster setup yourself after
+     you run 'rethinkdb-restore'.
     Exporting to directory...
     [========================================] 100%
-    428353 rows exported from 9 tables, with 0 secondary indexes
-      Done (260 seconds)
+    764509 rows exported from 9 tables, with 21 secondary indexes
+      Done (157 seconds)
     Zipping export directory...
-      Done (25 seconds)
+      Done (5 seconds)
 
 The dump result is a gzip file whose name is in format `rethinkdb_dump_{timestamp}.tar.gz`
-It's very useful when you want to try out something and get back your original data. Note it here because you will need it later.
+It's very useful when you want to try out something and get back your original data. 
+Note it here because you will need it later.
 
 ## restore
 
@@ -156,11 +156,30 @@ Once we got the dump file with `dump` command. We can restore with:
 
 # Import sample data
 
-It's much nicer to work with real and fun data than boring data. I have used the
-`dump` command to generate sample data[^sampledata]
+It's much nicer to work with real and fun data than boring data. I found a very
+useful dataset call FooDB[^foodb]. It's a data about food constituents,
+chemistry and biolog. To quote their about page:
 
-[^sampledata]: https://github.com/kureikain/simplyrethink/blob/master/data/simply_rethink_dump_2015-07-20T00:54:39.tar.gz
+> What is FooDB
+> FooDB is the world’s largest and most comprehensive resource on food constituents, chemistry and biology. 
+> It provides information on both macronutrients and micronutrients, including many of the constituents that give foods their flavor, color, taste, texture and aroma
 
-    rethinkdb restore -c 127.0.0.1:28015 simply_rethink_dump_2015-07-20T00:54:39.tar.gz
+[^foodb]: http://foodb.ca/about
 
+I import their data into RethinkDB, and generate some sample tables such as
+users table. At the end, I used the `dump` command to generate sample data
+which you can [download on my Github repo](https://github.com/kureikain/simplyrethink/blob/master/data/simplyrethink_rethinkdb_dump_2015-08-11T22:15:51.tar.gz).
+Once you download it, you can import this sample dataset:
 
+    rethinkdb restore -c 127.0.0.1:28015 simplyrethink_rethinkdb_dump_2015-08-11T22:15:51.tar.gz
+
+The output looks like this:
+
+    Unzipping archive file...
+      Done (1 seconds)
+    Importing from directory...
+
+Once this processing is done, you should have a database call **foodb** which
+contains the data we play throught the book. At any point, if you messed up
+data, you can always restore from this sample data. Also, I encourage to back
+up data if you build many interesting data to experiment yourself.
