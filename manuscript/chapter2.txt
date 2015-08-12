@@ -168,10 +168,10 @@ chemistry and biolog. To quote their about page:
 
 I import their data into RethinkDB, and generate some sample tables such as
 users table. At the end, I used the `dump` command to generate sample data
-which you can [download on my Github repo](https://github.com/kureikain/simplyrethink/blob/master/data/simplyrethink_rethinkdb_dump_2015-08-11T22:15:51.tar.gz).
+which you can [download on my Github repo][^sampledata](https://github.com/kureikain/simplyrethink/blob/master/data/simplyrethink_dump_2015-08-11T22:15:51.tar.gz).
 Once you download it, you can import this sample dataset:
 
-    rethinkdb restore -c 127.0.0.1:28015 simplyrethink_rethinkdb_dump_2015-08-11T22:15:51.tar.gz
+    rethinkdb restore -c 127.0.0.1:28015 simplyrethink_dump_2015-08-11T22:15:51.tar.gz
 
 The output looks like this:
 
@@ -183,3 +183,5 @@ Once this processing is done, you should have a database call **foodb** which
 contains the data we play throught the book. At any point, if you messed up
 data, you can always restore from this sample data. Also, I encourage to back
 up data if you build many interesting data to experiment yourself.
+
+[^sampledata]: https://github.com/kureikain/simplyrethink/blob/master/data/simplyrethink_rethinkdb_dump_2015-08-11T22:15:51.tar.gz

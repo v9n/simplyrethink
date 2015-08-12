@@ -130,5 +130,6 @@ I appreciate all of your feedbacks to improve this book. Below is my handle on i
 
 # Credit
 
-My friend, [aresta.co](http://aresta.co/) helps to create the cover for this book
+ * Sample dataset: [foodb.ca/foods](http://foodb.ca/foods)
+ * Book cover: Design by my friend, [aresta.co](http://aresta.co/) helps to create the cover for this book
 
