@@ -23,3 +23,7 @@ belong to me. I will credit you in README or a CREDIT file and on
 THANKYOU page of the book. But I keep the right to distribute and sell
 the book, including your contribution.
 
+# Credit
+
+ * [http://aresta.co/](Aresta.Co) for books cover
+
