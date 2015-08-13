@@ -1337,6 +1337,79 @@ returns *"SELECTION<STREAM>"*. `getAll` works only on a table.
     //=>
     "SELECTION<STREAM>"
 
+## The important map/concatMap
+
+On the surface, `filter` is powerful because they accept a function and evaluate
+that function to filter data based on its result. It's very similar to array
+filter that we usually has as language standard library.
+
+The only downside is slowness which is understandable. Therefore, we usually have
+to use `getAll` to leverage index. But `getAll` only query data based on value
+of index which doesn't give the flexible of `filter`. Because we have to calculate
+an index function to generate index, where as filter evaluated dynamically.
+
+Considering this example. Assume we have an *orders* table contains order. And
+other *orderItems* table which contains items of an order.
+
+We can creata some data:
+
+    r.tableCreate("orders")
+    r.tableCreate("orderItems")
+
+    r.table("orders").insert([
+      {id:1, shipped: 1},      {id:2, shipped: 0},      {id:3, shipped: 1},
+    ])
+
+    r.table("orderItems").insert([
+      {id:1, name: "f1", orderId: 1},
+      {id:2, name: "f2", orderId: 1},
+      {id:3, name: "a1", orderId: 2},
+      {id:4, name: "f2", orderId: 2},
+      {id:5, name: "a3", orderId: 2},
+      {id:6, name: "b3", orderId: 3},
+      {id:7, name: "b4", orderId: 3},
+      ])
+
+Question: find all items of every ship order. With filter, we can quickly do this:
+
+    r.table('orderItems')
+      .filter(function(orderItem) {
+        return r.table('order').get(orderItem('id'))('shipped').default(0).gt(0)
+      })
+
+However, they are bad because filter limitation. So ideally we only have
+`getAll` choice. But `getAll` only returns data of the table it's using index
+on. In our case, **shipped status** is stored in **orders** table, whileas we
+want to fetch data of **orderItems**. In other words, `getAll` doesn't give us
+data we want. We have to transform its into what we want by using `map`/`concatMap`.
+
+Let's add two indexes:
+
+     r.table("orderItems").indexCreate("orderId")
+     r.table("orders").indexCreate("shipStatus", r.row("shipped").default(0).gt(0))
+
+With that index, we can find all of shipper order
+
+    r.table("orders").getAll(true, {index: "shipStatus"})
+
+Now, we will use `concatMap` to transform the order into its equivalent
+orderItem
+
+    r.table("orders")
+     .getAll(true, {index: "shipStatus"})
+     .concatMap(function(order) {
+          return r.table("orderItems").getAll(order("id"), {index: "orderId"}).coerceTo("array")
+     })
+
+So now, we basically have the power of `filter`. We can query whatever data
+inside `concatMap` function(just to be sure to use proper index anyway). The
+way of thinking is in reverse of `filter`. In `filter`, we start query on table
+we want to get data. In `getAll`/`concatMap`, we start query query on the table
+contains the associated condition, then using `concatMap` to somehow, join the
+data across table.
+
+`map` and `concatMap` is really important and you should take a bit time to play
+around and master them.
 
 # Wrap up
 
@@ -1350,7 +1423,7 @@ This chapter is quite long. So far we've learned about index. We know how to cre
 We've also learned how to leverage index to sort, filter data. Two important
 transform functions you also learn:
 
-  * map:
-  * concatMap: 
+  * map: transform from a source data to other value
+  * concatMap: as map, but it flatten return array.
 
 And finally, by leveraging `map`, you can easily create multi index.
