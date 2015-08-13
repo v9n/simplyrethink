@@ -1,5 +1,7 @@
 -# Reading Data Advanced
 
+# Understanding index
+
 ## Index
 
 Soon enough you will realize that `filter` is slow. If you have a table
@@ -669,15 +671,55 @@ Sometimes we just want to say, when the index is ready, please run this:
     r.table.indexWait
 
 
-## Using index
+# Using index
 
-### Order
+## Ordering
 
-Sorting with order without index limit to 100k issue
+Sorting with order without index limit to 100k issue. Always considering using
+an index. We already learn about `orderBy` in chapter but we haven't use index
+at that time. It takes this form of syntax:
 
-### Pagination
+    table.orderBy([key1...], {index: index_name}) → selection<stream>
+    selection.orderBy(key1, [key2...]) → selection<array>
+    sequence.orderBy(key1, [key2...]) → array
+
+On a table, that means result of a `table` command, you can pass over an index
+for sorting. Example, we want to sort table *compounds_foods* by name:
+
+If we don't use index we will get:
+
+    r.db("foodb")
+      .table("compounds_foods")
+      .orderBy("name")   
+    //=>
+    RqlRuntimeError: Array over size limit `100000` in:
+    r.db("foodb").table("compounds_foods").orderBy("name")
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Therefore, we have to create index:
+
+    r.db("foodb")
+      .table("compounds_foods")
+      .indexCreate("foodname", r.row("name"))
+
+When index is ready, the original query works if we tell it what index to use:
+
+    r.db("foodb")
+      .table("compounds_foods")
+      .orderBy("name", {index: "foodname"})
+
+By defaul, the ordering is ascending. To change to descending, we simply wrap 
+the index name in `r.desc` or `r.asc`
+
+    r.db("foodb")
+      .table("compounds_foods")
+      .orderBy("name", {index: r.desc("foodname")})
+
+## Pagination
 
 To pagination data, we will use a combination of `skip`, `limit` and `slice`.
+We already learn them in *Chapter 3*. But now you can use in combination with
+`orderBy` using an index to make it more efficient.
 
 **skip(n)**
 
@@ -687,11 +729,32 @@ To pagination data, we will use a combination of `skip`, `limit` and `slice`.
 
 : End the sequence after we read up to the give number of limit
 
-**slice
+### slice
+
+Instead of manually doing pagination by using `skip` and `limit`, we can simply
+tell RethinkDB that we want the data from this position to the other position.
+Similarly to how we have an `slice` function to slice an array.
+
+Let's take our `foods` table. 
+
+    r.db("foodb")
+      .table("foods")
+      .orderBy(r.desc("name"))
+      .slice(10, 12)
+
+Will return two rows from position 10 and 11. So we can calculate the slice
+index for pagination. Example, assume we have 10 items per page, so on page 7
+we have item from 70 to 80. And we can do:
+
+    r.db("foodb")
+      .table("foods")
+      .orderBy(r.desc("name"))
+      .slice(70, 80)
 
 T> ## Where else I can call Skip, Limit, Slice
 T>
-T> These command can be called on a selection, an array or stream. So you ca
+T> These command can be called on a selection, an array or stream. So you can 
+T> basically call them on almost situation.
 
 ## Transform data
 
