@@ -484,7 +484,7 @@ using it on any significant data.
 ## outerJoin
 
 `innerJoin` is an intersection of two sequences where a pair of documents sastify
-a condition. How about an `union`? Let's meet `outerJoin`
+a condition. How about something similar to an `left join` in SQL? Let's meet `outerJoin`
 
 `outerJoin` will return all documents of left sequences. With each document,
 it will try to match with every documents of right hand. If the pair sastify
@@ -564,7 +564,6 @@ document of left sequence. Using same data set, but for `outerJoin`:
 **5** and **25** were not divided by any of the number on right hand. Therfore,
 the return document contains only left hand document.
 
-
 ## Name conflict
 
 In SQL worlds, we can alias column to avoid conflict when joining. What
@@ -588,20 +587,172 @@ RethinkDB team are aware of that and is working on it now[^collapse].
 
 ## Using sub queries
 
-Almost above JOIN commands is operator on sequence. What is we have an exactly
-single document which we have by using `get` and we want to join some data.
+Almost above JOIN commands is operator on two sequence. What if we have exactly
+a single document which we get by using `get` and we want to join some data.
 If we think a bit, we can see that in RethinkDB, we can query whatever extra
 data inside an anonoymous function. What if we query extra data inside those
 function then merge it with parent document. It will has same effect as a JOIN.
-Let's do it. Let's say we want to select Kiwi and all of its flavor.
+Let's do it. Let's say we want to know flavors of Kiwi, a fruit that we never
+eat. We had a table **compounds_flavors** which contains association of a
+*compound* and a *flavor*. We have table *compounds_foods* which contains
+association of a *compound* and a *food*. So basically, we can do this:
 
-  
+  * Given a food, we know its ID
+  * Find all of its *compound* using **compound_foods** tables.
+  * With each of compound, we can know its flavor, by query *compound_flavors* to find association with *flavors* table. 
+    In other words, to find the *flavor_id* for that compounds.
+
+First of all, we needs some index:
+
+    // We need this index to look up by food_id on `compounds_foods`
+    r.db('foodb').table('compounds_foods').indexCreate('food_id')
+
+    // We need this index to find on `compounds_falvors` by compound_id
+    r.db("foodb").table("compounds_flavors").indexCreate('compound_id')
+
+With that index, let's build our query step by step. First, we select Kiwi,
+its ID is *4*. Then calling *merge* command. 
+
+    r.db("foodb")
+      .table("foods")
+      .get(4)
+      .merge(function (food) {
+
+        return {
+          flavors: //flavor array here
+        }
+      })
+
+Let's see what will we fill in **flavors** array. We will try to grab all of
+its compound. That means all of *documents* of *compounds_foods* table where
+its *food_id* is equal with main ID of kiwi.
+
+    r.db("foodb")
+      .table("foods")
+      .get(4)
+      .merge(function (food) {
+        return {
+          flavors:
+              r.db("foodb").table("compounds_foods")
+                  .getAll(food("id"),{index: "food_id"})
+                  .concatMap(function(compound_food) {
+                    //Return something flavor of compound here
+                  })
+                  .coerceTo("array")
+        }
+      })
+
+Notice that we used `concatMap` so that it flattens array for us. We also used
+ `coerceTo` to convert selection result to an array for `merge` command.
+With each of document of *compounds_foods* we can baiscally get all of its 
+flavor as following:
+
+    r.db("foodb").table("compounds_flavors")
+                        .getAll(compound_food("compound_id"), {index: "compound_id"})
+                        .concatMap(function(compounds_flavor) {
+                        return
+                          r.db("foodb").table("flavors").getAll(compounds_flavor("flavor_id"))
+                          .map(function (flavor) {
+                            return flavor("name")
+                          })
+                        .coerceTo("array")
+                        })
+                            .coerceTo("array")
+
+Putting together, we have this final giant, scary query:
+
+    r.db("foodb")
+      .table("foods")
+      .get(4)
+      .merge(function (food) {
+
+        return {
+          flavors: 
+              r.db("foodb").table("compounds_foods")
+                  .getAll(food("id"),{index: "food_id"})
+                  .concatMap(function(compound_food) {
+                      return 
+                      r.db("foodb").table("compounds_flavors")
+                        .getAll(compound_food("compound_id"), {index: "compound_id"})
+                        .concatMap(function(compounds_flavor) {
+                          return
+                            r.db("foodb").table("flavors").getAll(compounds_flavor("flavor_id"))
+                            .map(function (flavor) {
+                              return flavor("name")
+                            })
+                            .coerceTo("array")
+                        })
+                        .coerceTo("array")
+
+
+                  })
+                  .distinct()
+                  .coerceTo("array")
+        }
+
+      })
+
+Before the final `coerceTo`, we also call `distinct` to eliminate duplicate.
+And we got this result:
+
+    {
+        "created_at": Wed Feb 09 2011 00: 37: 15 GMT - 08: 00,
+        "creator_id": null,
+        "description": null,
+        "flavors": [
+            "alcoholic",
+            "baked",
+            "bay oil",
+            "bitter",
+            "bland",
+            "bread",
+            "cheese",
+            "cheesy",
+            "citrus",
+            "coconut",
+            "ethereal",
+            "faint",
+            "fat",
+            "fatty",
+            "medical",
+            "metal",
+            "mild",
+            "odorless",
+            "rancid",
+            "slightly waxy",
+            "soapy",
+            "sour",
+            "strong",
+            "sweat",
+            "sweet",
+            "unpleasant",
+            "waxy",
+            "yeast"
+        ],
+        "food_group": "Fruits",
+        "food_subgroup": "Tropical fruits",
+        "food_type": "Type 1",
+        "id": 4,
+        "itis_id": "506775",
+        "legacy_id": 4,
+        "name": "Kiwi",
+        "name_scientific": "Actinidia chinensis",
+        "picture_content_type": "image/jpeg",
+        "picture_file_name": "4.jpg",
+        "picture_file_size": 110661,
+        "picture_updated_at": Fri Apr 20 2012 09: 32: 21 GMT - 07: 00,
+        "updated_at": Fri Apr 20 2012 16: 32: 22 GMT - 07: 00,
+        "updater_id": null,
+        "wikipedia_id": null
+    }
+
+While as the query looks giant and complex. The way to write is to drill down
+each table at a time, using a map/concatMap to transform data.
 
 
 The main different between using sub query is that we have nested document
 instead of **left** **right** field like in JOIN. However, via using some map or
 transform command we can turn them into whatever we can imagine.
-
 
 
 # Wrap up
@@ -610,5 +761,4 @@ At the end of this chapter, we should know how to join based on these concepts:
 
   * Primary key: the ID field of document
   * Secondary index: join using secondary index
-  * Sub queries:
- 
+  * Sub queries: using merge, map/concatMap to join data
