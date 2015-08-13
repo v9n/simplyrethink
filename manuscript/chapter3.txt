@@ -73,6 +73,10 @@ passing into another command:
 
 # Drivers
 
+This section deep down a bit on how the drivers work, you can skip if you are
+not interested in how RethinkDB driver works at low level. But I really hope you keep reading it.
+Let's start.
+
 ReQL is binded to your language. Therefore, the API is implemented totally by
 the driver itself. You won't work directly with RethinkDB server. You write the
 query using the API of driver, the driver will built it into a real query to send
@@ -95,25 +99,35 @@ Once I ran this command, I see this via `tcpdump`:
   [1,[96,[[15,[[14,["foodb"]],"users"]],"address"]],{}]
 
 So basically, the whole query is turned into a special JSON object by client
-driver. If you would like to dig deeper, the above query is actually trslate
+driver. If you would like to dig deeper, the above query is actually translate
 in to this:
 
-  [QUERY_START,
+  [QUERY_START, [WITH_FIELDS, [[TABLE, [[DB, ["foodb"]],"users"]],"address"]],{}]
 
+Each of numbers is equivalent to a command in RethinkDB. Those number is
+predefined in RethinkDB. So basically, whatever you write using client driver
+API will be turn into an JSON array. Each of element often takes this form:
+
+    COMMAND, [Argument Array], {Option object}
+
+It's similar to a function call when we have *function* name, follow by its argument and the last is an option object.
 
 You can quickly sense a downside is that each of driver have different API to
 construct query. When you come to another language, you may feel very strange.
 The driver hide the real query behinds its API. It's kind of similar to how you
 use an ORM in SQL world to avoid writing raw SQL string. But it's different
-because the ORM usually has its OWN API to turn query into raw query string,
+because the ORM usually has its own API to turn query into raw query string,
 which in turns send to server using another driver with that database protocol.
 Here, we are having power of an ORM, but happen at driver level, because
-RethinkDB protocol use a simple but powerful JSON protocol to help model query
+RethinkDB protocol is a powerful JSON protocol to help model query
 like function call, with argument and follow by parameter. In fact, ReQL is
 modeled after functional languages like Lisp or Hashkell.
 
 If you would like to know more about ReQL at lower level, you should read more
 in [official documents](http://rethinkdb.com/docs/writing-drivers/)
+
+
+## Using drivers
 
 RethinkDB supports 3 official drives:
 
@@ -166,7 +180,7 @@ Go Lang driver[^golang]
 
 [^golang]: [https://github.com/dancannon/gorethink](https://github.com/dancannon/gorethink)
 
-   var connection *r.Session
+    var connection *r.Session
 
     connection, err := r.Connect(r.ConnectOpts{
         Address:  "localhost:28015",
