@@ -7,6 +7,10 @@ will usually loaded into the memory. Embedding document has its own advantages
 such as: query data is simple, but this section will focus on data modeling with
 *JOIN*.
 
+# Using Join
+
+## eqJoin
+
 In RethinkDB, **JOIN** is automatically distributed, meaning if you run on a cluster, the data
 will be combined from many clusters and presents final result to you.
 
@@ -587,6 +591,8 @@ RethinkDB team are aware of that and is working on it now[^collapse].
 
 ## Using sub queries
 
+### One to many relation
+
 Almost above JOIN commands is operator on two sequence. What if we have exactly
 a single document which we get by using `get` and we want to join some data.
 If we think a bit, we can see that in RethinkDB, we can query whatever extra
@@ -749,11 +755,57 @@ And we got this result:
 While as the query looks giant and complex. The way to write is to drill down
 each table at a time, using a map/concatMap to transform data.
 
+### Many to many relation
+
+Using of `outerJoin` and `innerJoin` are not efficient because they are not
+using index at all. They are useful, like filter, powerful too but just not
+very fast. As in *Chapter 5*, we used `concatMap` with `getAll` to query
+data across tables, that is just an idea of *JOIN*. We should always avoid
+`outerJoin` and `innerJoin` if possible and adopt `getAll` with `concatMap`.
+
+In **inner join** section, it takes more than 2 minutes to run our query.
+Let's try it again, find all *foods* and its *compounds_founds*, this time we
+leverage an index with `getAll` and join data with `concatMap`
+
+    r.db('foodb').table('foods')
+      .map(function (food) {
+        return food.merge({
+          "compound_foods":
+            r.db('foodb').table('compounds_foods')
+              .getAll(food("id"), {index: 'food_id'})
+              .coerceTo('array')
+        })
+      })
+
+And how fast it runs:
+
+C> Executed in 1.52s. 40 rows returned, 40 displayed, more available
+
+Much better than using `innerJoin`.Compare to >2mins before, this is 
+a major improvement. To really see how fast/slow a query
+without index, you may want to put data on a spin disk(an external hard drive
+for example), because SSD is usually fast and you may not notice. All of
+my above example is using a SSD on  Macbook Pro (Retina, 13-inch, Mid 2014),
+with process Interl Core i5 2.8ghz and 16GB RAM.
+
+The key point is to ensure we get data using index. For each of document, we
+join data by run other query in a `map`/`concatMap` function to merge/transform
+extra data. The merge document is returned instead of original document
 
 The main different between using sub query is that we have nested document
 instead of **left** **right** field like in JOIN. However, via using some map or
 transform command we can turn them into whatever we can imagine.
 
+# Why map/concatMap is important
+
+In SQL, we can basically join whatever. In RethinkDB, join is infact just a syntaxtic
+sugar on top of `getAll` and `concatMap`. As you learn in *Chapter 5*, `map`/`concatMap`
+allow you to transform data with its relation data in an associated table, by
+querying extra data inside map function.
+
+I once say that they are important and now I repeated again because they are
+everything. `getAll` is just like *SELECT* in MySQL in term of how much
+you have to use. And `getAll` is not very useful without a `map`.
 
 # Wrap up
 
