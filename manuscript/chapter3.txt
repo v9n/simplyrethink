@@ -658,8 +658,23 @@ We can also pass an filter object to do matching filter:
     },...
     ]
 
-We can use `pluck` to get a subset of documents in sequence, similar to how we
-use it with `get`.
+Passing an object will match exactly document with those field and value. In
+other words, passing an object is equal to passing multiple `eq` command and `and`
+command. Above query can re-write using expression:
+
+    r.db('foodb').table('foods')
+      .filter(
+        r.and(
+          r.row('food_type').eq('Type 1'),
+          r.row('food_group').eq('Fruits')
+        )
+      )
+
+The object notation is much cleaner in this case.
+
+From a selection of document, We can use `pluck` to get a subset of documents's
+field instead of returning the whole document. Similarly to how we use *bracket*
+to get a particular field
 
     r.db('foodb').table('foods')
       .filter({
