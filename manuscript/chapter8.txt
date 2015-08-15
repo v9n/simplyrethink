@@ -1,5 +1,6 @@
 -# TIME
 
+# Accessing time
 RethinkDB supports date time date with millisecond precison times with timezon.
 It is integrated with the drivers. Meaning you will work with the time data in
 your language. You don't have to convert it to a special format. Such as in
