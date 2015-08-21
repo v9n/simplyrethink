@@ -1,14 +1,97 @@
 -# Aggregation
 
 Any database has to offer some kind of aggregation functions, and RethinkDb is not
-an exception here. 
+an exception here.
+
+## sum, average, and count
+
+A very normal task of a database is to get some kind of calculate from a given
+sequence of data. You already know `count`, by calling it on a stream, you get
+how many document it has. You can also passing a value or a function to `count`
+so RethinkDB only count document match the value or when predicate function
+return true.
+
+For example, let count how many food is nut we have
+
+    r.db('foodb').table('foods')('food_type').count('Type 1')
+    //=>
+    627
+
+Here we are using bracket to fetch *food_type* field and count how many value
+that match *Tyepe 1*. We can also pass a ReQL expression or a function. Let's
+find all food whose name starts with *L*
+
+    r.db('foodb').table('foods').count(r.row('name').match('^L'))
+    //=>
+    31
+
+Using function:
+
+    r.db('foodb').table('foods')
+      .count(function(food){
+        return food('name').match('^L')
+        })
+    //=>
+    31
+
+With some smart combination with `map`, we can `count` in different way:
+
+    r.db('foodb').table('foods').map(r.row('name').split('').nth(0)).count('L')
+
+Basically we get food name, split charater one by one using `split` command,
+then call `nth(0)` to fet first document. Using `map` we transform food name
+table into a stream of first charater of food name, then we count this stream
+for how many element equal *L*.
+
+`sum`, and `averag` is similar to `count` on how you use them. Just different
+on what they give you. `sum` give you sum of sequence, and `average` does 
+*average*. Let's find out how many bytes of storage need to store food image.
+Each of document in *foods* table has a *picture_file_size* field store in
+byte. 
+
+    r.db('foodb').table('foods').sum('picture_file_size')
+    //=>
+    123463051
+
+We can also sum direcly on the value of stream
+
+    r.db('foodb').table('foods')('picture_file_size').sum()
+
+The key thing is that you understand how those function operate. By default,
+they operator on the whole document. That's why we have to use `sum('pictire_file_size')`
+when we call `sum` direcly on table. However, when we already use bracket to
+get the field, we can simply call `sum()` without any parameters.
+
+    r.db('foodb').table('foods')('picture_file_size').sum()
+
+So you can guess what is the average file size, let's find out it:
+
+    r.db('foodb').table('foods')('picture_file_size').avg()
+    //=>
+    147155.0071513707
+
+We can also passing a function to `sum` or `avg`. In that case, RethinkDb calls
+the function on every document, then get the result and use them for sum
+purpose.
+
+Let's say we only interested in filesize which is bigger than 4MB
+
+    r.db('foodb').table('foods').sum(function(food) {
+      return r.branch(
+       food('picture_file_size').gt(1024*1024*4),
+       food('picture_file_size'),
+        0)
+    })
+    //=>
+    9666379
+
 
 The most popular function is `group`. Yeah, group is everywhere. Let's see how
 it is handle in RethinkDB.
 
 ## group
 
-  sequence.group(fieldOrFunction..., [{index: "indexName", multi: false}]) → grouped_stream
+    sequence.group(fieldOrFunction..., [{index: "indexName", multi: false}]) → grouped_stream
 
 In a nut shell, taking a sequence, depend on the value of field or return value
 of function, we can group document with same value into a group.
@@ -291,6 +374,17 @@ includes 2 fields:
     * reduciton
 
 and let any chain command follows it operate on this sequence.
+
+Let's say we want to find top 10 fruits which has most flavors. Because we want
+to eat fruits that is tasty, right?
+
+We have a table *compounds_foods* with *food_id* and *compound_id*. Using
+*food_id* we can know the food. Using *compound_id* we can know how many
+flavors it has by querying on *compounds_flavors* table. Here we only care
+abotut how many flavors, so we only needs to count, no need to get flavor
+detail.
+
+
 
 ## reduce
 
