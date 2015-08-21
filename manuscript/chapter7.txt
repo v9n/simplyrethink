@@ -85,11 +85,71 @@ Let's say we only interested in filesize which is bigger than 4MB
     //=>
     9666379
 
+Here, we are using `branch` command to say that
 
+    if food('picture_file_size') > 1024 * 1024 * 4
+      return food('picture_file_size')
+    else
+      0
+    end
+
+In some way, by passing function to `sum`, we have a simple effect of filter.
+If we uses `filter`, we can write above query again
+
+    r.db('foodb').table('foods').filter(function(food) {
+      return food('picture_file_size').gt(1024 * 1024 * 4)
+    }).sum('picture_file_size')
+    //=>
+    966379
+
+In this case, we first find and return only documents where its
+*picture_file_size* is greater than 4MB. Then we simply `sum` field
+*picture_file_size* of all documents.
+
+Doing some calculation is fun, but what if we want which food has smallest or
+biggest picture file size. Let's move to `min` and `max`
+
+## min and max
+
+As their name, given a sequence, they find the minimum document. But how we
+compare a JSON document? Therefore, we have to pass a *field name* to min,
+the value of that field of document is used to compare among documents. If
+we pass a function, the function is called on every document, the return value
+is used to compare among documents.
+
+    r.db('foodb').table('foods').max('picture_file_size').pluck('name', 'picture_file_size')
+    //=>
+    {
+    "name":  "Meatball" ,
+    "picture_file_size": 5102677
+    }
+
+As you can guess, RethinkDB runs faster if we pass a field name because no extra
+processing is made. In case of function, function has to be executed.
+
+Example, let's try to get file size of food in group *Type 1*.
+
+    r.db('foodb').table('foods').max('picture_file_size').pluck('name', 'picture_file_size')
+    //=>
+    {
+    "name":  "Meatball" ,
+    "picture_file_size": 5102677
+    }
+
+
+We can go further by passing an index, the value of the index will be used to
+compare. And this is the fastest one
+
+## distinct
+
+Distinct removed duplicate from a sequence.
+
+## group
+
+We learn about all kind of aggeration 
 The most popular function is `group`. Yeah, group is everywhere. Let's see how
 it is handle in RethinkDB.
 
-## group
 
     sequence.group(fieldOrFunction..., [{index: "indexName", multi: false}]) → grouped_stream
 
