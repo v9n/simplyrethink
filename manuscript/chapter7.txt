@@ -150,15 +150,56 @@ Take this example. Try to find the *compounds* with bigest *msds_file_size*
     //=>
     1 row returned in 217ms.
 
+> Note that if you try `max` again without index, in second time the query
+> run faster because a part of data was cached by RethinkDB. 
+> The size of this cache is defined by this forumula
+> (available_mem - 1024 MB) / 2. 
+> with available_mem is the memory when RethinkDB starts.
+
 This runs on a SSD. Pretty slow. Now, see how fast it's compare with index
 
     r.db('foodb').table('compounds').indexCreate('msds_file_size')
-    
 
+Using this index to query:
+
+    r.db('foodb').table('compounds').min({index: 'msds_file_size'})
+    //=>
+    1 row returned in 8ms.
+
+A more complicated way to using `min`, `max` with index. Let's say we have.
 
 ## distinct
 
-Distinct removed duplicate from a sequence.
+Distinct removed duplicate from a sequence. Let's start with this simple example:
+
+    r.expr([1, 2, 3, 4, 1]).distinct()
+    //=> 4 rows returned
+    [
+      1 ,
+      2 ,
+      3 ,
+      4
+    ]
+
+Let's find all *orig_food_common_name* of *compound_foods*.
+
+    r.db('foodb').table('compounds_foods')('orig_food_common_name').distinct()
+    //=>
+    9492 rows returned in 41.44s.
+
+Here we use bracket to return only *orig_food_common_name* field, then remove
+duplication with `distinct`. The query runs in **41.44** seconds. It also
+returns the whole array, **with 9492 rows**, means all data has to be put into
+memory and transfer over network. To make it faster, more efficient, we can 
+use index, and the result will be a stream.
+
+Let's create an index for that field.
+
+    r.db('foodb').table('compounds_foods').indexCreate('orig_food_common_name')
+
+We passing an argument *index: index_name* to distinct
+
+    r.db('foodb').table('compounds_foods').distinct({index: 'orig_food_common_name'})
 
 ## group
 
