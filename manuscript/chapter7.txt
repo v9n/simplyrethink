@@ -11,21 +11,21 @@ how many document it has. You can also passing a value or a function to `count`
 so RethinkDB only count document match the value or when predicate function
 return true.
 
-For example, let count how many food is nut we have
+For example, let count how many food is *Type 1* we have
 
     r.db('foodb').table('foods')('food_type').count('Type 1')
     //=>
     627
 
 Here we are using bracket to fetch *food_type* field and count how many value
-that match *Tyepe 1*. We can also pass a ReQL expression or a function. Let's
+that match *Type 1*. We can also pass a ReQL expression or a function. Let's
 find all food whose name starts with *L*
 
     r.db('foodb').table('foods').count(r.row('name').match('^L'))
     //=>
     31
 
-Using function:
+Or using function:
 
     r.db('foodb').table('foods')
       .count(function(food){
@@ -85,7 +85,7 @@ Let's say we only interested in filesize which is bigger than 4MB
     //=>
     9666379
 
-Here, we are using `branch` command to say that
+Here, we are using `branch` as a normal `if else` block:
 
     if food('picture_file_size') > 1024 * 1024 * 4
       return food('picture_file_size')
@@ -106,6 +106,9 @@ In this case, we first find and return only documents where its
 *picture_file_size* is greater than 4MB. Then we simply `sum` field
 *picture_file_size* of all documents.
 
+Basically, by passing function into `sum`, `avg`, we can transform document to
+our desire result for doing `sum` or `avg` on it.
+
 Doing some calculation is fun, but what if we want which food has smallest or
 biggest picture file size. Let's move to `min` and `max`
 
@@ -120,14 +123,16 @@ is used to compare among documents.
     r.db('foodb').table('foods').max('picture_file_size').pluck('name', 'picture_file_size')
     //=>
     {
-    "name":  "Meatball" ,
-    "picture_file_size": 5102677
+      "name":  "Meatball" ,
+      "picture_file_size": 5102677
     }
 
-As you can guess, RethinkDB runs faster if we pass a field name because no extra
-processing is made. In case of function, function has to be executed.
+We can also pass expression, the value of expression is used for comparing.
+Let's find the compound which has most *health effect*.
 
-Example, let's try to get file size of food in group *Type 1*.
+As you can guess, RethinkDB often runs faster if we pass a field name because
+no extra processing is made. In case of function, function has to be executed.
+Example, let's try to get max file size of food in group *Type 1*.
 
     r.db('foodb').table('foods').max('picture_file_size').pluck('name', 'picture_file_size')
     //=>
@@ -136,9 +141,20 @@ Example, let's try to get file size of food in group *Type 1*.
     "picture_file_size": 5102677
     }
 
+In case of `min`, `max` they returns full document, but using a value to
+compare. That hints that `min`, `max` may accept an index as comparing value.
 
-We can go further by passing an index, the value of the index will be used to
-compare. And this is the fastest one
+Take this example. Try to find the *compounds* with bigest *msds_file_size*
+
+    r.db('foodb').table('compounds').max('msds_file_size')
+    //=>
+    1 row returned in 217ms.
+
+This runs on a SSD. Pretty slow. Now, see how fast it's compare with index
+
+    r.db('foodb').table('compounds').indexCreate('msds_file_size')
+    
+
 
 ## distinct
 
