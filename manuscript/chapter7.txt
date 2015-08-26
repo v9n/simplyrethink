@@ -201,17 +201,19 @@ We passing an argument *index: index_name* to distinct
 
     r.db('foodb').table('compounds_foods').distinct({index: 'orig_food_common_name'})
 
+As you see, the command we learn on this chapter is operating on the whole
+sequence. However, usually coming with aggregation is grouping. We want to
+divide a sequence into many group, and doing aggregation on those group.
+To do that, let's learn about group
+
 ## group
 
-We learn about all kind of aggeration 
-The most popular function is `group`. Yeah, group is everywhere. Let's see how
-it is handle in RethinkDB.
-
+Yeah, group is everywhere. Let's see how it is handle in RethinkDB.
 
     sequence.group(fieldOrFunction..., [{index: "indexName", multi: false}]) → grouped_stream
 
 In a nut shell, taking a sequence, depend on the value of field or return value
-of function, we can group document with same value into a group.
+of function, RethinkDB groups documents with same value into a group.
 
 Looking at `flavors` table, let's group them by their `flavor_group` field:
 
@@ -314,6 +316,8 @@ The returned array includes two fields:
   * reduction: an array contains all of document has same value for `flavor_group` field
 
 When we continue to chain function after `group`, the function will operate on `reduction` array.
+The result of function will replaced the value of reduction array.
+
 For example, we can count how many element of **reduction**:
 
     r.db("foodb")
@@ -341,12 +345,15 @@ For example, we can count how many element of **reduction**:
     ...
     ]
 
+So, the *reduction* field no longer contains an array of document, but contains
+value of how many document in original reduction array.
+
 T> ## Command chain after group runs on grouped array
-T> 
+T>
 T> It's important to understand `group` make next function call operator
 T> on its `reduction` field.
 
-How about group them,and get the first document of grouped stream?
+Similarly, instead of counting, say we care about the first document only.
 
     r.db("foodb")
       .table("flavors")
@@ -396,9 +403,12 @@ How about group them,and get the first document of grouped stream?
     ...
     ]
 
+Here, `nth(0)` will be call on *reduction* array, return its first element, and
+re-assign the result to *reduction* field.
+
 W> Why null group?
 W>
-W> Why do we have a value ***null*** here. It's because 
+W> Why do we have a value ***null*** here. It's because
 W> some documents don't have any value for `flavor_group`,
 W> or in other words, a NULL value. They are put into the same group
 W> of NULL
@@ -418,11 +428,9 @@ And we got this:
 
 Why so? Because when we end the chain with `group`, the whole array is loaded
 into memory, and our sequence are greater than 100000 elements. We have around
-~668K documents. However, when we call `reduce` or `count` on it, RethinkDb won't
-load them all into memory and makes it works. Honestly, I don't know why, I've only read about 
-all of this from this issue [^issue2596]
-
-[^issue2596]: https://github.com/rethinkdb/rethinkdb/issues/2596
+~668K documents. However, when we call `reduce` or `count` on it, the number
+of documen will be reduce. RethinkDB won't them all into memory and makes it
+works.
 
 Let's try what it suggests:
 
@@ -444,11 +452,26 @@ Let's try what it suggests:
     ...
     ]
 
-Now, this result is of course not what we expected. But why it runs? It is because when we call `count`, the `reduction` field becomes a single
-value instead of an array of grouped data, that makes the size of final group data smaller. As you can see, ***9492*** is returned, and
+Now, this result is of course not what we expected. But why it runs? It is
+because when we call `count`, the whole array of `reduction` field becomes
+a single value instead of an array of grouped data, that makes the size of
+final group data smaller. As you can see, ***9492*** is returned, and
 that's all loaded into memory.
 
-So keep in mind that we have some limitation with `group`, at least at this moment.
+So keep in mind that we have some limitation with `group`. If you notice,
+*9492* is the same number when we run `distinct` on *orig_food_common_name*
+field.
+
+    r.db('foodb').table('compounds_foods')('orig_food_common_name').distinct()
+    //=>
+They returns same amount of document because they are just same concept.
+
+  * group: group many document into a single document with a value of document
+  * distinct: eliminate duplication, based on the value.
+
+This confirms that our query works properly. Sometimes, it's fun to go back
+and try different query as a way to validate our queries.
+
 
 
 ## ungroup
