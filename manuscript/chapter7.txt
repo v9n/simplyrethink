@@ -43,6 +43,43 @@ then call `nth(0)` to fet first document. Using `map` we transform food name
 table into a stream of first charater of food name, then we count this stream
 for how many element equal *L*.
 
+## count
+
+You already knew `count`. It also has an extra useful way to count is by passing a
+value or a function. When passing a value, it counts the document whose value matches
+the value such as counting users who are 18 year olds:
+
+    r.db("foodb")
+      .table("users")("age")
+      .count(18)
+
+When passing a function, it counts the document whose function evaulation returns true
+on document, very similar to filter function. However, filter returns document while `count`
+counts them such as counting users who are 19 years old and name starts with a K:
+
+    r.db("foodb")
+      .table("users")
+      .count(function(user) {
+        return user("age").eq(23).and(user("name").match("^L"))
+      })
+    //=>
+    1
+
+We can use `row` function too:
+
+    r.db("foodb")
+      .table("users")
+      .count(r.row("rowage").eq(23).and(r.row("name").match("^L")))
+    //=>
+    1
+
+
+
+
+
+
+
+
 `sum`, and `averag` is similar to `count` on how you use them. Just different
 on what they give you. `sum` give you sum of sequence, and `average` does 
 *average*. Let's find out how many bytes of storage need to store food image.
@@ -170,7 +207,17 @@ A more complicated way to using `min`, `max` with index. Let's say we have.
 
 ## distinct
 
-Distinct removed duplicate from a sequence. Let's start with this simple example:
+Given a sequence, `distinct` remove duplication from it. When giving an index,
+the duplication is detected by value of index. Its syntax is:
+
+    sequence.distinct() → array
+    table.distinct([:index => <indexname>]) → stream
+
+As you can tell, whenever we return an array, we will run into 100,000 element
+isues if the return array has more than 100,000 elements. So keep that in mind
+and try to call distinct with a proper index, which we will learn quickly
+
+Let's start with this simple example:
 
     r.expr([1, 2, 3, 4, 1]).distinct()
     //=> 4 rows returned
@@ -181,7 +228,80 @@ Distinct removed duplicate from a sequence. Let's start with this simple example
       4
     ]
 
-Let's find all *orig_food_common_name* of *compound_foods*.
+Let's get a list of our *username*, without duplication
+
+    r.db("foodb")
+      .table("users")
+      .withFields("name")
+      .distinct()
+    //=>Executed in 30ms. 152 rows returned
+    [
+    {
+    "name":  "Abe Willms"
+    } ,
+    {
+    "name":  "Adela Klein V"
+    } ,...]
+
+
+Let's see what kind of `age` our users are:
+
+    r.db("foodb")
+      .table("users")
+      .withFields("age")
+      .distinct()
+   //=> 71 rows are returned
+    [
+    {
+    "age": 9
+    } ,
+    {
+    "age": 10
+    } ,
+    {
+    "age": 13
+    } ,
+    {
+    "age": 14
+    } ,]
+
+So we have 152 unique user's name and 71 unique `age`.
+
+Sometime, the way to detect duplication is not by comparing value of a single
+field but the result of some logic. We can build an index based on that logic.
+Then using value of index to run distinct on.
+
+Imagine we want to divide user into 3 groups, depend on their *age*
+
+    r.db("foodb")
+      .table("users")
+      .indexCreate("age-group", function (user) {
+        return
+          r.branch(
+            user("age").lt(18),
+            "teenager",
+            r.branch(user("age").gt(50),
+              "older",
+              "adult"
+            )
+          )
+      })
+
+With that index, we can quickly list age group of our users, by
+calling `distinct` on table, passing that index:
+
+    r.db("foodb")
+      .table("users")
+      .distinct({index: "age-group"})
+    //=> 3 rows return
+    "adult"
+    "older"
+    "teenager"
+
+When passing index, the value of index is returned; and therefore that value is
+used to detect duplication.
+
+Let's try on some big table: list all *orig_food_common_name* of *compound_foods*.
 
     r.db('foodb').table('compounds_foods')('orig_food_common_name').distinct()
     //=>
@@ -200,6 +320,18 @@ Let's create an index for that field.
 We passing an argument *index: index_name* to distinct
 
     r.db('foodb').table('compounds_foods').distinct({index: 'orig_food_common_name'})
+    //=>40 rows returned in 161ms. Displaying rows 1-40, more available
+
+We optimize it from *41.44s* to *161ms*!!! So fast. Basically, without an index,
+RethinkDB has to scan the whole table, keep them all in memory. It is slow in
+two ways:
+
+  * slow to fetch data: read whole table, no index is used
+  * slow to return data: a big amout of data transfer overnetwork from RethinkDB to client
+
+When we pass an index, RethinkDB pickup the value of index, it doesn't have to
+care or load the whole document. The return result is stream, so client receive
+a cursor to fetch data lazily.
 
 As you see, the command we learn on this chapter is operating on the whole
 sequence. However, usually coming with aggregation is grouping. We want to
@@ -622,126 +754,12 @@ Let's re-write it in a recursion way, so we can simulate `reduce` style:
       return 1
     }
 
-    
-
-## distinct
-
-Given a sequence, `distinct` remove duplication from it. When giving an index,
-the duplication is detected by value of index. Its syntax is:
-
-    sequence.distinct() → array
-    table.distinct([:index => <indexname>]) → stream
-
-As you can tell, whenever we return an array, we will run into 100,000 element
-isues if the return array has more than 100,000 elements. So keep that in mind
-and try to call distinct with a proper index.
-
-Let's count how many distinct `user` we have:
-
-    r.db("foodb")
-      .table("users")
-      .withFields("name")
-      .distinct()
-    //=>Executed in 30ms. 152 rows returned
-    [
-    {
-    "name":  "Abe Willms"
-    } ,
-    {
-    "name":  "Adela Klein V"
-    } ,...]
-
-
-Let's see what kind of `age` our users are:
-
-    r.db("foodb")
-      .table("users")
-      .withFields("age")
-      .distinct()
-   //=> 71 rows are returned
-    [
-    {
-    "age": 9
-    } ,
-    {
-    "age": 10
-    } ,
-    {
-    "age": 13
-    } ,
-    {
-    "age": 14
-    } ,]
-
-So we have 152 unique user's name and 71 unique `age`. 
-
-
-What will happen when using an index?  Let's try to create an index for user age, we 
-divide them into 3 groups:
-
-    r.db("foodb")
-      .table("users")
-      .indexCreate("age-group", function (user) {
-        return
-          r.branch(
-            user("age").lt(18),
-            "teenager",
-            r.branch(user("age").gt(50),
-              "older",
-              "adult"
-            )
-          )   
-      })
-
-Calling `distinct` on table, passing that index:
-
-    r.db("foodb")
-      .table("users")
-      .distinct({index: "age-group"})
-    //=> 3 rows return
-    "adult"
-    "older"
-    "teenager"
-
-So when passing index, the value of index is returned; and therefore that value is
-used to detect duplication.
-
-## count
-
-You already knew `count`. It also has an extra useful way to count is by passing a
-value or a function. When passing a value, it counts the document whose value matches
-the value such as counting users who are 18 year olds:
-
-    r.db("foodb")
-      .table("users")("age")
-      .count(18)
-
-When passing a function, it counts the document whose function evaulation returns true
-on document, very similar to filter function. However, filter returns document while `count`
-counts them such as counting users who are 19 years old and name starts with a K:
-
-    r.db("foodb")
-      .table("users")
-      .count(function(user) {
-        return user("age").eq(23).and(user("name").match("^L"))
-      })
-    //=>
-    1
-
-We can use `row` function too:
-
-    r.db("foodb")
-      .table("users")
-      .count(r.row("rowage").eq(23).and(r.row("name").match("^L")))
-    //=>
-    1
-
-We also have some other aggregation functions such as `sum`, `min`, `max` but
-they are very simple, and you can read from API page in aggregation section[^Aggregation].
-
-[^Aggregation]: http://www.rethinkdb.com/api/javascript/max/#
 
 # Wrap up
 
 When finishing this chapter, you should know how to aggregation, how to group data, counting,
-and call function on grouped data.
+and call function on grouped data. Some keys thing:
+
+  * try to use index if possible on `min`, `max`, `distinct`
+  * without `ungroup`, any chain command works on sub stream group
+
