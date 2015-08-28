@@ -1,0 +1,29 @@
+{
+  "name": "server_monitoring",
+  "version": "0.0.1",
+  "description": "Web monitoring with RethinkDB and Telegram",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Vinh Nguyen",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kureikain/simplyrethink"
+  },
+  "keywords": [
+    "server",
+    "monitoring"
+  ],
+  "bugs": {
+    "url": "https://github.com/kureikain/simplyrethink/issues"
+  },
+  "homepage": "https://github.com/kureikain/simplyrethink",
+  "dependencies": {
+    "async": "^1.4.2",
+    "bluebird": "^2.9.34",
+    "request": "^2.61.0",
+    "rethinkdb": "^2.1.0"
+  }
+}
