@@ -337,7 +337,7 @@ Let's try on some big table: list all *orig_food_common_name* of *compound_foods
 Here we use bracket to return only *orig_food_common_name* field, then remove
 duplication with `distinct`. The query runs in **41.44** seconds. It also
 returns the whole array, **with 9492 rows**, means all data has to be put into
-memory and transfer over network. To make it faster, more efficient, we can 
+memory and transfer over network. To make it faster, more efficient, we can
 use index, and the result will be a stream.
 
 Let's create an index for that field.
@@ -349,9 +349,13 @@ We passing an argument *index: index_name* to distinct
     r.db('foodb').table('compounds_foods').distinct({index: 'orig_food_common_name'})
     //=>40 rows returned in 161ms. Displaying rows 1-40, more available
 
-We optimize it from *41.44s* to *161ms*!!! So fast. Basically, without an index,
-RethinkDB has to scan the whole table, keep them all in memory. It is slow in
-two ways:
+We optimize it from *41.44s* to *161ms*!!! So fast. It has two reason for this
+to be fast.
+
+  1. We using an index as value for distinct to find the difference
+  2. A stream is return. So the whole array won't have to load into memory and transfer to client
+
+Basically, without an index, RethinkDB has to scan the whole table. It is slow in two ways:
 
   * slow to fetch data: read whole table, no index is used
   * slow to return data: a big amout of data transfer overnetwork from RethinkDB to client
