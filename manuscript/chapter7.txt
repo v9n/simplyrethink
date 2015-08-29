@@ -1,15 +1,13 @@
 -# Aggregation
 
-Any database has to offer some kind of aggregation functions, and RethinkDb is not
-an exception here.
+A very normal task of a database is to get some kind of calculate from a given
+sequence of data. We will learn those kind of function on this chapter.
 
 ## sum, average, and count
 
-A very normal task of a database is to get some kind of calculate from a given
-sequence of data. You already know `count`, by calling it on a stream, you get
-how many document it has. You can also passing a value or a function to `count`
-so RethinkDB only count document match the value or when predicate function
-return true.
+You already knew `count`. It also has an extra useful way to count is by passing a
+value or a function. When passing a value, it counts the document whose value matches
+the value such as counting users who are 18 year olds:
 
 For example, let count how many food is *Type 1* we have
 
@@ -17,15 +15,24 @@ For example, let count how many food is *Type 1* we have
     //=>
     627
 
-Here we are using bracket to fetch *food_type* field and count how many value
-that match *Type 1*. We can also pass a ReQL expression or a function. Let's
+Here we are using nested field syntax to fetch *food_type* field and count how many value that match *Type 1*.
+
+Or count how many user who are *18* years old.
+
+    r.db("foodb")
+      .table("users")("age")
+      .count(18)
+
+We can also pass a ReQL expression or a function. Let's
 find all food whose name starts with *L*
 
     r.db('foodb').table('foods').count(r.row('name').match('^L'))
     //=>
     31
 
-Or using function:
+We can also passing a value or a function to `count`
+so RethinkDB only count documents match the value or when predicate function
+returns true.
 
     r.db('foodb').table('foods')
       .count(function(food){
@@ -34,7 +41,9 @@ Or using function:
     //=>
     31
 
-With some smart combination with `map`, we can `count` in different way:
+In RethinkDB, it's very flexible on how we do thing. Such as, counting, in
+fundamental is just count the element from an array. With some smart
+combination we can `count` same thing in different way:
 
     r.db('foodb').table('foods').map(r.row('name').split('').nth(0)).count('L')
 
@@ -43,19 +52,10 @@ then call `nth(0)` to fet first document. Using `map` we transform food name
 table into a stream of first charater of food name, then we count this stream
 for how many element equal *L*.
 
-## count
+In a sense, passing a function is like a shortcut of filter with that function,
+and count the return sequence
 
-You already knew `count`. It also has an extra useful way to count is by passing a
-value or a function. When passing a value, it counts the document whose value matches
-the value such as counting users who are 18 year olds:
-
-    r.db("foodb")
-      .table("users")("age")
-      .count(18)
-
-When passing a function, it counts the document whose function evaulation returns true
-on document, very similar to filter function. However, filter returns document while `count`
-counts them such as counting users who are 19 years old and name starts with a K:
+Below example, counting users who are 19 years old and name starts with a K:
 
     r.db("foodb")
       .table("users")
@@ -65,7 +65,20 @@ counts them such as counting users who are 19 years old and name starts with a K
     //=>
     1
 
-We can use `row` function too:
+If we run `filter`, before `count`:
+
+    r.db("foodb")
+      .table("users")
+      .filter(function(user) {
+        return user("age").eq(23).and(user("name").match("^L"))
+      })
+      .count()
+    //=>
+    1
+
+We got same result but it feel very redundant.
+
+We can also pass a ReQL expression which is evaluate to true or false:
 
     r.db("foodb")
       .table("users")
@@ -73,18 +86,11 @@ We can use `row` function too:
     //=>
     1
 
-
-
-
-
-
-
-
 `sum`, and `averag` is similar to `count` on how you use them. Just different
 on what they give you. `sum` give you sum of sequence, and `average` does 
 *average*. Let's find out how many bytes of storage need to store food image.
 Each of document in *foods* table has a *picture_file_size* field store in
-byte. 
+byte.
 
     r.db('foodb').table('foods').sum('picture_file_size')
     //=>
@@ -190,20 +196,23 @@ Take this example. Try to find the *compounds* with bigest *msds_file_size*
 > Note that if you try `max` again without index, in second time the query
 > run faster because a part of data was cached by RethinkDB. 
 > The size of this cache is defined by this forumula
-> (available_mem - 1024 MB) / 2. 
+> (available_mem - 1024 MB) / 2.
 > with available_mem is the memory when RethinkDB starts.
 
 This runs on a SSD. Pretty slow. Now, see how fast it's compare with index
 
     r.db('foodb').table('compounds').indexCreate('msds_file_size')
 
-Using this index to query:
+Using this index to query, we can see it much faster.
 
     r.db('foodb').table('compounds').min({index: 'msds_file_size'})
     //=>
     1 row returned in 8ms.
 
-A more complicated way to using `min`, `max` with index. Let's say we have.
+By passing an secondary index to `min`, `max` function, the index value is used
+to compare, run much faster and more efficient.
+
+
 
 ## distinct
 
