@@ -212,7 +212,25 @@ Using this index to query, we can see it much faster.
 By passing an secondary index to `min`, `max` function, the index value is used
 to compare, run much faster and more efficient.
 
+For complex logic, we can event pass a function to `min` or `max`, the return
+values are used to compare. Let's find the food that has most compounds. The
+compound of food is stored in *compound_foods* table.
 
+    //First, let create an index, you can ignore if you created index before.
+    r.db('foodb').table('compounds_foods').indexCreate('food_id')
+
+    r.db('foodb').table('foods')
+      .max(function(food) {
+        return r.db('foodb').table('compounds_foods')
+                .getAll(food('id'), {index: 'food_id'})
+                .count()
+      })
+    //=>
+    1 row returned in 1min 8.2
+
+Yay, it runs in 1 minute and 8.2 seconds. Super slow. Because the function has
+to be run on every document. That's being said, complex function may be slow,
+but they are useful when we need it.
 
 ## distinct
 
