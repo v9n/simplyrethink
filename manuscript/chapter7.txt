@@ -598,8 +598,8 @@ And we got this:
 Why so? Because when we end the chain with `group`, the whole array is loaded
 into memory, and our sequence are greater than 100000 elements. We have around
 ~668K documents. However, when we call `reduce` or `count` on it, the number
-of documen will be reduce. RethinkDB won't them all into memory and makes it
-works.
+of documen will be reduce. RethinkDB won't have to keep them all into memory and
+makes it works.
 
 Let's try what it suggests:
 
@@ -633,15 +633,19 @@ field.
 
     r.db('foodb').table('compounds_foods')('orig_food_common_name').distinct()
     //=>
-They returns same amount of document because they are just same concept.
+    9492 rows returned in 41.02s.
 
-  * group: group many document into a single document with a value of document
-  * distinct: eliminate duplication, based on the value.
+They return same amount of document because while they are different, they
+share same concept of equality. Look at its define a gain:
+
+  * group: group many documents which has same value of field or function result into a single document.
+  * distinct: eliminate duplication, based on the value of a field or function result.
+
+While they return different data, they retruns same quantity of document.
+*Distinct* turns.
 
 This confirms that our query works properly. Sometimes, it's fun to go back
 and try different query as a way to validate our queries.
-
-
 
 ## ungroup
 
