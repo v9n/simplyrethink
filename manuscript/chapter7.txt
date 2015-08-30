@@ -371,7 +371,13 @@ To do that, let's learn about group
 
 ## group
 
-Yeah, group is everywhere. Let's see how it is handle in RethinkDB.
+Yeah, group is everywhere. Group command groups data into many sub sequence,
+we can continue to run aggeration on those sub sequence. For example, instead
+of counting the whole sequence. We want to count how many document are in group
+A, how many document in group B and so on, with group A or group B is document
+that share same particular value.
+
+Let's see how it is handle in RethinkDB.
 
     sequence.group(fieldOrFunction..., [{index: "indexName", multi: false}]) → grouped_stream
 
