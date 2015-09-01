@@ -641,10 +641,11 @@ share same concept of equality. Look at its define a gain:
   * group: group many documents which has same value of field or function result into a single document.
   * distinct: eliminate duplication, based on the value of a field or function result.
 
-While they return different data, they retruns same quantity of document.
-*Distinct* turns.
+While they return different data, they retrun same quantity of document.
+*Distinct* elimiate equality by remove and keeping one. *Group* eliminate
+equality by mergering them into one.
 
-This confirms that our query works properly. Sometimes, it's fun to go back
+Above result confirms that our query works properly. Sometimes, it's fun to go back
 and try different query as a way to validate our queries.
 
 ## ungroup
@@ -680,13 +681,29 @@ how many value of `flavor_group`
     },...
     ]
 
+Without `ungroup`, We will get an error
+
+
+    r.db("foodb")
+      .table("flavors")
+      .group('flavor_group')
+      .count()
+      .orderBy(r.desc('reduction'))
+    //=>
+    e: Cannot convert NUMBER to SEQUENCE in:
+    r.db("foodb").table("flavors").group("flavor_group").count().orderBy(r.desc("reduction"))
+
+Error occurs because without `ungroup`, `orderBy` is called on reduction array,
+in this case it's a single number(the quantity of document in reduction array)
+and `orderBy` cannot work on a single number.
+
 So `ungroup` turns the return array from `group` into a sequence of object, with each object
 includes 2 fields:
 
     * group
     * reduciton
 
-and let any chain command follows it operate on this sequence.
+and let any subsequent commands follows it operate on this sequence.
 
 Let's say we want to find top 10 fruits which has most flavors. Because we want
 to eat fruits that is tasty, right?
@@ -697,13 +714,14 @@ flavors it has by querying on *compounds_flavors* table. Here we only care
 abotut how many flavors, so we only needs to count, no need to get flavor
 detail.
 
+@TODO wrire this query
 
 
 ## reduce
 
 I think at this point, you already know what `count()` does. From a sequence, or an array,
-it returns a single number of how many items the sequence holds. So it transforms a whole
-array into a single value. Unlike `map` which turns each element of sequence into
+it returns a single number of how many items the sequence holds. It transforms a whole
+array into a single value, unlike `map` which turns each element of sequence into
 other value, and returns a new sequence with all return value from `map` function. 
 
 `count` is an example of `reduce`. `reduce` accepts a function, let's call it `reduce_function`,
@@ -724,25 +742,119 @@ can run parallel across shards and CPU core, or even across computers in a clust
 The final result of each reduce functions on each shards or each computer,
 are then passed to reduce function again, to create final result.
 
-But what will happen if the sequence has a single element? We don't have enough input
+What will happen if the sequence has a single element? We don't have enough input
 for reduce function. That is a special case, and RethinkDB will simply return 
 value of element as result of reduce function.
 
-Usually, `reduce` will be used with `map` to transform document into a value that can 
-be aggregated. As you have seen, the reduce function paramters can be element of sequence, 
-or the result of previous reduce function. Therefore, we will need `map` to
-do some transformation so that the type of parameters and result of reduce function are
-the same.
+Usually, `reduce` will be used with `map` to transform document into a value
+that can
+be aggregated. As you have seen, the reduce function paramters can be elements of sequence,
+or the result of previous reduce function. Therefore, we need some transform  so that the
+type of parameters and result of reduce function are the same, or if we don't do the 
+transformation, the `reduce` function have to be able to deal with multiple data type
 
-T> Tail call optimization
-T>
-T> You may already sense that `reduce` is similar to recursion. But recursion is bad, they
-T> are quicjky fill up the heap. However, you know that we are also passing return
-T> value to next call of `reduce` function. Therefore, the reduce function doesn't need to
-T> know about state of a previous call. In other words, we don't have to store a stack
-T> for previous function call. That's tail called optimization where we can reuse
-T> current stack frame for function call instead of creating new one.
-T> I think that under the hood, reduce function is implemented in that sense.
+Take this example:
+
+    r.expr([1, 2, 7, 8])
+      .reduce(function(left, right) {
+        return left.add(right)
+      })
+    //=>
+    18
+
+That's the sum of the array. The process of reducing is similar to these steps:
+
+  1. reduce function is called with first element of sequence.`left=1`, `right=2`, and return `1.add(2)=3`. Result = 3
+  2. reduce function is called again, with third element *7*, and result of previos call *3*
+     left=3, right = 7 -> result = 10
+  3. reduce function is called again, with last element of array
+     left=10, right = 8 -> result = 18
+  4. no more lement, return the single value of last function call => 18
+
+So `reduce` is kind of like recursion. Like in above example, writing in plain
+english it looks like this:
+
+    sum(a) = a if a contains a single element
+    sum(a) = a[0] + a[1] if a has two element
+    sum(a) = sum([a[0], a[1]) + sum(a[2..last]) if a has more than element
+
+Let try another example. Find the minimun value of an array.
+
+    r.expr([10, 12, 4, 9])
+      .reduce(function(left, right) {
+        return r.branch(left.lt(right), left, right)
+      })
+    //=>
+    4
+
+In this example, the *reduce* function returns the smaller value from two input
+value. Here we use `branch` as an `if`, and `lt` to compare less than.
+Here is how it runs:
+
+  1. call function with left=10, right=12, return 10
+  2. call function with left=10(previous result), right=4 , return 4
+  3. call function with left=4(previous result), right=9(last element), return 4
+  4. final value 4 is returned
+
+Here, we noticed that the reduce function return same data type as input value.
+Let's try to count how many document we have, using `reduce` style. Basically,
+you can already guess that we will write a *reduce* function that increase to
+1 while we iterates the array. But here we are writing reduce as a recursion
+fuction, so we will add the *left* and *right* value.
+
+    r.db("foodb")
+      .table("flavors")
+      .reduce(function(left, right) {
+        return
+          r.branch(left.typeOf().ne('NUMBER'), 1, left)
+          .add(
+          r.branch(right.typeOf().ne('NUMBER'), 1, right)
+          )
+      })
+    //=>
+    855
+
+That the total documents of *flavors* table. Let looks at our *reduce* function again:
+
+    function(left, right) {
+        return
+          r.branch(left.typeOf().ne('NUMBER'), 1, left)
+          .add(
+          r.branch(right.typeOf().ne('NUMBER'), 1, right)
+          )
+    }
+
+*left* and *right* can be a document of
+*flavors* table with its whole fields, or a number from the result of `add`
+command. We use `typeOf` to detect type, if it's not a *NUMBER*, that means it
+is a document, we consider that is a 1 item, and return 1 for counting. If
+it's already a number, we used it, then add both number. It's just like seeing
+an item, take 1, add with previous function call. Repeat this process for whole
+sequence, we have a count of it.
+
+
+So you see that we have to deal with `branch` command to turn the document into
+a number, both for left and right. That job is a transformation, and sounds like
+a job of `map`. Rewrite it we can make it cleanrer:
+
+
+    r.db("foodb")
+      .table("flavors")
+      .map(function(doc) {
+        return 1
+      })
+      .reduce(function(left, right) {
+       return left.add(right)
+      })
+    //=>
+    855
+
+Now, we `map` each of document to become a single number `1`. Then the reduce
+function works as a `sum` of the array. Take first two elements, return the sum.
+Take the previous sum, add it with third element and so on.
+
+Usually, we will have `map` step before `reduce` to turn document into a type
+that compatible with result of *reduce* function.
 
 Let's rewrite `count` in `reduce` style. Giving it some thoughts, you know that the way we count thing
 is by using variable; each time we get a new input, we increment that variable by 1,
