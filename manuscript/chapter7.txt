@@ -771,6 +771,13 @@ That's the sum of the array. The process of reducing is similar to these steps:
      left=10, right = 8 -> result = 18
   4. no more lement, return the single value of last function call => 18
 
+W> Order of reduce function
+W>
+W> Above steps just to help you illustrate how it works. The real order maybe different
+W> Because the data can be compute across the shard, cpu or even computer
+W> and the final result of each continued to be called on reduce function
+W> Never make assumption that the order of reduce function is from left to right
+
 So `reduce` is kind of like recursion. Like in above example, writing in plain
 english it looks like this:
 
@@ -832,7 +839,6 @@ it's already a number, we used it, then add both number. It's just like seeing
 an item, take 1, add with previous function call. Repeat this process for whole
 sequence, we have a count of it.
 
-
 So you see that we have to deal with `branch` command to turn the document into
 a number, both for left and right. That job is a transformation, and sounds like
 a job of `map`. Rewrite it we can make it cleanrer:
@@ -871,7 +877,7 @@ counting in JavaScript:
     count(['a', 'b', 'a1', 12, 'a9', 13])
 
 In the above ***count*** function of JavaScript, we have a step where we initialize the
-value of `sum` to 0, and a step where we increment `sum` to 1. 
+value of `sum` to 0, and a step where we increment `sum` to 1.
 
 Let's re-write it in a recursion way, so we can simulate `reduce` style:
 
@@ -907,6 +913,10 @@ Let's re-write it in a recursion way, so we can simulate `reduce` style:
       return 1
     }
 
+### Map Reduce
+
+The process of `map-reduce` shines when using with `group`. Because we now have
+power to do our own aggeration.
 
 # Wrap up
 
