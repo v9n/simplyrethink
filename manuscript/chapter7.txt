@@ -915,8 +915,156 @@ Let's re-write it in a recursion way, so we can simulate `reduce` style:
 
 ### Map Reduce
 
-The process of `map-reduce` shines when using with `group`. Because we now have
-power to do our own aggeration.
+The process of `map-reduce` shines when using with `group`. When calling
+`group`, the subsequent command operate on sub stream, we can take advantage
+of that to run reduce on that sub stream.
+
+Let's try to fetch the food and how many health effect they have.
+
+
+    r.db("foodb")
+      .table("foods")
+      .concatMap(function(food) {
+        return
+          r.db("foodb").table("compounds_foods")
+            .getAll(food('id'), {index: 'food_id'})
+            .pluck('food_id', 'compound_id')
+          .merge({name: food('name')})
+      })
+      .group(function(doc) {
+        return doc.pluck('food_id', 'name')
+      })
+      .reduce(function(left, right) {
+        return
+          r.branch(left.typeOf().eq("NUMBER"), left, 1)
+          .add(
+            r.branch(right.typeOf().eq("NUMBER"), right, 1)
+          )
+      })
+
+Let's improve it to remove branch command which is odd
+
+
+
+    r.db("foodb")
+      .table("foods")
+      .concatMap(function(food) {
+        return 
+          r.db("foodb").table("compounds_foods")
+            .getAll(food('id'), {index: 'food_id'})
+            .pluck('food_id', 'compound_id')
+          .merge({name: food('name')})
+      })
+      .group(function(doc) {
+        return doc.pluck('food_id', 'name')
+      })
+      .map(function(doc) {
+        return doc.merge({compound_count: 1})
+      })
+      .reduce(function(left, right) {
+        return
+          {compound_count: left('compound_count').add(right('compound_count'))}
+      })
+
+here, we inject a field call `compound_count` and set it to 1, because we are
+counting one at a time. The reduce function simply doing an sum of two left and
+right field of `compound_count`, and return an object with `compound_count`.
+
+r.db('foodb')
+  .table('foods')
+  .group(r.row('name').split('').nth(0))
+  .count()
+
+
+
+
+
+First, let create necessary index
+    r.db("foodb").table('compounds_health_effects').indexCreate('compound_id')
+    r.db("foodb").table('compounds_flavors').indexCreate('compound_id')
+    r.db("foodb").table('compounds_foods').indexCreate('compound_id')
+
+With the index, we can easily get all *compunds* and count how many flavor and
+health effect associated with a compounds.
+
+
+    r.db("foodb")
+      .table('compounds')
+      .map(function(doc) {
+        return {
+          compound_id: doc('id'),
+          food_id: r.db('foodb').table('compounds_foods').getAll(doc('id'), {index: 'compound_id'}).coerceTo('array'),
+          flavor_total: r.db('foodb').table('compounds_flavors').getAll(doc('id'), {index: 'compound_id'}).count(),
+          health_effect_total: r.db('foodb').table('compounds_health_effects').getAll(doc('id'), {index: 'compound_id'}).count()
+        }
+      })
+
+Ok, above query give us compound and its flavor count and health effect count.
+But we want to count the flavor and healh effect of a food. 
+Well, a food contains many compound, so the total health effect is the sum 
+of all compound's health effect.
+
+Therefore, we can group by *food_id* field and run `reduce` function on
+reduction group to get the total count
+
+
+      .group('food_id')
+      .reduce(function(left, right) {
+        return {
+          flavor_total: left('flavor_total') + right('flavor_total'),
+          health_effect_total: left('health_effect_total') + right('health_effect_total'),
+        }
+      }
+
+This give us a list of food id and its total flavor and health effect. Let's
+make one more extra thing by returns food name too.
+
+      .ungroup()
+      .map(function(doc) {
+        return {
+          food: r.db('foodb').table('food').get(doc('group')('food_id')),
+          flavor_total: doc('reduction')('flavor_total'),
+          health_effect_total: doc('reduction')('health_effect_total'),
+        }
+      })
+
+And the final query is:
+
+    r.db("foodb")
+
+        
+      .table('compounds')        
+      .map(function(doc) {
+        return {
+          compound_id: doc('id'),
+          food_id: r.db('foodb').table('compounds_foods').getAll(doc('id'), {index: 'compound_id'}).coerceTo('array'),
+          
+          flavor_total: r.db('foodb').table('compounds_flavors').getAll(doc('id'), {index: 'compound_id'}).count(),
+          health_effect_total: r.db('foodb').table('compounds_health_effects').getAll(doc('id'), {index: 'compound_id'}).count()
+        }
+      })
+      
+      .group('food_id')
+      .reduce(function(left, right) {
+        return {
+          flavor_total: left('flavor_total') + right('flavor_total'),
+          health_effect_total: left('health_effect_total') + right('health_effect_total'),
+        }
+      }
+      
+      .ungroup()
+      .map(function(doc) {
+        return {
+          food: r.db('foodb').table('food').get(doc('group')('food_id')),
+          flavor_total: doc('reduction')('flavor_total'),
+          health_effect_total: doc('reduction')('health_effect_total'),
+        }
+      })
+      
+      //.orderBy(r.desc('flavor_total'))
+
+Actually, sometime you may not need to use `reduce` with `map`, `concatMap` and
+some built-in command, you can already do a lot. But when you need reduce, it really helps.
 
 # Wrap up
 
@@ -925,4 +1073,5 @@ and call function on grouped data. Some keys thing:
 
   * try to use index if possible on `min`, `max`, `distinct`
   * without `ungroup`, any chain command works on sub stream group
+  * know how to use map reduce, and remember that the order of reduce function is not left to right
 
