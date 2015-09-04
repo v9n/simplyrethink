@@ -7,3 +7,11 @@ This includes 2 components:
 
 * server: using changefeeds, detect whenever any metrics goes over a
   threshold and notify user via a hipchat message
+
+# Test
+
+Using mocha and chai. You have to have a RethinkDB listen on local.
+
+```
+mocha
+```
