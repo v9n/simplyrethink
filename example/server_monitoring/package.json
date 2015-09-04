@@ -23,6 +23,7 @@
   "dependencies": {
     "async": "^1.4.2",
     "bluebird": "^2.9.34",
+    "dotenv": "^1.2.0",
     "request": "^2.61.0",
     "rethinkdb": "^2.1.0"
   },
