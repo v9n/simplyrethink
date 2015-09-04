@@ -1,4 +1,5 @@
 var expect = require('chai').expect
+    ,should = require('chai').should()
     , assert = require("assert")
     , Check = require('../check')
     , sinon = require('sinon')
@@ -15,8 +16,7 @@ describe('Check', function() {
           done()
         })
         .error(function(err) {
-          console.log(err)
-          done()
+          should.not.exist(err);
         })
     })
   })
