@@ -59,10 +59,11 @@ describe('Alert', function() {
 
   describe('inspects', function() {
     it('notify if the status is diffferent', function() {
-    
+      console.log("...")
     })
 
     it('notify if the duration us longer than threshold', function() {
+      console.log("inspect")
     })
   })
 
