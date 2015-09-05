@@ -898,7 +898,58 @@ eaten:
     "total_eaten": 7
     }
 
-By using `map`, we can pre-calculate some data, either using function or
+Inside `map` function, we can use any arbitrary ReQL command to fetch data. In
+follow example, we try to use `getAll` and an index to count data. Let's find
+the quantity of flavor which a compound has. Table *compounds* has an associated
+table *compounds_flavors* which stores a releation compounds and flavors using
+two fields: *compound_id* and *flavor_id*. By counting how many item for a
+given *compound_id* on table *compounds_flavors*, we can get the total flavor
+count of compound.
+
+    r.db('foodb')
+      .table('compounds')
+      .map(function(doc) {
+        return {
+          compound_id: doc('id'),
+          name: doc('name'),
+          flavor_total: r.db('foodb').table('compounds_flavors').getAll(doc('id'), {index: 'compound_id'}).count()
+        }
+      })
+      .orderBy(r.desc('flavor_total'))
+    //=>
+    [
+      {
+          "compound_id": 3266,
+          "flavor_total": 22,
+          "name": "Ethyl methyl sulfide"
+      },
+      {
+          "compound_id": 930,
+          "flavor_total": 19,
+          "name": "3-Ethylpyridine"
+      },...
+    ]
+
+In this example, with each of compound, we pass it into `map` function. The map
+function count how many flavor it has by querying table **compound_flavor**. We
+are using `getAll` with an index to make it run fast. We finally call
+`.count()` to count the total element of sequence. In the map function, we
+explicitly return an object which we construct ourselves. The using of it
+someitmes confused people that the function runs on client site which is wrong.
+The map function is executed on RethinkDB server. If we don't like return an
+JSON object directly as above, we can use `pluck` to get only **name** and
+**compound_id** and merge it with extra flavor_total field like this:
+
+    r.db("foodb")
+      .table('compounds')
+      .map(function(doc) {
+        return doc.pluck('name', 'compound_id').merge({
+          flavor_total: r.db('foodb').table('compounds_flavors').getAll(doc('id'), {index: 'compound_id'}).count()
+        })
+      })
+      .orderBy(r.desc('flavor_total'))
+
+Using `map`, we can pre-calculate some data, either using function or
 expression. Let's meet other kind of `mapping` function.
 
 ### concatMap
