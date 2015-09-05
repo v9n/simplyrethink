@@ -14,4 +14,8 @@ Notifier.prototype.mail = function() {
 Notifier.prototype.phone = function() {
 }
 
+Notifier.prototype.telegram = function() {
+}
+
+
 

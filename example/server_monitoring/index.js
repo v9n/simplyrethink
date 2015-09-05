@@ -3,11 +3,15 @@ var async = require('async')
   , Promise = require("bluebird")
   , Check = require('./check')
   , Alert = require('./alert')
+  , Bot = require('./bot')
 
+require('dotenv').load()
 r.connect({db: "webmon"}).then(function (c) {
-  run(c)
-  alert = new Alert(c)
-  alert.watch()
+  //run(c)
+  //alert = new Alert(c)
+  //alert.watch()
+  bot = new Bot('120980387:AAFPBbySOz7YzsX574UYw64MHO1_ZR9_IjI')
+  bot.watch()
   //createData(c)
 }).error(function(error) {
   console.log(error)
