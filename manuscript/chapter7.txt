@@ -916,7 +916,7 @@ Let's re-write it in a recursion way, so we can simulate `reduce` style:
 
 ### Map Reduce
 
-The process of `map-reduce` shines when using with `group`. When calling
+The process of *map-reduce* shines when using with `group`. When calling
 `group`, the subsequent command operate on sub stream, we can take advantage
 of that to run reduce on that sub stream and do the logic for our own
 aggeration, by writing reduce function.
@@ -925,7 +925,24 @@ Let's try to fetch the food and count how many health effects they have.
 Given that a food has many compounds, a compounds has many healh effects. As
 in below diagram:
 
-  1. table *c
++------------+    +----------------+       +------------------+
+|   food     |    |  compounds_food|       | compounds_flavors|
++------------+    +----------------+       +------------------+
+|    id      +--->+   food_id      |       |                  |
+|            |    |                |       |                  |
++------------+    +----------------+       |                  |
+                  |  compound_id   +------>+  compound_id     |
+                  +---+------------+       +------------------+
+                      |
+             +--------+
+             |
+             |    +--------------------------+
+             |    | compounds_health_effects |
+             |    +--------------------------+
+             +--->+  compound_id             +
+                  +--------------------------+
+
+
 
 
     r.db("foodb")
@@ -1096,12 +1113,31 @@ And the final query is:
       .ungroup()
       .map(function(doc) {
         return doc('reduction').merge({
-          food: r.db('foodb').table('food').get(doc('group')).pluck('id', 'name'),
+          food: r.db('foodb').table('foods').get(doc('group')).default({}).pluck('id', 'name'),
         })
       })
 
 You can sit around watching the nice graph of RethinkDB admin dashboard 
 And the result:
+
+    //=>832 rows returned in 3min 49.60s.
+    [
+    {
+        "flavor_total": 16,
+        "food": {
+            "id": 2,
+            "name": "Savoy cabbage"
+        },
+        "health_effect_total": 517
+    },
+    {
+        "flavor_total": 0,
+        "food": {
+            "id": 3,
+            "name": "Silver linden"
+        },
+        "health_effect_total": 112
+    },...]
 
 A very important point here is we start with *compounds* table instead of from
 *foods* table. But later on, we group them by *food_id*. It is reverse of
@@ -1123,7 +1159,8 @@ final step, we do a join with table *foods* food to fetch food name, but it's
 readable because the *map* is like go up a level, make query easier to follow.
 
 Sometime you may not need to use `reduce` with `map`, `concatMap` and
-some built-in command, you can already do a lot. But when you need reduce, it really helps.
+some built-in command, you can already do a lot. But when you need reduce, it
+really helps.
 
 # Wrap up
 
