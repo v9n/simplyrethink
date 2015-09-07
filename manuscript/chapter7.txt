@@ -860,7 +860,8 @@ function works as a `sum` of the array. Take first two elements, return the sum.
 Take the previous sum, add it with third element and so on.
 
 Usually, we will have `map` step before `reduce` to turn document into a type
-that compatible with result of *reduce* function.
+that compatible with result of *reduce* function. That's why the process of
+this sometimes is called *map-reduce*.
 
 Let's rewrite `count` in `reduce` style. Giving it some thoughts, you know that the way we count thing
 is by using variable; each time we get a new input, we increment that variable by 1,
@@ -917,9 +918,14 @@ Let's re-write it in a recursion way, so we can simulate `reduce` style:
 
 The process of `map-reduce` shines when using with `group`. When calling
 `group`, the subsequent command operate on sub stream, we can take advantage
-of that to run reduce on that sub stream.
+of that to run reduce on that sub stream and do the logic for our own
+aggeration, by writing reduce function.
 
-Let's try to fetch the food and how many health effect they have.
+Let's try to fetch the food and count how many health effects they have.
+Given that a food has many compounds, a compounds has many healh effects. As
+in below diagram:
+
+  1. table *c
 
 
     r.db("foodb")
@@ -943,8 +949,6 @@ Let's try to fetch the food and how many health effect they have.
       })
 
 Let's improve it to remove branch command which is odd
-
-
 
     r.db("foodb")
       .table("foods")
@@ -978,6 +982,8 @@ r.db('foodb')
 
 
 
+Let's take a more complex. At the same time, calculate how many flavor and health 
+effect a food has.
 
 First, let create necessary index
     r.db("foodb").table('compounds_health_effects').indexCreate('compound_id')
@@ -987,18 +993,37 @@ First, let create necessary index
 With the index, we can easily get all *compunds* and count how many flavor and
 health effect associated with a compounds.
 
-
-    r.db("foodb")
+    r.db('foodb')
       .table('compounds')
-      .map(function(doc) {
-        return {
-          compound_id: doc('id'),
-          food_id: r.db('foodb').table('compounds_foods').getAll(doc('id'), {index: 'compound_id'}).coerceTo('array'),
-          flavor_total: r.db('foodb').table('compounds_flavors').getAll(doc('id'), {index: 'compound_id'}).count(),
-          health_effect_total: r.db('foodb').table('compounds_health_effects').getAll(doc('id'), {index: 'compound_id'}).count()
-        }
+      .concatMap(function(doc) {
+        return
+          r.db('foodb').table('compounds_foods')
+            .getAll(doc('id'), {index: 'compound_id'})
+            .pluck('food_id')
+            .merge({
+              compound_id: doc('id'),
+              flavor_total: r.db('foodb').table('compounds_flavors').getAll(doc('id'), {index: 'compound_id'}).count(),
+              health_effect_total: r.db('foodb').table('compounds_health_effects').getAll(doc('id'), {index: 'compound_id'}).count()
+            })
       })
+    //=>400 rows returned in 1min 15.09s. Displaying rows 1-400, more available
+    {
+      "compound_id": 4 ,
+      "flavor_total": 0 ,
+      "food_id": 191 ,
+      "health_effect_total": 0
+    }
+    {
+      "compound_id": 4 ,
+      "flavor_total": 0 ,
+      "food_id": 189 ,
+      "health_effect_total": 0
+    }
 
+In above query, we first fetch the table *compounds*, with a given compound, we
+try to fetch its *food_id* by query on table *compound*_foods*. A *compound*
+can be in many foods, hence we used *concatMap* to flatten the return array.
+We pluck field *food_id* from *compound_table* because we only care about 
 Ok, above query give us compound and its flavor count and health effect count.
 But we want to count the flavor and healh effect of a food. 
 Well, a food contains many compound, so the total health effect is the sum 
@@ -1007,111 +1032,97 @@ of all compound's health effect.
 Therefore, we can group by *food_id* field and run `reduce` function on
 reduction group to get the total count
 
-
-      .group('food_id')
-      .reduce(function(left, right) {
-        return {
-          flavor_total: left('flavor_total') + right('flavor_total'),
-          health_effect_total: left('health_effect_total') + right('health_effect_total'),
-        }
-      }
-
-This give us a list of food id and its total flavor and health effect. Let's
-make one more extra thing by returns food name too.
-
-      .ungroup()
-      .map(function(doc) {
-        return {
-          food: r.db('foodb').table('food').get(doc('group')('food_id')),
-          flavor_total: doc('reduction')('flavor_total'),
-          health_effect_total: doc('reduction')('health_effect_total'),
-        }
-      })
-
-And the final query is:
-
-    r.db("foodb")
+    r.db('foodb')        
       .table('compounds')
-      .map(function(doc) {
-        return {
-          compound_id: doc('id'),
-          food_id: r.db('foodb').table('compounds_foods').getAll(doc('id'), {index: 'compound_id'}).coerceTo('array'),
-          flavor_total: r.db('foodb').table('compounds_flavors').getAll(doc('id'), {index: 'compound_id'}).count(),
-          health_effect_total: r.db('foodb').table('compounds_health_effects').getAll(doc('id'), {index: 'compound_id'}).count()
-        }
-      })
-
-      .group('food_id')
-      .reduce(function(left, right) {
-        return {
-          flavor_total: left('flavor_total') + right('flavor_total'),
-          health_effect_total: left('health_effect_total') + right('health_effect_total'),
-        }
-      })
-
-      .ungroup()
-      .map(function(doc) {
-        return {
-          food: r.db('foodb').table('foods').get(doc('group')('food_id')),
-          flavor_total: doc('reduction')('flavor_total'),
-          health_effect_total: doc('reduction')('health_effect_total'),
-        }
-      })
-
-      //.orderBy(r.desc('flavor_total'))
-
-This query takes a very long time to run, so it will be timeout in Data
-Exploerer because data explorer limit to 5 minutes to wait for a query to be
-finised. Let's put together this small *NodeJS* script:
-
-    var r = require('rethinkdb')
-
-    r.connect()
-      .then(function(c) {
-        query(c)
-      })
-
-    var query = function(c) {
-        console.log("start to query at ", new Date().getTime())
-        var startAt = new Date().getTime()
-
-        r.db("foodb")
-          .table('compounds')
-          .map(function(doc) {
-            return {
+      .concatMap(function(doc) {
+        return 
+          r.db('foodb').table('compounds_foods')
+            .getAll(doc('id'), {index: 'compound_id'})
+            .pluck('food_id')
+            .merge({
               compound_id: doc('id'),
-              food_id: r.db('foodb').table('compounds_foods').getAll(doc('id'), {index: 'compound_id'}).coerceTo('array'),
               flavor_total: r.db('foodb').table('compounds_flavors').getAll(doc('id'), {index: 'compound_id'}).count(),
               health_effect_total: r.db('foodb').table('compounds_health_effects').getAll(doc('id'), {index: 'compound_id'}).count()
-            }
-          })
-
-          .group('food_id')
-          .reduce(function(left, right) {
-            return {
-              flavor_total: left('flavor_total') + right('flavor_total'),
-              health_effect_total: left('health_effect_total') + right('health_effect_total'),
-            }
-          })
-
-          .limit(5)
-          .run(c)
-          .then(function(err, result) {
-            console.log("end at ", new Date().getTime())
-            result.each(function(doc) {
-              console.log(doc)
             })
-            console.log("take ", new Date().getTime() - startAt)
-          })
+      })
+      .group('food_id')
+      .reduce(function(left, right) {
+            return {
+              flavor_total: left('flavor_total').add(right('flavor_total')),
+              health_effect_total: left('health_effect_total').add(right('health_effect_total')),
+            }
+      })
+    //=> 832 rows returned in 3min 33.23s.
+    {
+        "group": 2,
+        "reduction": {
+            "flavor_total": 16,
+            "health_effect_total": 517
+        }
+    },
+    {
+        "group": 3,
+        "reduction": {
+            "flavor_total": 0,
+            "health_effect_total": 112
+        }
     }
+
+This give us a list of food id and its total flavor and health effect. Let's
+make one more extra thing by returns food name too, and remap the field to make
+document readable.
+
+And the final query is:
+    r.db('foodb')        
+      .table('compounds')
+      .concatMap(function(doc) {
+        return 
+          r.db('foodb').table('compounds_foods')
+            .getAll(doc('id'), {index: 'compound_id'})
+            .pluck('food_id')
+            .merge({
+              compound_id: doc('id'),
+              flavor_total: r.db('foodb').table('compounds_flavors').getAll(doc('id'), {index: 'compound_id'}).count(),
+              health_effect_total: r.db('foodb').table('compounds_health_effects').getAll(doc('id'), {index: 'compound_id'}).count()
+            })
+      })
+      .group('food_id')
+      .reduce(function(left, right) {
+            return {
+              flavor_total: left('flavor_total').add(right('flavor_total')),
+              health_effect_total: left('health_effect_total').add(right('health_effect_total')),
+            }
+      })
+      .ungroup()
+      .map(function(doc) {
+        return doc('reduction').merge({
+          food: r.db('foodb').table('food').get(doc('group')).pluck('id', 'name'),
+        })
+      })
 
 You can sit around watching the nice graph of RethinkDB admin dashboard 
 And the result:
 
+A very important point here is we start with *compounds* table instead of from
+*foods* table. But later on, we group them by *food_id*. It is reverse of
+fetching *foods* first, then find all *compounds* and go down all the way. It
+makes the query shorter, easier to follow because we eliminate one nested level
+when come directly to *compounds* table. It's important to pick the right table
+to start with, and the right order.
 
-A very important point here is we start with *compounds* table instead of from *foods* table. But later on, we group them by *food_id*. It's kind of similar with starting with 
+The reason is, if we start with *food* table, we have to join/map with table
+*compounds_foods* to find its compound, then join with *compounds* table, then
+continue to join with two more
+table *compounds_flavors* and *compounds_health_effects*. That's three levels.
 
-Actually, sometime you may not need to use `reduce` with `map`, `concatMap` and
+When we start right at *compounds*, we just need to join with *compounds_foods 
+and *compounds_flavors* and *compounds_health_effects* at the same time, because
+we had *compound_id*. That is only a single depth level. We are actually done right
+there, because we have enough information(*food_id* field to grouping). Then in
+final step, we do a join with table *foods* food to fetch food name, but it's 
+readable because the *map* is like go up a level, make query easier to follow.
+
+Sometime you may not need to use `reduce` with `map`, `concatMap` and
 some built-in command, you can already do a lot. But when you need reduce, it really helps.
 
 # Wrap up
