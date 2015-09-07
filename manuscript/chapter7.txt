@@ -1031,37 +1031,85 @@ make one more extra thing by returns food name too.
 And the final query is:
 
     r.db("foodb")
-
-        
-      .table('compounds')        
+      .table('compounds')
       .map(function(doc) {
         return {
           compound_id: doc('id'),
           food_id: r.db('foodb').table('compounds_foods').getAll(doc('id'), {index: 'compound_id'}).coerceTo('array'),
-          
           flavor_total: r.db('foodb').table('compounds_flavors').getAll(doc('id'), {index: 'compound_id'}).count(),
           health_effect_total: r.db('foodb').table('compounds_health_effects').getAll(doc('id'), {index: 'compound_id'}).count()
         }
       })
-      
+
       .group('food_id')
       .reduce(function(left, right) {
         return {
           flavor_total: left('flavor_total') + right('flavor_total'),
           health_effect_total: left('health_effect_total') + right('health_effect_total'),
         }
-      }
-      
+      })
+
       .ungroup()
       .map(function(doc) {
         return {
-          food: r.db('foodb').table('food').get(doc('group')('food_id')),
+          food: r.db('foodb').table('foods').get(doc('group')('food_id')),
           flavor_total: doc('reduction')('flavor_total'),
           health_effect_total: doc('reduction')('health_effect_total'),
         }
       })
-      
+
       //.orderBy(r.desc('flavor_total'))
+
+This query takes a very long time to run, so it will be timeout in Data
+Exploerer because data explorer limit to 5 minutes to wait for a query to be
+finised. Let's put together this small *NodeJS* script:
+
+    var r = require('rethinkdb')
+
+    r.connect()
+      .then(function(c) {
+        query(c)
+      })
+
+    var query = function(c) {
+        console.log("start to query at ", new Date().getTime())
+        var startAt = new Date().getTime()
+
+        r.db("foodb")
+          .table('compounds')
+          .map(function(doc) {
+            return {
+              compound_id: doc('id'),
+              food_id: r.db('foodb').table('compounds_foods').getAll(doc('id'), {index: 'compound_id'}).coerceTo('array'),
+              flavor_total: r.db('foodb').table('compounds_flavors').getAll(doc('id'), {index: 'compound_id'}).count(),
+              health_effect_total: r.db('foodb').table('compounds_health_effects').getAll(doc('id'), {index: 'compound_id'}).count()
+            }
+          })
+
+          .group('food_id')
+          .reduce(function(left, right) {
+            return {
+              flavor_total: left('flavor_total') + right('flavor_total'),
+              health_effect_total: left('health_effect_total') + right('health_effect_total'),
+            }
+          })
+
+          .limit(5)
+          .run(c)
+          .then(function(err, result) {
+            console.log("end at ", new Date().getTime())
+            result.each(function(doc) {
+              console.log(doc)
+            })
+            console.log("take ", new Date().getTime() - startAt)
+          })
+    }
+
+You can sit around watching the nice graph of RethinkDB admin dashboard 
+And the result:
+
+
+A very important point here is we start with *compounds* table instead of from *foods* table. But later on, we group them by *food_id*. It's kind of similar with starting with 
 
 Actually, sometime you may not need to use `reduce` with `map`, `concatMap` and
 some built-in command, you can already do a lot. But when you need reduce, it really helps.
