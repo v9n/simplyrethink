@@ -843,7 +843,6 @@ So you see that we have to deal with `branch` command to turn the document into
 a number, both for left and right. That job is a transformation, and sounds like
 a job of `map`. Rewrite it we can make it cleanrer:
 
-
     r.db("foodb")
       .table("flavors")
       .map(function(doc) {
@@ -863,56 +862,14 @@ Usually, we will have `map` step before `reduce` to turn document into a type
 that compatible with result of *reduce* function. That's why the process of
 this sometimes is called *map-reduce*.
 
-Let's rewrite `count` in `reduce` style. Giving it some thoughts, you know that the way we count thing
-is by using variable; each time we get a new input, we increment that variable by 1,
-until all of input are processed. The final value is how many element we have such as
-counting in JavaScript:
-
-    function count(sequence) {
-      sum = 0
-      for (i=0; i<=sequence.length; i++) {
-        sum = sum + 1
-      }
-      return sum
-    }
-    count(['a', 'b', 'a1', 12, 'a9', 13])
-
-In the above ***count*** function of JavaScript, we have a step where we initialize the
-value of `sum` to 0, and a step where we increment `sum` to 1.
-
-Let's re-write it in a recursion way, so we can simulate `reduce` style:
-
-    function count(element, sum) {
-      if (typeof element == 'undefined') {
-        return 
-      }
-
-      if (typeof element == 'undefined') {
-        return 0
-      }
-      if (typeof sum == 'undefined') {
-        sum = 0
-      }
-      count(
-    }
-
-    for (i=0; i<=sequence.length; i++) {
-      
-    }
-    
-    reduce_function = function(left, right) {
-      return left+right
-    }
-    count_with_reduce(sequence, reduce_function(left, right) {
-    })
-
-    if (typeof sequence[0] == 'undefined') {
-      return 0
-    }
-
-    if (typeof sequence[1] == 'undefined') {
-      return 1
-    }
+The process of `reduce` function executing is like recursion, but with passing
+the result of previous run to the function itself, we don't have to keep a
+stack to store value of previous function call. In other words, that
+function encapsulated its data, it doesn't access any outside variables. All
+data it needs are passed to it as *left* and *right* parameter. Note that
+they are just name binding, we can name them whatever, and they have to have
+capability of dealing with different data type: the type of sequence element,
+and the type of result of function call.
 
 ### Map Reduce
 
@@ -921,10 +878,13 @@ The process of *map-reduce* shines when using with `group`. When calling
 of that to run reduce on that sub stream and do the logic for our own
 aggeration, by writing reduce function.
 
-Let's try to fetch the food and count how many health effects they have.
+Let's try to count how many *compounds* a food has for first 10 food, using
+map-reduce style instead of built-in `count` command.
+
 Given that a food has many compounds, a compounds has many healh effects. As
 in below diagram:
 
+```
 +------------+    +----------------+       +------------------+
 |   food     |    |  compounds_food|       | compounds_flavors|
 +------------+    +----------------+       +------------------+
@@ -941,12 +901,11 @@ in below diagram:
              |    +--------------------------+
              +--->+  compound_id             +
                   +--------------------------+
-
-
-
+```
 
     r.db("foodb")
       .table("foods")
+      .limit(5)
       .concatMap(function(food) {
         return
           r.db("foodb").table("compounds_foods")
@@ -964,13 +923,47 @@ in below diagram:
             r.branch(right.typeOf().eq("NUMBER"), right, 1)
           )
       })
+    //=>5 rows returned in 254ms
+    [{
+        "group": {
+            "food_id": 4,
+            "name": "Kiwi"
+        },
+        "reduction": 378
+    }, {
+        "group": {
+            "food_id": 20,
+            "name": "Mugwort"
+        },
+        "reduction": 103
+    }, {
+        "group": {
+            "food_id": 25,
+            "name": "Common beet"
+        },
+        "reduction": 942
+    }, {
+        "group": {
+            "food_id": 26,
+            "name": "Borage"
+        },
+        "reduction": 225
+    }, {
+        "group": {
+            "food_id": 30,
+            "name": "Common cabbage"
+        },
+        "reduction": 1826
+    }]
 
 Let's improve it to remove branch command which is odd
 
+
     r.db("foodb")
       .table("foods")
+      .limit(5)
       .concatMap(function(food) {
-        return 
+        return
           r.db("foodb").table("compounds_foods")
             .getAll(food('id'), {index: 'food_id'})
             .pluck('food_id', 'compound_id')
@@ -980,35 +973,32 @@ Let's improve it to remove branch command which is odd
         return doc.pluck('food_id', 'name')
       })
       .map(function(doc) {
-        return doc.merge({compound_count: 1})
+        return 1
       })
       .reduce(function(left, right) {
         return
-          {compound_count: left('compound_count').add(right('compound_count'))}
+          left.add(right)
       })
 
-here, we inject a field call `compound_count` and set it to 1, because we are
-counting one at a time. The reduce function simply doing an sum of two left and
-right field of `compound_count`, and return an object with `compound_count`.
 
-r.db('foodb')
-  .table('foods')
-  .group(r.row('name').split('').nth(0))
-  .count()
+here, we group by *food_id*, and *food name*, then for each of document of sub
+stream, we map them to 1. Because we are counting, we only care about a
+document as awhole instead of as individual fields. The reduce function simply
+doing an sum of two left and right and return the sum. The `map` steps help us
+clean up the `reduce` function because it's easier to deal with number as input,
+and return number too.
 
-
-
-
-Let's take a more complex. At the same time, calculate how many flavor and health 
-effect a food has.
+Let's take a more complex example. At the same time, calculate how many flavor
+and health effect a food has.
 
 First, let create necessary index
+
     r.db("foodb").table('compounds_health_effects').indexCreate('compound_id')
     r.db("foodb").table('compounds_flavors').indexCreate('compound_id')
     r.db("foodb").table('compounds_foods').indexCreate('compound_id')
 
-With the index, we can easily get all *compunds* and count how many flavor and
-health effect associated with a compounds.
+With the index, we can easily get all *compounds* and count how many flavor and
+health effect associated with a compound.
 
     r.db('foodb')
       .table('compounds')
@@ -1038,9 +1028,11 @@ health effect associated with a compounds.
     }
 
 In above query, we first fetch the table *compounds*, with a given compound, we
-try to fetch its *food_id* by query on table *compound*_foods*. A *compound*
+try to fetch its *food_id* by query on table *compound_foods*. A *compound*
 can be in many foods, hence we used *concatMap* to flatten the return array.
-We pluck field *food_id* from *compound_table* because we only care about 
+We pluck field *food_id* from *compound_table* because we only care about it
+instead of return the whole array.
+
 Ok, above query give us compound and its flavor count and health effect count.
 But we want to count the flavor and healh effect of a food. 
 Well, a food contains many compound, so the total health effect is the sum 
@@ -1049,10 +1041,10 @@ of all compound's health effect.
 Therefore, we can group by *food_id* field and run `reduce` function on
 reduction group to get the total count
 
-    r.db('foodb')        
+    r.db('foodb')
       .table('compounds')
       .concatMap(function(doc) {
-        return 
+        return
           r.db('foodb').table('compounds_foods')
             .getAll(doc('id'), {index: 'compound_id'})
             .pluck('food_id')
@@ -1087,9 +1079,9 @@ reduction group to get the total count
 
 This give us a list of food id and its total flavor and health effect. Let's
 make one more extra thing by returns food name too, and remap the field to make
-document readable.
+document readable. To `map` document, so we can change field name from *group*
+and *reduction*, we have to call `ungroup` first. And the final query is:
 
-And the final query is:
     r.db('foodb')        
       .table('compounds')
       .concatMap(function(doc) {
@@ -1117,8 +1109,8 @@ And the final query is:
         })
       })
 
-You can sit around watching the nice graph of RethinkDB admin dashboard 
-And the result:
+You can sit around watching the nice graph of RethinkDB admin dashboard. It
+takes a few minutes depend on your CPU and disk speed. And the result:
 
     //=>832 rows returned in 3min 49.60s.
     [
