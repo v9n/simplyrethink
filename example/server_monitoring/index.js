@@ -64,7 +64,8 @@ var report = function(storage, result, check) {
   storage
   .report({
     website_id: check.id,
-    duration: result.meta.duration
+    duration: result.meta.duration,
+    statusCode: result.meta.statusCode
   })
   .then(function(result) {
   })

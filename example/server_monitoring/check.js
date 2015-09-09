@@ -22,7 +22,8 @@ Check.prototype.http = function(url) {
         resolve({
           response: response,
           meta: {
-            duration: end - start
+            duration: end - start,
+            statusCode: response.statusCode
           }
         })
       }

@@ -17,9 +17,16 @@ Alert.prototype.watch = function() {
 /**
  * Inspect a check result to see if we need alerting 
  */
-Alert.prototype.inspect = function(check_result) {
-  if (check_result.duration > 200) {
-    console.log(check_result.website.uri, " takes more than 100ms to respon ", check_result.duration, ". Alert needed")
-    this._notifier.yell(check_result.website.uri + " takes more than 100ms to respon " + check_result.duration)
+Alert.prototype.inspect = function(checkResult) {
+  var threshold = 1000
+  console.log(checkResult)
+  if (checkResult.duration > threshold) {
+    console.log(checkResult.website.uri, " takes more than ", threshold," to respond ", checkResult.duration, ". Alert needed")
+    this._notifier.yell(checkResult.website.uri + " takes more than ", threshold,"ms to respond: " + checkResult.duration)
+  }
+
+  if (checkResult.statusCode != 200) {
+    console.log(checkResult.website.uri, " returns code ", checkResult.statusCode,". Alert needed")
+    this._notifier.yell(checkResult.website.uri + " returns code", checkResult.statusCode,"ms to respond: " + checkResult.duration)
   }
 }
