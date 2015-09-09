@@ -7,7 +7,7 @@ function Alert(storage, notifier) {
   if (typeof storage.connection == 'undefined') {
     throw "Define connection"
   }
-  if (typeof storage.connection == 'undefined') {
+  if (typeof storage.db == 'undefined') {
     throw "Define db"
   }
 
@@ -49,5 +49,6 @@ Alert.prototype.watch = function() {
 Alert.prototype.inspect = function(check_result) {
   if (check_result.duration > 100) {
     console.log(check_result.website.uri, " takes more than 100ms to respon ", check_result.duration, ". Alert needed")
+    this._notifier.yell(check_result.website.uri + " takes more than 100ms to respon " + check_result.duration)
   }
 }

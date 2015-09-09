@@ -7,11 +7,16 @@ var async = require('async')
 
 require('dotenv').load()
 r.connect({db: "webmon"}).then(function (c) {
-  //run(c)
-  //alert = new Alert(c)
-  //alert.watch()
-  bot = new Bot('120980387:AAFPBbySOz7YzsX574UYw64MHO1_ZR9_IjI')
+  // Kick off monitoring system
+  run(c)
+
+  //Kick off alerting system
+  bot = new Bot(process.env.TELEGRAM_BOT_API)
+  alert = new Alert({connection: c, db: "webmon"}, bot)
+  alert.watch()
   bot.watch()
+
+  //Kick of data creating
   //createData(c)
 }).error(function(error) {
   console.log(error)
