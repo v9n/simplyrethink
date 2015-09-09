@@ -264,8 +264,13 @@ Let's try it out:
     }
 
 With proper index, a query may looks cleaner and more natural.
+The order of how we use `eqJoin` is important. You should always try to narrow
+down data first, so that the join do less works.
 
-As you can see, we don't have `left join`, `right join` equivalents in RethinkDB. We achieve it by swapping left and right on eqJoin with approriate index. So far, we only join on a single field. How do we join in multile field condtion? Such as in MySQL we can do
+Also, we don't have `left join`, `right join` equivalents in RethinkDB. We achieve
+it by swapping left and right on eqJoin with approriate index. So far, we only
+join on a single field. How do we join in multile field condtion? Such as in
+MySQL we can do
 
     SELECT * 
       FROM table1 as t1
@@ -277,6 +282,7 @@ How about complex join where we want either or ? Like in MySQL
       FROM table1 as t1
     LEFT JOIN tabl2 as t2 ON t1.field1= t2.field1  OR 
 
+@TODO
 
 To join, we usually need index. But can we join data without using any index
 via two arbitray sequence? Even if it's not very efficient but useful to have.
