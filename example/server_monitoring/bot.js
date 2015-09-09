@@ -1,4 +1,5 @@
 var events = require('events')
+    , em = new events.EventEmitter
 
 exports = module.exports = Bot
 
@@ -8,7 +9,10 @@ function Bot(token) {
   this._token = token
   this.bot    = new TelegramBot(token, {polling: true})
   this.subscribers = []
+  events.EventEmitter.call(this);
 }
+
+Bot.prototype.__proto__ = events.EventEmitter.prototype
 
 Bot.prototype.watch = function() {
   console.log("** Watch telegram", this._token)
@@ -21,6 +25,7 @@ Bot.prototype.watch = function() {
 Bot.prototype.subscribe = function(chatId) {
   this.subscribers.push(chatId)
   this.bot.sendMessage(chatId, "Ok, I will notifiy you")
+  this.emit('subscribe', chatId)
 }
 
 // Broadcast a message to all subscribers
