@@ -12,17 +12,14 @@ var storage = new Storage({db: 'webmon'})
 storage.init().then(function(s) {
   run(s)
   //Kick off alerting system
-  bot = new Bot(process.env.TELEGRAM_BOT_API)
-  alert = new Alert({connection: c, db: "webmon"}, bot)
-  alert.watch()
-  bot.watch()
-  bot.on('subscribe', function(chatId) {
-    console.log("Event with id ", chatId)
-    r.table('subscriber')
-    .insert({id: chatId})
-    .run(c)
-    .then(function(result) {
-      console.log("Insert subscriber and their chat id")
+  s.getSubscribers().then(function(subscribers) {
+    bot = new Bot(process.env.TELEGRAM_BOT_API, subscribers)
+    alert = new Alert(storage, bot)
+    alert.watch()
+    bot.watch()
+    bot.on('subscribe', function(chatId) {
+      console.log("Event with id ", chatId)
+      s.subscribe(chatId)
     })
   })
 })
@@ -56,7 +53,7 @@ var monitor = function(storage, check, row) {
   .then(function(data) {
     setTimeout(function() {
       monitor(storage, check, row)
-    }, 3000)
+    }, 7000)
   })
   .catch(function(error) {
     console.log(error)

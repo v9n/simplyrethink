@@ -5,10 +5,15 @@ exports = module.exports = Bot
 
 var TelegramBot = require('node-telegram-bot-api')
 
-function Bot(token) {
+function Bot(token, subscribers) {
   this._token = token
   this.bot    = new TelegramBot(token, {polling: true})
-  this.subscribers = []
+  if (typeof subscribers == 'undefined') {
+    this.subscribers = []
+  } else {
+    this.subscribers = subscribers
+    console.log("** bot: pre-defined subscribers ", this.subscribers)
+  }
   events.EventEmitter.call(this);
 }
 
@@ -24,14 +29,19 @@ Bot.prototype.watch = function() {
 // Subscribe an user into alert system
 Bot.prototype.subscribe = function(chatId) {
   this.subscribers.push(chatId)
-  this.bot.sendMessage(chatId, "Ok, I will notifiy you")
+  this.bot.sendMessage(chatId, "You has been subscribed to monitoring boot. We will notifiy you when a service is down or slow")
   this.emit('subscribe', chatId)
 }
 
 // Broadcast a message to all subscribers
 Bot.prototype.yell = function(msg) {
   this.subscribers.forEach(function(index, value) {
-    this.bot.sendMessage(index, msg)
+    var chatId = index
+    console.log(index)
+    if (typeof index == 'object') {
+      chatId = index.id
+    }
+    this.bot.sendMessage(chatId, msg)
   }.bind(this))
 }
 
