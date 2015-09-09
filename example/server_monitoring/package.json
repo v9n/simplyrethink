@@ -4,7 +4,7 @@
   "description": "Web monitoring with RethinkDB and Telegram",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "author": "Vinh Nguyen",
   "license": "ISC",
@@ -23,7 +23,13 @@
   "dependencies": {
     "async": "^1.4.2",
     "bluebird": "^2.9.34",
+    "dotenv": "^1.2.0",
+    "node-telegram-bot-api": "^0.12.1",
     "request": "^2.61.0",
     "rethinkdb": "^2.1.0"
+  },
+  "devDependencies": {
+    "chai": "^3.2.0",
+    "mocha": "^2.3.0"
   }
 }
