@@ -37,7 +37,6 @@ Bot.prototype.subscribe = function(chatId) {
 Bot.prototype.yell = function(msg) {
   this.subscribers.forEach(function(index, value) {
     var chatId = index
-    console.log(index)
     if (typeof index == 'object') {
       chatId = index.id
     }

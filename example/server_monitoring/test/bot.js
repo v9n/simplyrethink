@@ -31,7 +31,14 @@ describe('Bot', function() {
       })
       bot.subscribe(1)
     })
+  })
 
-
+  describe('#yell', function() {
+    bot = new Bot('token', [{id: 1}, {id: 2}])
+    it('send message to the subscribers', function() {
+      bot.yell('lol')
+      assert(TelegramBot.prototype.sendMessage.calledWith(1, 'lol'))
+      assert(TelegramBot.prototype.sendMessage.calledWith(2, 'lol'))
+    })
   })
 })
