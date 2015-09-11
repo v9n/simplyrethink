@@ -9,16 +9,28 @@ var expect = require('chai').expect
 describe('Bot', function() {
 
   this.timeout(10000)
-  var bot
-
   sinon.stub(TelegramBot.prototype, 'sendMessage')
 
   it('accept two params', function() {
-    bot = new Bot('token', [{id: 1}, {id: 2}])
+    var bot = new Bot('token', [{id: 1}, {id: 2}])
     expect(bot).to.be.an.instanceOf(Bot)
   })
 
+  describe('#watch', function() {
+    var source = {from: {id: 3}}
+    it('registers subscriber when receiving text message', function(done) {
+      var bot = new Bot('token', [{id: 1}, {id: 2}])
+      sinon.stub(bot, 'subscribe',function(msg) {
+        expect(msg).to.be.equal(source.from.id)
+        done()
+      })
+      bot.watch()
+      bot.bot.emit('text', source)
+    })
+  })
+
   describe('#subscribe', function() {
+    var bot = new Bot('token', [{id: 1}, {id: 2}])
     it('send message to the subscriber', function() {
       bot.subscribe(1)
       assert(TelegramBot.prototype.sendMessage.called)
@@ -34,7 +46,7 @@ describe('Bot', function() {
   })
 
   describe('#yell', function() {
-    bot = new Bot('token', [{id: 1}, {id: 2}])
+    var bot = new Bot('token', [{id: 1}, {id: 2}])
     it('send message to the subscribers', function() {
       bot.yell('lol')
       assert(TelegramBot.prototype.sendMessage.calledWith(1, 'lol'))
