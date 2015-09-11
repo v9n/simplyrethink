@@ -22,11 +22,11 @@ Alert.prototype.inspect = function(checkResult) {
   console.log(checkResult)
   if (checkResult.duration > threshold) {
     console.log(checkResult.website.uri, " takes more than ", threshold," to respond ", checkResult.duration, ". Alert needed")
-    this._notifier.yell(checkResult.website.uri + " takes more than ", threshold,"ms to respond: " + checkResult.duration)
+    this._notifier.yell(checkResult.website.uri + " takes more than "+ threshold+"ms to respond: "+ checkResult.duration)
   }
 
   if (checkResult.statusCode != 200) {
     console.log(checkResult.website.uri, " returns code ", checkResult.statusCode,". Alert needed")
-    this._notifier.yell(checkResult.website.uri + " returns code", checkResult.statusCode,"ms to respond: " + checkResult.duration)
+    this._notifier.yell(checkResult.website.uri + " returns code"+ checkResult.statusCode+"ms to respond: " + checkResult.duration)
   }
 }
