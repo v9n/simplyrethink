@@ -22,7 +22,7 @@ Bot.prototype.__proto__ = events.EventEmitter.prototype
 Bot.prototype.watch = function() {
   console.log("** Watch telegram", this._token)
   this.bot.on('text', function(msg) {
-    this.subscribe(msg.from.id)
+    this.subscribe(msg.from)
   }.bind(this))
 }
 

@@ -21,7 +21,7 @@ describe('Bot', function() {
     it('registers subscriber when receiving text message', function(done) {
       var bot = new Bot('token', [{id: 1}, {id: 2}])
       sinon.stub(bot, 'subscribe',function(msg) {
-        expect(msg).to.be.equal(source.from.id)
+        expect(msg).to.be.equal(source.from)
         done()
       })
       bot.watch()

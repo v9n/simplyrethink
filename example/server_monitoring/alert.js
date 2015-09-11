@@ -18,7 +18,7 @@ Alert.prototype.watch = function() {
  * Inspect a check result to see if we need alerting 
  */
 Alert.prototype.inspect = function(checkResult) {
-  var threshold = 1000
+  var threshold = checkResult.website.threshold || 1000
   console.log(checkResult)
   if (checkResult.duration > threshold) {
     console.log(checkResult.website.uri, " takes more than ", threshold," to respond ", checkResult.duration, ". Alert needed")

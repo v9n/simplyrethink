@@ -43,9 +43,9 @@ Storage.prototype.report = function(doc) {
   })
 }
 
-Storage.prototype.subscribe = function(chatId) {
+Storage.prototype.subscribe = function(source) {
   r.table('subscriber')
-    .insert({id: chatId})
+    .insert(source)
     .run(this._connection)
     .then(function(result) {
       console.log("** Insert subscriber and their chat id")
@@ -81,6 +81,7 @@ Storage.prototype.watch = function(first_argument) {
       website: r.db(self._db).table('website').get(doc('website_id')).default({})
     }
   })
+  .filter(r.row('duration').gt(r.row('website').getField('threshold').default(1000)))
   .run(this._connection, function(err, cursor) {
     if (err) {
       console.log(err)
