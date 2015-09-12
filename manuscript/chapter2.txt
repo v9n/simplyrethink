@@ -1,4 +1,4 @@
--# Getting to know RethinkDB
+-# 2. Getting to know RethinkDB
 
 Let's warm up with some RethinkDB concepts, ideas and tools. In this chapter, thing
 may a bit confuse because sometime to understand concept A, you need to

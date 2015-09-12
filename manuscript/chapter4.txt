@@ -1,4 +1,4 @@
--# Modifying data
+-# 4. Modifying data
 
 We know how to fetch the data. But a database is useless without ability of
 writing data. In this chapter, we will learn about writing data. We will

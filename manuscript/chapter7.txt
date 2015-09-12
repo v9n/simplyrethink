@@ -1,4 +1,4 @@
--# Aggregation
+-# 7. Aggregation
 
 A very normal task of a database is to get some kind of calculate from a given
 sequence of data. We will learn those kind of function on this chapter.

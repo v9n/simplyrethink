@@ -1,4 +1,4 @@
--# Conclusion
+-# 9. Conclusion
 
 I call RethinkDB is a database for programmer, not for database administrator
 because it takes very minimal effort to understand and pick up it. The way

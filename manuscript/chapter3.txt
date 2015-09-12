@@ -1,4 +1,4 @@
--# Reading Data Basic
+-# 3. Reading Data Basic
 
 If you are lazy(just like me) and skip straigh to this chapter, please go back to
 the end of previous chapter to import sample dataset. Once you did it, let's start.

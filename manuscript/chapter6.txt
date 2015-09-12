@@ -1,6 +1,7 @@
--# Data Modeling With JOIN
+-# 6. Data Modeling With JOIN
 
-Join is a joy to work with in my opinion. It makes data model easier to design. Without joy, we have to either embed or joinging
+Join is a joy to work with in my opinion. It makes data model easier to design. 
+Without joy, we have to either embed or joinging
 data with our code instead of database taking care of that for us. With embedding
 document, we will hit a limit point about document size because the document 
 will usually loaded into the memory. Embedding document has its own advantages

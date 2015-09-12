@@ -1,4 +1,4 @@
--# TIME
+-# 8. Time
 
 # Accessing time
 RethinkDB supports date time date with millisecond precison times with timezon.
