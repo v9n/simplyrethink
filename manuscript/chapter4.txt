@@ -8,7 +8,7 @@ in this chapter.
 # Database
 
 All commands on database levels start at the top namespace `r` since they are
-like genesis item in any database system. Let's start out journey by creating
+like genesis item in any database system. Let's start our journey by creating
 a database. Remember, we need a database to hold everything.
 
 ## Create
