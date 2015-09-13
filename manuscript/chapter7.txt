@@ -700,22 +700,156 @@ and `orderBy` cannot work on a single number.
 So `ungroup` turns the return array from `group` into a sequence of object, with each object
 includes 2 fields:
 
-    * group
-    * reduciton
+    * group: the value is used for grouping
+    * reduction: all document contains same `group` value
 
-and let any subsequent commands follows it operate on this sequence.
+and let any subsequent commands follows it operate on the whole sequence instead
+of sub sequence from `group`. That's why it's call `ungroup` because it won't
+treat value of `reduction` field as a sub sequence to work on, the whole `reduction`
+array are now just a normal array of a document of the sequence.
 
-Let's say we want to find top 10 fruits which has most flavors. Because we want
-to eat fruits that is tasty, right?
+Let's dive into this example to learn more about it. Let's say we have an array
+of value, we want to get sub of *odd* number and *even* number.
+Using `expr` we can easily represent an array in RethinkDB
 
-We have a table *compounds_foods* with *food_id* and *compound_id*. Using
-*food_id* we can know the food. Using *compound_id* we can know how many
-flavors it has by querying on *compounds_flavors* table. Here we only care
-abotut how many flavors, so we only needs to count, no need to get flavor
-detail.
+    r.expr([1, 2, 14, 4, 3, 1, 7, 12, 10, 9, 3, 5])
 
-@TODO wrire this query
+To denote *odd* number and *even* we can group them by the result of mod to 2
 
+    r.expr([4, 3,5, 2])
+    .group(r.row.mod(2))
+    //=>
+    [{
+        "group": 0,
+        "reduction": [
+            4,
+            2
+        ]
+    }, {
+        "group": 1,
+        "reduction": [
+            3,
+            5
+        ]
+    }]
+
+Now, a `sum` command follow will work on value of `reduction`.
+
+    r.expr([4, 3,5, 2])
+      .group(r.row.mod(2))
+      .sum()
+    //=>
+    [
+      {
+      "group": 0 ,
+      "reduction": 6
+      } ,[
+      {
+      "group": 1 ,
+      "reduction": 8
+      }
+    ]
+
+Nothing is new here. We know what `group` and `sum` do. 
+The *group 0* has reduction = [4,2] so the sum is 6.
+
+If we put a ungroup first
+
+    r.expr([4, 3,5, 2])
+      .group(r.row.mod(2))
+      .ungroup()
+    //=>
+    [{
+        "group": 0,
+        "reduction": [
+            4,
+            2
+        ]
+    }, {
+        "group": 1,
+        "reduction": [
+            3,
+            5
+        ]
+    }]
+
+The output is same but the context is changed. Using `typeOf` we can verify:
+
+    r.expr([4, 3,5, 2])
+      .group(r.row.mod(2))
+      .ungroup().typeOf()
+    //=>
+    ARRAY
+
+    r.expr([4, 3,5, 2])
+      .group(r.row.mod(2))
+      .typeOf()
+    //=>
+    GROUPED_STREAM
+
+So after `ungroup`, the result became an array instead of grouped_stream. Now,
+if we call `sum`, sum will work on the whole documents, that mean document with
+two fields *group* and *reduction* instead of sub stream of *reduction*
+
+    r.expr([4, 3,5, 2])
+      .group(r.row.mod(2))
+      .ungroup()
+      .sum()
+    //=>
+    e: Expected type NUMBER but found OBJECT in:
+    r([4, 3, 5, 2]).group(r.row.mod(2)).ungroup().sum()
+
+We can confirm that the `ungroup` really operator on the whole document:
+
+    r.expr([4, 3,5, 2])
+      .group(r.row.mod(2))
+      .ungroup()
+      .sum(r.row('reduction').sum())
+    //=>
+    14
+
+So with each document, we get the `sum` of field `reduction`, which is an
+array, then sum them all. The final result is: (4+2) + ( 3+5) = 14
+
+Or, we want to show the sum of *odd* number first, right now, the sum of 
+even number show up first:
+
+    r.expr([4, 3,5, 2])
+      .group(r.row.mod(2))
+    //=>
+    [{
+        "group": 0,
+        "reduction": [
+            4,
+            2
+        ]
+    }, {
+        "group": 1,
+        "reduction": [
+            3,
+            5
+        ]
+    }]
+
+Using `orderBy` as below wont' work:
+
+    r.expr([4, 3,5, 2])
+      .group(r.row.mod(2))
+      .orderBy(r.desc('group'))
+
+Because reduction array has no field `group` for *orderBy* to work on.
+If we use `ungroup` here, we will have access to the whole document normally:
+
+    r.expr([4, 3,5, 2])
+      .group(r.row.mod(2))
+      .ungroup()
+      .orderBy(r.desc('group'))
+
+The idea of `ungroup` confused me a bit at beginning. If you are able to get it
+right quickly then congrat. Otherwise, just re-read and do sime simple example
+yourself and you will get it.
+
+Now, let's move on to a even more confusing function `reduce`
 
 ## reduce
 
