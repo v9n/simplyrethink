@@ -14,7 +14,7 @@ ADD . .
 #   rm -rf /tmp/* /var/cache/apk/* /root/.npm /root/.node-gyp
 
 # Build RethinkDB
-GET http://download.rethinkdb.com/dist/rethinkdb-2.1.3.tgz
+ADD http://download.rethinkdb.com/dist/rethinkdb-2.1.3.tgz .
 RUN tar xf rethinkdb-2.1.3.tgz
 RUN cd rethinkdb-2.1.3 && \
     ./configure --allow-fetch && \
