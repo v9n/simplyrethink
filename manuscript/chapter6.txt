@@ -56,114 +56,32 @@ And we get this:
       .eqJoin("compound_id", r.db("foodb").table("compounds"))
     #=>
       "left": {
-          "compound_id": 82 ,
-          "created_at": Fri Apr 09 2010 17:40:05 GMT-07:00 ,
-          "id": 832 ,
-          "source":  "db_source" ,
-          "synonym":  "3,4,2',4'-Tetrahydroxychalcone" ,
-          "updated_at": Fri Apr 09 2010 17:40:05 GMT-07:00
+            "compound_id": 82 ,
+            "created_at": Fri Apr 09 2010 17:40:05 GMT-07:00 ,
+            "id": 832 ,
+            "source":  "db_source" ,
+            "synonym":  "3,4,2',4'-Tetrahydroxychalcone" ,
+            "updated_at": Fri Apr 09 2010 17:40:05 GMT-07:00
           } ,
           "right": {
-          "annotation_quality":  "low" ,
-          "assigned_to_id": null ,
-          "bigg_id": null ,
-          "boiling_point": null ,
-          "boiling_point_reference": null ,
-          "cas_number": null ,
-          "charge": null ,
-          "charge_reference": null ,
-          "chebi_id": null ,
-          "comments": null ,
-          "compound_source":  "PHENOLEXPLORER" ,
-          "created_at": Thu Apr 08 2010 22:04:26 GMT-07:00 ,
-          "creator_id": null ,
-          "density": null ,
-          "density_reference": null ,
-          "description": null ,
-          "dfc_id": null ,
-          "dfc_name": null ,
-          "drugbank_id": null ,
-          "duke_id":  "BUTEIN" ,
-          "duplicate_id": null ,
-          "eafus_id": null ,
-          "experimental_logp": null ,
-          "experimental_logp_reference": null ,
-          "experimental_pka": null ,
-          "experimental_pka_reference": null ,
-          "experimental_solubility": null ,
-          "experimental_solubility_reference": null ,
-          "export": false ,
-          "flavornet_id": null ,
-          "genbank_id": null ,
-          "general_citations": null ,
-          "goodscent_id": null ,
-          "het_id": null ,
-          "hmdb_id": null ,
-          "hydrophobicity": null ,
-          "hydrophobicity_reference": null ,
-          "id": 82 ,
-          "isoelectric_point": null ,
-          "isoelectric_point_reference": null ,
-          "kegg_compound_id":  "C08578" ,
-          "knapsack_id":  "C00006941" ,
-          "legacy_id": 99 ,
-          "mass_spec_content_type": null ,
-          "mass_spec_file_name": null ,
-          "mass_spec_file_size": null ,
-          "mass_spec_updated_at": null ,
-          "melting_point": null ,
-          "melting_point_reference": null ,
-          "metabolism": null ,
-          "moldb_alogps_logp":  "2.61" ,
-          "moldb_alogps_logs":  "-3.57" ,
-          "moldb_alogps_solubility":  "7.38e-02 g/l" ,
-          "moldb_average_mass":  "272.2528" ,
-          "moldb_formula":  "C15H12O5" ,
-          "moldb_id": 41513 ,
-          "moldb_inchi": "InChI=1S/C15H12O5/c16-10-3-4-11(14(19)8-10)12(17)5-1-9-2-6-13(18)15(20)7-9/h1-8,16,18-20H/b5-1+" ,
-          "moldb_inchikey":  "InChIKey=AYMYWHCQALZEGT-ORCRQEGFSA-N" ,
-          "moldb_iupac":  "(2E)-1-(2,4-dihydroxyphenyl)-3-(3,4-dihydroxyphenyl)prop-2-en-1-one" ,
-          "moldb_logp":  "3.33" ,
-          "moldb_mono_mass":  "272.068473494" ,
-          "moldb_pka":  "8.77" ,
-          "moldb_smiles":  "OC1=CC=C(C(=O)\C=C\C2=CC(O)=C(O)C=C2)C(O)=C1" ,
-          "msds_content_type": null ,
-          "msds_file_name": null ,
-          "msds_file_size": null ,
-          "msds_updated_at": null ,
-          "name":  "Butein" ,
-          "old_dfc_id": null ,
-          "optical_rotation": null ,
-          "optical_rotation_reference": null ,
-          "percent_composition": null ,
-          "percent_composition_reference": null ,
-          "phenolexplorer_id": 104 ,
-          "phenolexplorer_metabolite_id": 104 ,
-          "physical_description": null ,
-          "physical_description_reference": null ,
-          "protein_formula": null ,
-          "protein_structure_content_type": null ,
-          "protein_structure_file_name": null ,
-          "protein_structure_file_size": null ,
-          "protein_structure_updated_at": null ,
-          "protein_weight": null ,
-          "pubchem_compound_id":  "5281222" ,
-          "pubchem_substance_id": null ,
-          "public_id":  "FDB000082" ,
-          "refractive_index": null ,
-          "refractive_index_reference": null ,
-          "state": null ,
-          "structure_source":  "BIOSPIDER" ,
-          "superscent_id": null ,
-          "synthesis_citations": null ,
-          "type":  "SmallMoleculeCompound" ,
-          "uniprot_id": null ,
-          "uniprot_name": null ,
-          "updated_at": Fri Jan 20 2012 00:50:49 GMT-08:00 ,
-          "updater_id": 2 ,
-          "uv_index": null ,
-          "uv_index_reference": null ,
-          "wikipedia_id": null
+            "annotation_quality":  "low" ,
+            "assigned_to_id": null ,
+            "bigg_id": null ,
+            "boiling_point": null ,
+            "boiling_point_reference": null ,
+            "cas_number": null ,
+            "charge": null ,
+            "charge_reference": null ,
+            "chebi_id": null ,
+            "comments": null ,
+            "compound_source":  "PHENOLEXPLORER" ,
+            "created_at": Thu Apr 08 2010 22:04:26 GMT-07:00 ,
+            "creator_id": null ,
+            "density": null ,
+            "density_reference": null ,
+            "wikipedia_id": null,
+            //...lot of other fields
+            ...
           }
           }
 
@@ -175,18 +93,18 @@ We get back an array, with element on both table match our condition. We can see
       .zip()
     //=>
     {
-    "annotation_quality":  "low" ,
-    "assigned_to_id": null ,
-    "bigg_id": null ,
-    "boiling_point":  "Bp14 72°" ,
-    "boiling_point_reference":  "DFC" ,
-    "cas_number":  "15707-34-3" ,
-    "charge": null ,
-    "charge_reference": null ,
-    "chebi_id": null ,
-    "comments": null ,
-    "compound_id": 923 ,
-    //...lot of other fields
+      "annotation_quality":  "low" ,
+      "assigned_to_id": null ,
+      "bigg_id": null ,
+      "boiling_point":  "Bp14 72°" ,
+      "boiling_point_reference":  "DFC" ,
+      "cas_number":  "15707-34-3" ,
+      "charge": null ,
+      "charge_reference": null ,
+      "chebi_id": null ,
+      "comments": null ,
+      "compound_id": 923 ,
+      //...lot of other fields
     },
     //other document here as well
 
@@ -292,8 +210,8 @@ The answer is yes, we can do inner join and outer join.
 ## innerJoin
 
 innerJoin returns an inter section of two sequences where as each row of first
-sequence will be put together with each row of second sequence then evaluate
-a predicate function to find pair of row which predicate function returns true.
+sequence will be put together with each row of second sequence, then evaluates
+a predicate function to find pair of rows which predicate function returns true.
 The syntax of `innerJoin` is:
 
     sequence.innerJoin(otherSequence, predicate) → stream
@@ -302,7 +220,7 @@ The syntax of `innerJoin` is:
 Predicate function accepts two parameters of each row of first and second
 sequence.
 
-Let's say the first sequence has `m` rows, and second sequence has `n` rows,
+Let's say the first sequence has `M` rows, and second sequence has `N` rows,
 the innerJoin will loop ***M x N*** times and pass the pair of rows into
 predicate function. Let's say we have two sequences:
 
@@ -310,7 +228,7 @@ predicate function. Let's say we have two sequences:
     [2,3,4]
 
 And we want to find all pair of data where the first element module and second
-element equal zero.
+element equals zero.
 
 We can write this:
 
@@ -378,18 +296,18 @@ We can write this:
     ]
 
 RethinkDB will loop 27 times(9x3) and evaluate function to find rows. Because
-of the evaluation, this function is slow.
+of the evaluation, and no index is involved, this function is slow.
 
 Here is another real example with real data. Let's find all `foods` and its `compound_foods`.
 
     r.db("foodb")
       .table("foods")
       .innerJoin(
-        r.db("foodb")
-          .table("compounds_foods")
-        , function(food, compound_food) {
+        r.db("foodb").table("compounds_foods"),
+        function(food, compound_food) {
           return food("id").eq(compound_food("food_id"))
-        })
+        }
+      )
     //=>
     {
     "left": {
@@ -490,7 +408,7 @@ in `compound_foods` table. It has to run the predicate function
 C> Executed in 2min 25.86s. 40 rows returned, 40 displayed, more available
 
 Basically `innerJoin` is equivalent of table scan in MySQL. We should avoid
-using it on any significant data.
+using it on any significant amount data.
 
 ## outerJoin
 
