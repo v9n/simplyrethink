@@ -13,6 +13,20 @@ function Storage(options) {
 
 Storage.prototype.__proto__ = events.EventEmitter.prototype
 
+Storage.prototype.saveService = function(service) {
+  return new Promise(function(resolve, reject) {
+    r.table('website')
+      .insert(service)
+      .run(self._connection)
+      .then(function(result) {
+        resolve(result)
+      })
+      .error(function(err) {
+        reject(err)
+      })
+  })
+}
+
 Storage.prototype.getService = function() {
   var self = this
   return new Promise(function (resolve, reject) {
@@ -124,5 +138,3 @@ var createData = function(connection) {
     {id: 2, uri: 'http://blog.noty.im'}
   ]).run(connection)
 }
-
-
