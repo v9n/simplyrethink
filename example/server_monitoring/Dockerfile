@@ -1,27 +1,26 @@
-FROM mhart/alpine-node:base
+FROM phusion/baseimage:0.9.17
 
 # WORKDIR /src
 ADD . .
 
+RUN apt-get -u update
+
 # If you have native dependencies, you'll need extra tools
-RUN apk add --update make gcc g++ python
+RUN apt-get install -y build-essential checkinstall autoconf libtool
 
-# If you need npm, don't use a base tag
-# RUN npm install
+# RethinkDB deps
+RUN apt-get install -y python wget
 
-# If you had native dependencies you can now remove build tools
-# RUN apk del make gcc g++ python && \
-#   rm -rf /tmp/* /var/cache/apk/* /root/.npm /root/.node-gyp
+# Install RethinkDB
+RUN add-apt-repository "deb http://download.rethinkdb.com/apt trusty main"
 
-RUN apk add --update curl 
+RUN wget -qO- http://download.rethinkdb.com/apt/pubkey.gpg | apt-key add -
+RUN apt-get update -y
+RUN apt-get install -y rethinkdb
 
-# Build RethinkDB
-ADD http://download.rethinkdb.com/dist/rethinkdb-2.1.3.tgz .
-RUN tar -xvf rethinkdb-2.1.3.tgz
-RUN cd rethinkdb-2.1.3 && \
-    ./configure --allow-fetch && \
-    make
-
+RUN curl -sL https://deb.nodesource.com/setup_0.10 | bash -
+RUN apt-get install -y nodejs
+RUN npm install
 
 EXPOSE 3000
 CMD ["node", "index.js"]
