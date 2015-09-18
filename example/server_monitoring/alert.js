@@ -9,6 +9,10 @@ function Alert(storage, notifier) {
   }
 }
 
+Alert.prototype.suscribe = function(notifier) {
+  this._notifier.push(notifier)
+}
+
 Alert.prototype.watch = function() {
   var self = this
   this._storage.watch()
