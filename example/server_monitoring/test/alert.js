@@ -16,6 +16,19 @@ describe('Alert', function() {
     expect(alert).instanceof(Alert)
   })
 
+  describe('subscribe', function() {
+    it('adds notifier', function() {
+      var storage = new Storage({db: 'db'})
+      sinon.stub(storage, 'watch')
+      var alert = new Alert(storage)
+      sinon.stub(alert, 'inspect')
+      alert.watch()
+      storage.emit('alertChange', {alert: 'message'})
+      assert(storage.watch.calledOnce)
+      assert(alert.inspect.calledWith({alert: 'message'}))
+    })
+  })
+
   describe('watches', function() {
     it('listen to change feed', function() {
       var storage = new Storage({db: 'db'})
