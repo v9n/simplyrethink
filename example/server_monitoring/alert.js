@@ -9,7 +9,7 @@ function Alert(storage, notifier) {
   }
 }
 
-Alert.prototype.suscribe = function(notifier) {
+Alert.prototype.subscribe = function(notifier) {
   this._notifier.push(notifier)
 }
 
@@ -40,7 +40,15 @@ Alert.prototype.inspect = function(checkResult) {
     message = checkResult.website.uri + " returns code"+ checkResult.statusCode+"ms to respond: " + checkResult.duration
   }
 
-  this._notifier.forEach(function(notifier) {
-    notifier.yell(message)
-  }.bind(this))
+  if (typeof checkResult.website.subscribers == 'undefined') {
+    this._notifier.forEach(function(notifier) {
+      notifier.yell(message)
+    }.bind(this))
+  } else {
+    checkResult.website.subscribers.forEach(function(subscriber) {
+      var noti =  require('./' + subscriber.name)(subscriber.option)
+      noti.yell(message)
+    })
+  }
+
 }
