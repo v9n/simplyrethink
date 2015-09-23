@@ -4,7 +4,8 @@
   "description": "Web monitoring with RethinkDB and Telegram",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "start": "node index.js"
   },
   "author": "Vinh Nguyen",
   "license": "ISC",
