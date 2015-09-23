@@ -1,0 +1,3 @@
+#!/bin/sh
+
+exec node index.js > /var/log/monitor/node.log 2>&1

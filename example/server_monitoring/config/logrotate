@@ -1,0 +1,10 @@
+/var/log/monitor/*.log
+{
+  rotate 2
+  daily
+  missingok
+  notifempty
+  compress
+  copytruncate
+}
+

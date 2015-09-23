@@ -1,0 +1,3 @@
+#!/bin/sh
+
+exec rethinkdb -d /data/rethinkdb > /var/log/monitor/rethinkdb.log 2>&1

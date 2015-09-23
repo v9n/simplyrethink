@@ -1,7 +1,8 @@
 FROM phusion/baseimage:0.9.17
 
-# WORKDIR /src
-ADD . .
+RUN mkdir /app
+WORKDIR /app
+ADD . /app
 
 RUN apt-get -u update
 
@@ -21,6 +22,8 @@ RUN apt-get install -y rethinkdb
 RUN curl -sL https://deb.nodesource.com/setup_0.10 | bash -
 RUN apt-get install -y nodejs
 RUN npm install
+
+ADD config/logrotate /etc/logrotate.d/monitor
 
 EXPOSE 3000
 CMD ["node", "index.js"]
