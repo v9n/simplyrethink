@@ -18,7 +18,6 @@ will be combined from many clusters and presents final result to you.
 In SQL, ideally you can join whatever you want by making sure that the records on 2
 tables match a condition. An example:
 
-
     SELECT post.*
       FROM post
       JOIN comment ON comment.post_id=post.id
@@ -29,21 +28,41 @@ tables match a condition. An example:
       FROM post
       JOIN comment ON comment.author_id=post.author_id
 
-You don't even need to care about the index. The database is usually smart enough to figure out what index to use, or will scan the full table for you.
+You don't even need to care about the index. The database is usually smart
+enough to figure out what index to use, or will scan the full table for you.
 
 Join is a bit different in RethinkDB. Similar to how we have primary index and
-second index, we usually need index to join in Rethink DB.
+second index, we usually need index to join in Rethink DB. Generally, we use
+below techniques in a *JOIN* command:
 
 * primary keys
 * secondary indexes
 * sub queries
 
-Let's explore why we need joins. Starting with one-to-many relationship. Let's find all compound and its synonyms. `eq_join` is used to join data:
+Let's go over them one by one.
+
+### Join with primary index
+
+Starting with one-to-many relationship. Let's find all compound and its synonyms.
+First, let see `eqJoin` syntax, a command for joining data is used to join data:
 
     sequence.eqJoin(leftField, rightTable[, {index:'id'}]) → sequence
     sequence.eqJoin(function, rightTable[, {index:'id'}]) → sequence
 
-It tries to find the document on table **righTable** whose index value matches leftField value or the return value of function. It's similar to `INNER JOIN` in MySQL.
+It tries to find the document on table **righTable** whose index value matches leftField value or the return value of function.
+It's just similar to a normal `JOIN` in MySQL.
+
+    SELECT
+    FROM sequence
+    JOIN rightTable
+    ON sequence.leftField = rightTable.id
+
+In plain English, `eqJoin` try to find pair of document on left table(sequence)
+and rightTable whereas value of index of right table (default is the primary
+index) matches value of leftField on left Table or the return value of execution
+of function we passed into `eqJoin`
+
+So, to find all compounds and its synonyms, we can do:
 
     r.db("foodb")
       .table("compound_synonyms")
@@ -51,10 +70,6 @@ It tries to find the document on table **righTable** whose index value matches l
 
 And we get this:
 
-    r.db("foodb")
-      .table("compound_synonyms")
-      .eqJoin("compound_id", r.db("foodb").table("compounds"))
-    #=>
       "left": {
             "compound_id": 82 ,
             "created_at": Fri Apr 09 2010 17:40:05 GMT-07:00 ,
@@ -85,7 +100,11 @@ And we get this:
           }
           }
 
-We get back an array, with element on both table match our condition. We can see that the item on the left has its `compound_id` matchs `id` field of the one on the right. However, the above result with left, right is not very useful. It will be more useful if we can merge both side into a single document. To do that, we use `zip`
+We get back an array, with element on both table match our condition. We can
+see that the item on the left has its `compound_id` matchs `id` field of the
+one on the right. However, the above result with left, right is not very useful.
+It will be more useful if we can merge both side into a single document. To do
+that, we use `zip`
 
     r.db("foodb")
       .table("compound_synonyms")
@@ -133,16 +152,20 @@ to transform the document into a more read-able document since we only care abou
       "synonym":  "Benzoic acid, 3,4-dimethoxy-"
     }
 
-Much cleaner now! The important thing is that the join data is just another stream or array 
+Much cleaner now! The important thing is that the join data is just another stream or array
 and we can do transformation on it.
 
-As you may see, we don't need to specify an index on above query. When we don't
-specify index, RethinkDB use primary key of table. In this case, the primary key
-is `id` field of `compounds`. Now loking at the query, it seems a bit awkard 
-because `compound_synonyms` comes first. We can make it more natural, just follow above
-syntax: for each document on `compounds`, fetch all document on
-`compound_synonyms` where document's `compound_id` field match id of document
-on `compounds` table. So now we see that we have to have an index on 
+As you may see, we didn't specify an index on above query. When we don't
+specify index, RethinkDB use primary index of table. In this case, the primary key
+is value of **id** field of table **compounds**. 
+
+### Join with secondary index
+
+Now loking at the previous query, it seems a bit awkard 
+because table `compound_synonyms` comes first. We can make it more natural,
+just follow above syntax: for each document on `compounds`, fetch all document on
+`compound_synonyms` where document's `compound_id` field match value *id* of document
+on `compounds` table. To do that, we have to have an index on 
 `compound_synonyms` table for `compound_id` field. Let's create an index for it:
 
         r.db("foodb").table("compounds")
@@ -183,11 +206,10 @@ Let's try it out:
     }
 
 With proper index, a query may looks cleaner and more natural.
-The order of how we use `eqJoin` is important. You should always try to narrow
-down data first, so that the join do less works.
+The order of how we use `eqJoin` is important. Trying narrow
+down data first if possible, to make the join does less work.
 
-Also, we don't have `left join`, `right join` equivalents in RethinkDB. We achieve
-it by swapping left and right on eqJoin with approriate index. So far, we only
+So far, we only
 join on a single field. How do we join in multile field condtion? Such as in
 MySQL we can do
 
@@ -201,11 +223,13 @@ How about complex join where we want either or ? Like in MySQL
       FROM table1 as t1
     LEFT JOIN tabl2 as t2 ON t1.field1= t2.field1  OR 
 
+
 @TODO
 
 To join, we usually need index. But can we join data without using any index
 via two arbitray sequence? Even if it's not very efficient but useful to have.
 The answer is yes, we can do inner join and outer join.
+
 
 ## innerJoin
 
