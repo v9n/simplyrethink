@@ -205,31 +205,132 @@ Let's try it out:
     "synonym":  "2',3,4,4'-Tetrahydroxychalcone"
     }
 
-With proper index, a query may looks cleaner and more natural.
+With proper index, a query looks cleaner and more natural.
 The order of how we use `eqJoin` is important. Trying narrow
 down data first if possible, to make the join does less work.
 
-So far, we only
-join on a single field. How do we join in multile field condtion? Such as in
-MySQL we can do
+Also, instead of passing the **field** name to `eqJoin`, we can also pass a
+function or using `row` command to get value of nested field. In this case, 
+the return value of function, or value of field access with `row`  will be
+used to match with value of index on the right table. These are useful
+especially with structure data on field.
 
-    SELECT * 
+Do you remember we have *users* table with data structure looks like this:
+
+    r.db('foodb').table('users')
+    {
+      "age": 40 ,
+      "eatenfoods": [
+      "True sole" ,
+      "Jerusalem artichoke" ,
+      "Ascidians" ,
+      "Pineappple sage" ,
+      "Lotus" ,
+      "Coffee and coffee products"
+      ] ,
+      "favfoods": [
+      "Edible shell" ,
+      "Clupeinae (Herring, Sardine, Sprat)" ,
+      "Deer" ,
+      "Perciformes (Perch-like fishes)" ,
+      "Bivalvia (Clam, Mussel, Oyster)"
+      ] ,
+      "gender":  "m" ,
+      "id":  "1dd8059c-82ca-4345-9d75-eaa0f8edbf48" ,
+      "name":  "Arthur Hegmann"
+      ...
+    }
+
+Let's try to find more information about the most favourite foods.
+
+First, let's create an index for *food name*
+
+    r.db('foodb').table('foods').indexCreate('name')
+
+With that index, we can join data:
+
+    r.db('foodb').table('users')
+      .eqJoin(r.row('favfoods').nth(0), r.db('foodb').table('foods'), {index: 'name'})
+    //=>
+    {
+        "left": {
+            "age": 40,
+            "eatenfoods": [
+                "True sole",
+                "Jerusalem artichoke",
+                "Ascidians",
+                "Pineappple sage",
+                "Lotus",
+                "Coffee and coffee products"
+            ],
+            "favfoods": [
+                "Edible shell",
+                "Clupeinae (Herring, Sardine, Sprat)",
+                "Deer",
+                "Perciformes (Perch-like fishes)",
+                "Bivalvia (Clam, Mussel, Oyster)"
+            ],
+            "gender": "m",
+            "id": "1dd8059c-82ca-4345-9d75-eaa0f8edbf48",
+            "name": "Arthur Hegmann"
+        },
+        "right": {
+            "created_at": Wed Dec 21 2011 02: 40: 48 GMT - 08: 00,
+            "creator_id": 2,
+            "description": null,
+            "food_group": "Baking goods",
+            "food_subgroup": "Wrappers",
+            "food_type": "Type 2",
+            "id": 868,
+            "itis_id": null,
+            "legacy_id": null,
+            "name": "Edible shell",
+            "name_scientific": null,
+            "picture_content_type": "image/jpeg",
+            "picture_file_name": "868.jpg",
+            "picture_file_size": 51634,
+            "picture_updated_at": Fri Apr 20 2012 09: 39: 05 GMT - 07: 00,
+            "updated_at": Fri Apr 20 2012 16: 39: 06 GMT - 07: 00,
+            "updater_id": 2,
+            "wikipedia_id": null
+        }
+    }
+    //....
+
+We can have the same result, using *function* syntax
+
+    r.db('foodb').table('users')
+      .eqJoin(function(user) { return user('favfoods').nth(0) }, 
+              r.db('foodb').table('foods'), 
+              {index: 'name'})
+
+So basically passing field name is just a shortcut when using `r.row(field_name)`.
+Using `row` or function gives us much more flexibility. Also remember that
+`row` command cannot be used in any sub queries such as in this case:
+
+Let's say we have a 
+
+Since the beginning, the way *join* is constructed is to match the document
+between 2 tables based on value and matching of index. How we can just simply
+join data across two table based on two *field*? In real life, we may have even
+more complex *join* condition. Example, in MySQL, we can join with, basically
+any arbitrary condition like this:
+
+    SELECT *
       FROM table1 as t1
-    LEFT JOIN tabl2 as t2 ON t1.field1= t2.field1 AND 
+    JOIN tabl2 as t2 ON t1.field1=t2.field1 AND t1.foo=t2.bar
 
-How about complex join where we want either or ? Like in MySQL
+Let's think of an example. I want to join data of table *compounds* and its 
+*compounds_synonyms* where the source is from **biospider** and created after
+2013. It is obviously we cannot use a single field here with `eqJoin`.
 
-    SELECT * 
-      FROM table1 as t1
-    LEFT JOIN tabl2 as t2 ON t1.field1= t2.field1  OR 
-
-
-@TODO
+Luckily, we have another way of joining data, using sub queries with `concatMap`
+and `getAll`. However, since they are not `eqJoin` command, we will learn about
+sub query later in this chapter. For now, let's move on to other *join* command.
 
 To join, we usually need index. But can we join data without using any index
 via two arbitray sequence? Even if it's not very efficient but useful to have.
 The answer is yes, we can do inner join and outer join.
-
 
 ## innerJoin
 
@@ -539,6 +640,10 @@ RethinkDB team are aware of that and is working on it now[^collapse].
 [^collapse]: https://github.com/rethinkdb/rethinkdb/issues/1855
 
 ## Using sub queries
+
+As I promised before, in many complex case, `eqJoin` won't work for us. And we
+can use `concatMap` and `getAll`. Now is the time to learn them. We will slowly
+go over some kind of relation again.
 
 ### One to many relation
 
