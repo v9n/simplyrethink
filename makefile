@@ -18,7 +18,8 @@ preview:
 	if [ ! -d "./output" ]; then mkdir ./output; fi
 	echo "" > "./output/source.markdown"
 	for chapfile in $(shell cat manuscript/Book.txt); do cat manuscript/"$$chapfile" >> ./output/source.markdown; done
-	pandoc --smart --table-of-contents --output=./output/preview.pdf ./output/source.markdown
+	cp -rf manuscript/images ./output/
+	cd output && pandoc --smart --table-of-contents --output=./preview.pdf ./source.markdown
 
 open:
 	open output/preview.pdf
