@@ -10,7 +10,7 @@ Before we go into the technical details, I have something to say.
 Firstly, I'm not a RethinkDB expert at all. I'm just an average guy who loves
 programming and new technologies. To me, RethinkDB is a pleasure to use.
 However, due to its age, there are not many books and documents about it comparing to other
-database systems. While the RethinkDB cocumentation and API is very good, it can be hard to 
+database systems. While the RethinkDB cocumentation and API is very good, it can be hard to know 
 where to start. So this guide is for all those in mind who are unsure about taking the plunge into
 RethinkDB as something totally new. I hope this helps them ease into the learning process.
 
@@ -119,7 +119,7 @@ Do you understand the query below?
       .table('foods')
       .filter(r.row('created_at').year().eq(2011))
 
-This query is finds all foods which were inserted in the year **2011**. I
+This query finds all foods which were inserted in the year **2011**. I
 cannot even provide an equivalent SQL example, because it just cannot be as beautiful
 and concise as the above query.
 
