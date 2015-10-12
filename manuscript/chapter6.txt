@@ -659,8 +659,9 @@ association of a *compound* and a *food*. So basically, we can do this:
 
   * Given a food, we know its ID
   * Find all of its *compound* using **compound_foods** tables.
-  * With each of compound, we can know its flavor, by query *compound_flavors* to find association with *flavors* table. 
-    In other words, to find the *flavor_id* for that compounds.
+  * With each of compound, we know its flavor, by query *compound_flavors*
+    to find association with *flavors* table. In other words, to find the
+    *flavor_id* for that compounds.
 
 First of all, we needs some index:
 
