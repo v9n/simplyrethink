@@ -1,19 +1,19 @@
 -# 4. Modifying data
 
-We know how to fetch the data. But a database is useless without ability of
-writing data. In this chapter, we will learn about writing data. We will
-address database command, table command, and then document command
+We knew how to fetch the data. But a database is useless without ability of
+writing data. In this chapter, we will learn about modifiying data. We will
+address database level command, table level command, and then document command
 in this chapter.
 
 # Database
 
-All commands on database levels start at the top namespace `r` since they are
-like genesis item in any database system. Let's start our journey by creating
-a database. Remember, we need a database to hold everything.
+All commands on database levels start at the top namespace `r`. They are
+usually the first command right after `r`. Let's start our journey by creating
+a database. Remember, we need a database to hold everything, right?
 
 ## Create
 
-Very simple. With example, you will get it easily.
+Very simple. With examples, you will get it easily.
 
     //Create database
     r.dbCreate("db1")
