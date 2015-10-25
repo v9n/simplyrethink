@@ -1350,7 +1350,7 @@ First, we want to remove `eateanorlike`.
 
 To remove one or many fields from document, we cannot use `update` anymore.
 We can set a field to `null` value(null, nil depends on your language) to make
-it become null. But they key is still in the document with a `null` value.
+it becomes null. But they key is still in the document with a `null` value.
 In other words, `update` lets us overwrite the fields, but don't remove it.
 That's why we have another command for removing field. The `replace` command
 replaces entire document with new document.

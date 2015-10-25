@@ -10,6 +10,15 @@ You can buy this book at [https://leanpub.com/simplyrethinkdb](https://leanpub.c
 
 You can of course read this book online by browseing this repository.
 
+Example
+==============
+
+I have some example on how I develop real application with RethinkDB.
+Those are small app, worker-able, and docker-ready so that you can
+easily run them.
+
+Check them out in `example` folder.
+
 Feedback
 ==============
 
