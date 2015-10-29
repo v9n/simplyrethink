@@ -1220,7 +1220,7 @@ in `favfoods` field)
         eateanorlike : r.add(r.row("eatenfoods"), [r.row("favfoods").nth(0)])
       }, {nonAtomic: true})
 
-By combine ReQL expression, looking at its RethinkDB API and find approriate
+By combining ReQL expressions, looking at RethinkDB API and find approriate
 function, we can achieve what we want. In the above example, we know we want to
 concat two arrays from `eatenfoods` and first item of `favfoods`. We used `r.add`. We have
 to wrap `r.row("favfoods").nth(0)` in `[]` because `nth()` return a document,
@@ -1346,13 +1346,14 @@ that destroy data. Let's meep **replace** command.
 
 ## Replace
 
-First, we want to remove `eateanorlike`.
+Let's see how we remove a field from a document. Assume we want to remove
+field `eateanorlike`.
 
 To remove one or many fields from document, we cannot use `update` anymore.
 We can set a field to `null` value(null, nil depends on your language) to make
 it becomes null. But they key is still in the document with a `null` value.
-In other words, `update` lets us overwrite the fields, but don't remove it.
-That's why we have another command for removing field. The `replace` command
+In other words, `update` lets us overwrite fields, but don't remove them.
+That's why we have another command for removing fields. The `replace` command
 replaces entire document with new document.
 
     r.db("foodb").table("users").replace(r.row.without('eateanorlike'))
@@ -1479,7 +1480,24 @@ We will got an error:
     "unchanged": 0
     }
 
-Of course, changing primary key is actually simply removing old one and insert
+`replace` also has a useful feature is that if it detects a document with same
+primary key, it's replace the document, otherwise it can insert a new document.
+When using this feature, we have to make sure to pass primary key in replace
+document:
+
+    r.table('test').get('primary_key').replace({
+      id: 'primary_key',
+      field: 'value'
+    })
+
+replace or insert is helpful when we want to ensure that the document will be
+existed in database. In above query, we first call `get` to find document, if a
+document is founed, then `replace` is executed and replace it. Because the
+primary keys are same, only other **fields** will be replaced. If `get` return
+NULL, replace will insert the whole document.
+
+One thing to remember is that we cannot replace the primary key of document.
+Because changing primary key is actually simply removing old one and insert
 a new document. Let's learn about removing data.
 
 ## Delete
