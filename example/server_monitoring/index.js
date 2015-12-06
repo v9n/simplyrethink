@@ -13,9 +13,10 @@ storage.init().then(function(s) {
   run(s)
   //Kick off alerting system
   s.getSubscribers().then(function(subscribers) {
-    bot = new Bot(process.env.TELEGRAM_BOT_API, subscribers)
+    var bot = new Bot(process.env.TELEGRAM_BOT_API, subscribers)
     alert = new Alert(storage, bot)
     alert.watch()
+
     bot.watch()
     bot.on('subscribe', function(chatId) {
       console.log("Event with id ", chatId)

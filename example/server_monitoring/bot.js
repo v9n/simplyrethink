@@ -29,7 +29,10 @@ Bot.prototype.watch = function() {
 // Subscribe an user into alert system
 Bot.prototype.subscribe = function(chatId) {
   this.subscribers.push(chatId)
-  this.bot.sendMessage(chatId, "You has been subscribed to monitoring boot. We will notifiy you when a service is down or slow")
+  this.bot.sendMessage(chatId, "Now, you have to insert your chatid into website table " + chatId)
+  //@TODO
+  //Support syntax subscribe website and insert automatically
+  //this.bot.sendMessage(chatId, "You has been subscribed to monitoring boot. We will notifiy you when a service is down or slow. Btw, you can use this chatId " + chatId)
   this.emit('subscribe', chatId)
 }
 

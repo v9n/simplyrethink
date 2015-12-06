@@ -10,7 +10,7 @@ function Bot(option) {
 Bot.prototype.yell = function(msg) {
   console.log('Will notify hipchat ', msg)
   var token = this._option.token
-  this.bot.notify('System Status',
+  this.bot.notify(this._option.room,
                     {
                       message: msg,
                       color: 'purple'

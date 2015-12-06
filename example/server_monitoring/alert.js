@@ -46,7 +46,7 @@ Alert.prototype.inspect = function(checkResult) {
     }.bind(this))
   } else {
     checkResult.website.subscribers.forEach(function(subscriber) {
-      var noti =  require('./' + subscriber.name)(subscriber.option)
+      var noti =  require('./notifier/' + subscriber.name)(subscriber.option)
       noti.yell(message)
     })
   }
