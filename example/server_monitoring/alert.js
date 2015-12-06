@@ -2,11 +2,17 @@ exports = module.exports = Alert
 
 function Alert(storage, notifier) {
   this._storage = storage
+  this._adapters = {}
+
   if (typeof notifier == 'object' && typeof notifier[0] != 'undefined') {
     this._notifier   = notifier
   } else {
     this._notifier   = [notifier]
   }
+
+  this._adapters['telegram'] = notifier
+  this._adapters['hipchat'] = require('./notifier/hipchat')
+  this._adapters['twilio'] = require('./notifier/twilio')
 }
 
 Alert.prototype.subscribe = function(notifier) {
@@ -41,16 +47,17 @@ Alert.prototype.inspect = function(checkResult) {
   }
 
   console.log(this._notifier)
+  var self = this
   var telegram = this._notifier[0];
   checkResult.website.subscribers.forEach(function(subscriber) {
     // Telegram is special, we will send notification use bot object
     if ('telegram' == subscriber.name) {
       console.log("** Will notify telegram")
-      telegram.yellTo(message, subscriber.option)
+      self._adapters['telegram'].yellTo(message, subscriber.option)
       return
     }
 
-    var noti =  require('./notifier/' + subscriber.name)(subscriber.option)
+    var noti = self._adapters[subscriber.name](subscriber.option)
     noti.yell(message)
   }.bind(this))
 
