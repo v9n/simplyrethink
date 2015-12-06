@@ -1,0 +1,8 @@
+-# 9. Change feeds
+
+RethinkDB call itself "The open-source database
+for the realtime web" but so far we didn't see anything realtime this. So here
+we are. Looking at realtime aspect of RethinkDB
+
+
+
