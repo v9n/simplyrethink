@@ -24,7 +24,8 @@ storage.init().then(function(s) {
   })
 })
 .error(function(error) {
-  console.log("Exit")
+  console.log("Get error:")
+  console.log(error)
   process.exit(1)
 })
 
