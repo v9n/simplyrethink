@@ -40,15 +40,18 @@ Alert.prototype.inspect = function(checkResult) {
     message = checkResult.website.uri + " returns code"+ checkResult.statusCode+"ms to respond: " + checkResult.duration
   }
 
-  if (typeof checkResult.website.subscribers == 'undefined') {
-    this._notifier.forEach(function(notifier) {
-      notifier.yell(message)
-    }.bind(this))
-  } else {
-    checkResult.website.subscribers.forEach(function(subscriber) {
-      var noti =  require('./notifier/' + subscriber.name)(subscriber.option)
-      noti.yell(message)
-    })
-  }
+  console.log(this._notifier)
+  var telegram = this._notifier[0];
+  checkResult.website.subscribers.forEach(function(subscriber) {
+    // Telegram is special, we will send notification use bot object
+    if ('telegram' == subscriber.name) {
+      console.log("** Will notify telegram")
+      telegram.yellTo(message, subscriber.option)
+      return
+    }
+
+    var noti =  require('./notifier/' + subscriber.name)(subscriber.option)
+    noti.yell(message)
+  }.bind(this))
 
 }

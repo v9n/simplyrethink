@@ -55,7 +55,7 @@ var monitor = function(storage, check, row) {
   .then(function(data) {
     setTimeout(function() {
       monitor(storage, check, row)
-    }, 7000)
+    }, 15000)
   })
   .catch(function(error) {
     console.log(error)
