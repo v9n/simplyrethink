@@ -115,6 +115,25 @@ Storage.prototype.watch = function(first_argument) {
   })
 }
 
+Storage.prototype.createIncidentForService = function (serviceId, data) {
+  var self = this
+  return new Promise(function(resolve, reject) {
+    r.table('incidents')
+      .insert({
+        serviceId: serviceId,
+        status: data.status,
+        responseTime: data.responseTime,
+      })
+      .run(self._connection)
+      .then(function(cursor) {
+      })
+      .error(function(err) {
+        console.log("!! Error when fetching subscribe ", err)
+        reject(err)
+      })
+  })
+}
+
 Storage.prototype.getSubscribers = function() {
   var self = this
   return new Promise(function(resolve, reject) {
