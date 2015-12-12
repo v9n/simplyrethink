@@ -1,29 +1,39 @@
 FROM phusion/baseimage:0.9.17
 
 RUN mkdir /app
+RUN mkdir /var/log/monitor
 WORKDIR /app
 ADD . /app
 
 RUN apt-get -u update
 
 # If you have native dependencies, you'll need extra tools
-RUN apt-get install -y build-essential checkinstall autoconf libtool
+# RUN apt-get install -y build-essential checkinstall autoconf libtool
 
 # RethinkDB deps
 RUN apt-get install -y python wget
 
-# Install RethinkDB
-RUN add-apt-repository "deb http://download.rethinkdb.com/apt trusty main"
-
-RUN wget -qO- http://download.rethinkdb.com/apt/pubkey.gpg | apt-key add -
+RUN bash -c 'source /etc/lsb-release && echo "deb http://download.rethinkdb.com/apt $DISTRIB_CODENAME main" | sudo tee /etc/apt/sources.list.d/rethinkdb.list'
+RUN wget -qO- https://download.rethinkdb.com/apt/pubkey.gpg | sudo apt-key add -
 RUN apt-get update -y
 RUN apt-get install -y rethinkdb
 
-RUN curl -sL https://deb.nodesource.com/setup_0.10 | bash -
+# NodeJS
+RUN curl -sL https://deb.nodesource.com/setup_0.12 | bash -
 RUN apt-get install -y nodejs
 RUN npm install
 
 ADD config/logrotate /etc/logrotate.d/monitor
 
+# Service
+ADD service/* /etc/service/
+
+# Data dir
+RUN mkdir -p /data/rethinkdb
+VOLUMES /data/rethinkdb
+
 EXPOSE 3000
-CMD ["node", "index.js"]
+EXPOSE 8080
+
+#CMD ["node", "index.js"]
+CMD ["/sbin/my_init"]
