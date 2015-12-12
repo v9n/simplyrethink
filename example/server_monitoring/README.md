@@ -7,6 +7,19 @@ RethinkDB.
 
 See https://www.youtube.com/watch?v=XINum9pOiOg&feature=youtu.be
 
+# Running with docker
+
+```shell
+$ sudo docker run --restart=always -d -v `pwd`/data:/data/rethinkdb -v
+  `pwd`/log:/var/log/monitor -p 8080:8080 \
+  -e "TELEGRAM_BOT_API=your telegram api" \
+  -e "TWILIO_ACCOUNT_SID=twilio_account_sid" \
+  -e "TWILIO_AUTH_TOKEN=twilio_auth_token" \
+  -e "TWILIO_FROM=+1xxxxxxxxx" \
+  simplyrethinkdb/monitor:0.1.1
+```
+
+Then visit `hostip:8080` to open Dashboard and insert website data
 
 # What it does
 
