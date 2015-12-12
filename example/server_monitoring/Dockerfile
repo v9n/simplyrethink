@@ -14,7 +14,7 @@ RUN apt-get update -y
 RUN apt-get install -y rethinkdb
 
 # NodeJS
-RUN curl -sL https://deb.nodesource.com/setup_0.12 | bash -
+RUN curl -sL https://deb.nodesource.com/setup_5.x | bash -
 RUN apt-get install -y nodejs
 
 ADD config/logrotate /etc/logrotate.d/monitor

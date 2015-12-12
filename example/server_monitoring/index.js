@@ -6,7 +6,7 @@ var async = require('async')
   , Bot = require('./bot')
   , Storage = require('./storage')
 
-require('dotenv').load()
+require('dotenv').config({silent: true}).load()
 
 var storage = new Storage({db: 'webmon'})
 storage.init().then(function(s) {

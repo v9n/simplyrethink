@@ -1,12 +1,12 @@
 OWNER := simplyrethinkdb
 NAME := monitor
-TAG  := 0.1
+TAG  := 0.1.1
 
 docker:
 	docker build -t $(OWNER)/$(NAME):$(TAG) .
 
 push:
-	docker push -t $(OWNER)/$(NAME):$(TAG)
+	docker push $(OWNER)/$(NAME):$(TAG)
 
 build: docker
 
