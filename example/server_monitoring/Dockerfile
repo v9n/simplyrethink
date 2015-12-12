@@ -1,10 +1,5 @@
 FROM phusion/baseimage:0.9.17
 
-RUN mkdir /app
-RUN mkdir /var/log/monitor
-WORKDIR /app
-ADD . /app
-
 RUN apt-get -u update
 
 # If you have native dependencies, you'll need extra tools
@@ -26,11 +21,16 @@ RUN npm install
 ADD config/logrotate /etc/logrotate.d/monitor
 
 # Service
-ADD service/* /etc/service/
+ADD service /etc/service/
 
 # Data dir
 RUN mkdir -p /data/rethinkdb
-VOLUMES /data/rethinkdb
+VOLUME /data/rethinkdb
+
+RUN mkdir /app
+RUN mkdir /var/log/monitor
+WORKDIR /app
+ADD . /app
 
 EXPOSE 3000
 EXPOSE 8080
