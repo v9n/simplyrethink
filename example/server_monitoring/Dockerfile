@@ -16,7 +16,6 @@ RUN apt-get install -y rethinkdb
 # NodeJS
 RUN curl -sL https://deb.nodesource.com/setup_0.12 | bash -
 RUN apt-get install -y nodejs
-RUN npm install
 
 ADD config/logrotate /etc/logrotate.d/monitor
 
@@ -31,6 +30,7 @@ RUN mkdir /app
 RUN mkdir /var/log/monitor
 WORKDIR /app
 ADD . /app
+RUN cd /app && npm install
 
 EXPOSE 3000
 EXPOSE 8080
