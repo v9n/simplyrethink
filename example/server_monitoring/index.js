@@ -5,8 +5,10 @@ var async = require('async')
   , Alert = require('./alert')
   , Bot = require('./bot')
   , Storage = require('./storage')
+  , dotenv =require('dotenv')
 
-require('dotenv').config({silent: true}).load()
+dotenv.config({silent: true})
+dotenv.load()
 
 var storage = new Storage({db: 'webmon'})
 storage.init().then(function(s) {
@@ -30,7 +32,10 @@ storage.init().then(function(s) {
   process.exit(1)
 })
 
-var run = function(storage) {
+/**
+ * @var Srotage
+ */
+function run(storage) {
   storage
   .getService()
   .then(function(services) {
@@ -45,6 +50,11 @@ var run = function(storage) {
   })
 }
 
+/**
+ * @var Storage
+ * @var Check
+ * @var service $row an item of service table
+ */
 var monitor = function(storage, check, row) {
   console.log("** Start to check ", row, " at ", new Date().getTime())
   check.http(row.uri)

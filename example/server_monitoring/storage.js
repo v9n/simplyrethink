@@ -92,7 +92,8 @@ Storage.prototype.watch = function(first_argument) {
   var self = this
   r.table('monitor').changes()('new_val').merge(function(doc) {
     return {
-      website: r.db(self._db).table('website').get(doc('website_id')).default({})
+      website: r.db(self._db).table('website').get(doc('website_id')).default({}),
+      hasIncident: r.db(self._db).table('incident').getAll(doc('website_id'), {index: 'website_id'}).count().gt(0)
     }
   })
   .filter(r.row('duration').gt(r.row('website').getField('threshold').default(1000)))
@@ -115,20 +116,19 @@ Storage.prototype.watch = function(first_argument) {
   })
 }
 
-Storage.prototype.createIncidentForService = function (serviceId, data) {
+Storage.prototype.createIncident = function (serviceId, data) {
   var self = this
+  data["website_id"] = serviceId
+  data["status"] = "open"
   return new Promise(function(resolve, reject) {
     r.table('incidents')
-      .insert({
-        serviceId: serviceId,
-        status: data.status,
-        responseTime: data.responseTime,
-      })
+      .insert(data)
       .run(self._connection)
       .then(function(cursor) {
+        resolve(cursor)
       })
       .error(function(err) {
-        console.log("!! Error when fetching subscribe ", err)
+        console.log("!! Error when creating incident", err)
         reject(err)
       })
   })

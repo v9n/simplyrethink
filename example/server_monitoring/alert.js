@@ -33,32 +33,48 @@ Alert.prototype.watch = function() {
  */
 Alert.prototype.inspect = function(checkResult) {
   var threshold = checkResult.website.threshold || 1000
-  var message
+      , message = ''
+      , alertNeeded = false
 
   console.log(checkResult)
   if (checkResult.duration > threshold) {
     console.log(checkResult.website.uri, " takes more than ", threshold," to respond ", checkResult.duration, ". Alert needed")
     message = checkResult.website.uri + " takes more than "+ threshold+"ms to respond: "+ checkResult.duration
+    alertNeeded = true
   }
 
   if (checkResult.statusCode != 200) {
     console.log(checkResult.website.uri, " returns code ", checkResult.statusCode,". Alert needed")
     message = checkResult.website.uri + " returns code"+ checkResult.statusCode+"ms to respond: " + checkResult.duration
+    alertNeeded = true
   }
 
-  console.log(this._notifier)
-  var self = this
-  var telegram = this._notifier[0];
-  checkResult.website.subscribers.forEach(function(subscriber) {
-    // Telegram is special, we will send notification use bot object
-    if ('telegram' == subscriber.name) {
-      console.log("** Will notify telegram")
-      self._adapters['telegram'].yellTo(message, subscriber.option)
-      return
+  if (!alertNeeded) {
+    if (checkResult.hasIncident) {
+      console.log("Close incident")
     }
+    return
+  }
 
-    var noti = self._adapters[subscriber.name](subscriber.option)
-    noti.yell(message)
-  }.bind(this))
+  if (!checkResult.hasIncident) {
+      this._storage.createIncident(checkResult.website.id, {
+          message: message,
+          monitor_id: checkResult.id
+      })
 
+      console.log(this._notifier)
+      var self = this
+      var telegram = this._notifier[0];
+      checkResult.website.subscribers.forEach(function(subscriber) {
+        // Telegram is special, we will send notification use bot object
+        if ('telegram' == subscriber.name) {
+          console.log("** Will notify telegram")
+          self._adapters['telegram'].yellTo(message, subscriber.option)
+          return
+        }
+
+        var noti = self._adapters[subscriber.name](subscriber.option)
+        noti.yell(message)
+      }.bind(this))
+  }
 }

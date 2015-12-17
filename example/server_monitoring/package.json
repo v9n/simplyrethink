@@ -1,6 +1,6 @@
 {
   "name": "server_monitoring",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Web monitoring with RethinkDB and Telegram",
   "main": "index.js",
   "scripts": {
