@@ -48,6 +48,7 @@ r.db('webmon).tableCreate('subscriber')
 r.db('webmon).tableCreate('monitor')
 r.db('webmon).tableCreate('incident')
 r.db('webmon').table('incident').indexCreate('website_id')
+r.db('webmon').table('incident').indexCreate('open_incident', [r.row('status'), r.row('website_id')])
 ```
 
 ### 2. Create a bot in telegram 

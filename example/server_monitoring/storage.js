@@ -93,7 +93,7 @@ Storage.prototype.watch = function(first_argument) {
   r.table('monitor').changes()('new_val').merge(function(doc) {
     return {
       website: r.db(self._db).table('website').get(doc('website_id')).default({}),
-      hasIncident: r.db(self._db).table('incident').getAll(doc('website_id'), {index: 'website_id'}).count().gt(0)
+      incident: r.db(self._db).table('incident').getAll(['open', doc('website_id')], {index: 'open_incident'}).default([]).nth(0).default(null)
     }
   })
   .filter(r.row('duration').gt(r.row('website').getField('threshold').default(1000)))
@@ -121,7 +121,7 @@ Storage.prototype.createIncident = function (serviceId, data) {
   data["website_id"] = serviceId
   data["status"] = "open"
   return new Promise(function(resolve, reject) {
-    r.table('incidents')
+    r.table('incident')
       .insert(data)
       .run(self._connection)
       .then(function(cursor) {

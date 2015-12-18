@@ -50,31 +50,39 @@ Alert.prototype.inspect = function(checkResult) {
   }
 
   if (!alertNeeded) {
-    if (checkResult.hasIncident) {
+    if (checkResult.incident) {
+      //@TODO notification for close incident
       console.log("Close incident")
+      return
     }
     return
   }
 
-  if (!checkResult.hasIncident) {
-      this._storage.createIncident(checkResult.website.id, {
-          message: message,
-          monitor_id: checkResult.id
-      })
-
-      console.log(this._notifier)
-      var self = this
-      var telegram = this._notifier[0];
-      checkResult.website.subscribers.forEach(function(subscriber) {
-        // Telegram is special, we will send notification use bot object
-        if ('telegram' == subscriber.name) {
-          console.log("** Will notify telegram")
-          self._adapters['telegram'].yellTo(message, subscriber.option)
-          return
-        }
-
-        var noti = self._adapters[subscriber.name](subscriber.option)
-        noti.yell(message)
-      }.bind(this))
+  if (checkResult.incident) {
+    //@TODO Add duration of incident here
+    message = "Incident #" + checkResult.monitor_id + " is still going.\n" + message
+  } else {
+    // Create associated incident
+    this._storage.createIncident(checkResult.website.id, {
+        message: message,
+        monitor_id: checkResult.id
+    })
   }
+
+  // Finally doing notification
+  console.log(this._notifier)
+  var self = this
+  //var telegram = this._notifier[0];
+  checkResult.website.subscribers.forEach(function(subscriber) {
+    // Telegram is special, we will send notification use bot object
+    if ('telegram' == subscriber.name) {
+      console.log("** Will notify telegram")
+      self._adapters['telegram'].yellTo(message, subscriber.option)
+      return
+    }
+
+    var noti = self._adapters[subscriber.name](subscriber.option)
+    //noti.yell(message)
+    console.log(message)
+  }.bind(this))
 }
