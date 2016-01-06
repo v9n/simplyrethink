@@ -120,6 +120,7 @@ Storage.prototype.createIncident = function (serviceId, data) {
   var self = this
   data["website_id"] = serviceId
   data["status"] = "open"
+  data["created_at"] = r.now()
   return new Promise(function(resolve, reject) {
     r.table('incident')
       .insert(data)

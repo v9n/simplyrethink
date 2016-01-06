@@ -45,7 +45,7 @@ Alert.prototype.inspect = function(checkResult) {
 
   if (checkResult.statusCode != 200) {
     console.log(checkResult.website.uri, " returns code ", checkResult.statusCode,". Alert needed")
-    message = checkResult.website.uri + " returns code"+ checkResult.statusCode+"ms to respond: " + checkResult.duration
+    message = checkResult.website.uri + " returns code "+ checkResult.statusCode + " to respond in " + checkResult.duration + "ms"
     alertNeeded = true
   }
 
@@ -60,7 +60,7 @@ Alert.prototype.inspect = function(checkResult) {
 
   if (checkResult.incident) {
     //@TODO Add duration of incident here
-    message = "Incident #" + checkResult.monitor_id + " is still going.\n" + message
+    message = "Incident #" + checkResult.incident.id + " is still going.\n" + message
   } else {
     // Create associated incident
     this._storage.createIncident(checkResult.website.id, {
@@ -69,10 +69,18 @@ Alert.prototype.inspect = function(checkResult) {
     })
   }
 
-  // Finally doing notification
   console.log(this._notifier)
+  this.fire(checkResult, message)
+}
+
+/**
+ * Actually fire message
+ *
+ * @var array checkResult object contains
+ *
+ */
+Alert.prototype.fire = function(checkResult, message) {
   var self = this
-  //var telegram = this._notifier[0];
   checkResult.website.subscribers.forEach(function(subscriber) {
     // Telegram is special, we will send notification use bot object
     if ('telegram' == subscriber.name) {
