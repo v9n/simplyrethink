@@ -470,6 +470,32 @@ So it's slower because it takes time to write to hard drive. You may not see
 the effect if you have a very fast hard drive or SSD. I tried it on an external
 spin drive :).
 
+## Conflict when inserting document
+
+What happens when we insert a document with same primary keys?
+
+    r.tableCreate('t')
+    r.table('t').insert({id: 1, name: 'Vinh'})
+    r.table('t').insert({id: 1, name: 'Vinh'})
+
+On the second time, I got this error:
+
+    {
+        "deleted": 0,
+        "errors": 1,
+        "first_error": "Duplicate primary key `id`:\n{\n\t\"id\":\t1,\n\t\"name\":\t\"Vinh\"\n}\n{\n\t\"id\":\t1,\n\t\"name\":\t\"Vinh\"\n}",
+        "inserted": 0,
+        "replaced": 0,
+        "skipped": 0,
+        "unchanged": 0
+    }
+
+So by default, the behaviour is an error is throw. However, we can change that
+behaviour. RethinkDB supports this via a `conflict` field in option of insert.
+It accepts 3 values:
+
+ 
+
 ## Update
 
 To make it easier, you can think of updating like selecting data, then change
